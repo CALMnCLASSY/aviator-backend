@@ -2,19 +2,15 @@
   "name": "aviator-backend",
   "version": "1.0.0",
   "main": "app.js",
-  "engines": {
-    "node": ">=16.0.0"
-  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node app.js",
-    "dev": "nodemon app.js",
-    "build": "echo 'No build required'"
+    "dev": "nodemon app.js"
   },
-  "keywords": ["aviator", "prediction", "api", "express"],
-  "author": "Joshua",
+  "keywords": [],
+  "author": "",
   "license": "ISC",
-  "description": "Aviator prediction backend API",
+  "description": "",
   "dependencies": {
     "axios": "^1.6.0",
     "body-parser": "^2.2.0",

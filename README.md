@@ -38,8 +38,6 @@ npm install
 Create a `.env` file in the root directory with the following variables:
 
 ```env
-# Database
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/aviator-predictions
 
 # Server Configuration
 PORT=5000
@@ -91,18 +89,11 @@ npm start
 
 ### Payment Endpoints
 
-#### Stripe
-- `POST /api/payments/stripe/create-payment-intent` - Create payment intent
-- `POST /api/payments/stripe/webhook` - Handle Stripe webhooks
 
 #### PayPal
 - `POST /api/payments/paypal/create-payment` - Create PayPal payment
 - `GET /api/payments/paypal/success` - Handle PayPal success
 - `GET /api/payments/paypal/cancel` - Handle PayPal cancellation
-
-#### M-Pesa
-- `POST /api/payments/mpesa/stk-push` - Initiate M-Pesa payment
-- `POST /api/payments/mpesa/callback` - Handle M-Pesa callbacks
 
 #### Cryptocurrency
 - `POST /api/payments/crypto/verify-payment` - Verify crypto transactions
@@ -127,25 +118,6 @@ const response = await fetch('/api/users', {
   })
 });
 ```
-
-### 2. Creating a Stripe Payment
-```javascript
-const response = await fetch('/api/payments/stripe/create-payment-intent', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    amount: 29.99,
-    currency: 'usd',
-    email: 'user@example.com',
-    packageName: '2x Prediction Package',
-    timeSlot: '14:00',
-    bettingSite: '1xBet'
-  })
-});
-```
-
 ### 3. Getting User Predictions
 ```javascript
 const response = await fetch('/api/users/user@example.com/predictions');
@@ -200,7 +172,6 @@ console.log(data.predictions); // Array of prediction multipliers
 - Duplicate payment prevention
 
 ### Data Protection
-- MongoDB connection with authentication
 - Input validation and sanitization
 - Error handling without information leakage
 - Secure API endpoint design
@@ -221,22 +192,6 @@ console.log(data.predictions); // Array of prediction multipliers
 
 ## Testing
 
-### Demo Mode
-Use the demo endpoint for testing:
-```javascript
-const response = await fetch('/api/payments/demo/verify-payment', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    email: 'test@example.com',
-    packageName: '2x Prediction Package',
-    timeSlot: '14:00',
-    bettingSite: '1xBet'
-  })
-});
-```
 
 ### Webhook Testing
 Use tools like ngrok to expose your local server for webhook testing:
