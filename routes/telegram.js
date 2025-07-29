@@ -31,8 +31,9 @@ router.post('/send', async (req, res) => {
             includeVerificationButtons,
             hasToken: !!telegramBotToken,
             hasChatId: !!telegramChatId,
-            tokenLength: telegramBotToken?.length,
-            chatId: telegramChatId
+            tokenPrefix: telegramBotToken?.substring(0, 10) + '...',
+            chatId: telegramChatId,
+            baseUrl: process.env.BASE_URL
         });
 
         if (!message) {
@@ -74,7 +75,13 @@ router.post('/send', async (req, res) => {
         }
 
         const url = `https://api.telegram.org/bot${telegramBotToken}/sendMessage`;
-        console.log('📤 Sending to Telegram:', { url: url.substring(0, 50) + '...', messageOptions });
+        console.log('📤 Sending to Telegram URL:', url.substring(0, 50) + '...');
+        console.log('📤 Message options:', { 
+            chat_id: messageOptions.chat_id, 
+            textLength: messageOptions.text?.length,
+            hasButtons: !!messageOptions.reply_markup,
+            buttonCount: messageOptions.reply_markup?.inline_keyboard?.length || 0
+        });
         
         // Send immediate response to frontend
         sendResponse(200, {
@@ -356,6 +363,8 @@ router.post('/set-webhook', async (req, res) => {
     try {
         const webhookUrl = `${process.env.BASE_URL}/api/telegram/webhook`;
         
+        console.log('🔗 Setting webhook URL:', webhookUrl);
+        
         const response = await fetch(`https://api.telegram.org/bot${telegramBotToken}/setWebhook`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -367,12 +376,15 @@ router.post('/set-webhook', async (req, res) => {
         
         const result = await response.json();
         
+        console.log('📱 Telegram webhook response:', result);
+        
         if (result.ok) {
             res.json({ success: true, message: 'Webhook set successfully', webhookUrl });
         } else {
             res.status(400).json({ success: false, error: result.description });
         }
     } catch (error) {
+        console.error('❌ Webhook setup error:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
