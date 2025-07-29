@@ -10,7 +10,7 @@ const app = express();
 // CORS Configuration - Add your frontend domain here
 const corsOptions = {
     origin: [
-        'https://fbad725e5d5c.ngrok-free.app',
+        'https://aviator-backend-komp.onrender.com',
         'file://',
         'https://avisignalss.netlify.app',
         /^file:\/\/.*$/,
