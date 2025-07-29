@@ -10,9 +10,9 @@ const app = express();
 // CORS Configuration - Add your frontend domain here
 const corsOptions = {
     origin: [
-        'https://aviator-backend-komp.onrender.com',
-        'file://',
+        'https://avisignals.com',
         'https://avisignalss.netlify.app',
+        'file://',
         /^file:\/\/.*$/,
         'http://localhost:3000',
         'http://127.0.0.1:4040',
@@ -28,7 +28,7 @@ const corsOptions = {
         'Authorization',
         'Cache-Control',
         'Pragma',
-        'ngrok-skip-browser-warning' // Allow ngrok header
+        'ngrok-skip-browser-warning' // Legacy header support
     ],
     exposedHeaders: ['Content-Range', 'X-Content-Range']
 };
@@ -39,15 +39,17 @@ app.use(cors(corsOptions));
 // Handle preflight requests for all routes
 app.options('*', cors(corsOptions));
 
-// Additional CORS headers for ngrok and development
+// Additional CORS headers for development and production
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   
   // For development: be more permissive with localhost and file:// origins
+  // For production: allow specific domains
   if (!origin || 
       origin.includes('localhost') || 
       origin.includes('127.0.0.1') || 
-      origin.includes('ngrok') ||
+      origin === 'https://avisignals.com' ||
+      origin === 'https://avisignalss.netlify.app' ||
       origin === 'null' || // file:// protocol sends null origin
       origin.startsWith('file://')) {
     
