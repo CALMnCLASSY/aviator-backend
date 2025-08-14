@@ -426,7 +426,7 @@ router.post('/crypto/personal/verify/:orderId', async (req, res) => {
             paymentData = global.cryptoPayments[orderId];
         } 
         // Check in paybill payments (pendingPayments)
-        else if (orderId.startsWith('PAYBILL_') && global.pendingPayments && global.pendingPayments[orderId]) {
+        else if ((orderId.startsWith('PAYBILL_') || orderId.startsWith('BOT_MPESA_') || orderId.startsWith('BOT_CRYPTO_')) && global.pendingPayments && global.pendingPayments[orderId]) {
             paymentData = global.pendingPayments[orderId];
         }
         
@@ -482,7 +482,7 @@ router.get('/crypto/status/:orderId', async (req, res) => {
         let paymentMethod = 'unknown';
         
         // Determine payment method based on orderId prefix
-        if (orderId.startsWith('PAYBILL_')) {
+        if (orderId.startsWith('PAYBILL_') || orderId.startsWith('BOT_MPESA_') || orderId.startsWith('BOT_CRYPTO_')) {
             paymentMethod = 'paybill';
             
             // Import the pendingPayments Map from telegram routes
@@ -745,7 +745,7 @@ router.post('/payment-success', async (req, res) => {
     });
 
     // Clean up payment data from storage
-    if (orderId.startsWith('PAYBILL_')) {
+    if (orderId.startsWith('PAYBILL_') || orderId.startsWith('BOT_MPESA_') || orderId.startsWith('BOT_CRYPTO_')) {
       const telegramRoutes = require('./telegram');
       if (telegramRoutes.pendingPayments && telegramRoutes.pendingPayments.has(orderId)) {
         telegramRoutes.pendingPayments.delete(orderId);

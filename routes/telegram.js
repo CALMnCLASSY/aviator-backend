@@ -23,12 +23,13 @@ router.post('/send', async (req, res) => {
     };
     
     try {
-        const { message, orderId, includeVerificationButtons } = req.body;
+        const { message, orderId, includeVerificationButtons, paymentData } = req.body;
         
         console.log('📥 Telegram send request:', { 
             messageLength: message?.length, 
             orderId, 
             includeVerificationButtons,
+            hasPaymentData: !!paymentData,
             hasToken: !!telegramBotToken,
             hasChatId: !!telegramChatId,
             tokenPrefix: telegramBotToken?.substring(0, 10) + '...',
@@ -42,6 +43,31 @@ router.post('/send', async (req, res) => {
                 success: false,
                 message: 'Message is required'
             });
+        }
+
+        // Store payment data if provided with orderId
+        if (orderId && paymentData) {
+            console.log('💾 Storing payment data for verification:', { orderId, paymentData });
+            
+            // Store in global.cryptoPayments for all payment types
+            global.cryptoPayments = global.cryptoPayments || {};
+            global.cryptoPayments[orderId] = {
+                ...paymentData,
+                status: 'pending_verification',
+                timestamp: new Date(),
+                storedAt: new Date().toISOString()
+            };
+            
+            // Also store in pendingPayments Map for paybill compatibility
+            if (orderId.startsWith('PAYBILL_') || orderId.startsWith('BOT_MPESA_') || orderId.startsWith('BOT_CRYPTO_')) {
+                pendingPayments.set(orderId, {
+                    ...paymentData,
+                    status: 'pending_verification',
+                    timestamp: new Date()
+                });
+            }
+            
+            console.log('✅ Payment data stored successfully for orderId:', orderId);
         }
 
         let messageOptions = {
@@ -195,8 +221,8 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                 global.cryptoPayments[orderId].verifiedAt = new Date();
             } 
             
-            // Handle paybill payment verification
-            if (orderId.startsWith('PAYBILL_')) {
+            // Handle paybill and mobile payment verification
+            if (orderId.startsWith('PAYBILL_') || orderId.startsWith('BOT_MPESA_')) {
                 // Update in pendingPayments Map
                 if (pendingPayments.has(orderId)) {
                     const currentData = pendingPayments.get(orderId);
@@ -257,8 +283,8 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                 global.cryptoPayments[orderId].rejectedAt = new Date();
             } 
             
-            // Handle paybill payment rejection
-            if (orderId.startsWith('PAYBILL_')) {
+            // Handle paybill and mobile payment rejection
+            if (orderId.startsWith('PAYBILL_') || orderId.startsWith('BOT_MPESA_')) {
                 // Update in pendingPayments Map
                 if (pendingPayments.has(orderId)) {
                     const currentData = pendingPayments.get(orderId);
