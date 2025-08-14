@@ -47,6 +47,10 @@ app.use((req, res, next) => {
     res.setHeader('X-XSS-Protection', '1; mode=block');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+    
+    next();
+});
+
 // Additional CORS headers for development and production
 app.use((req, res, next) => {
   const origin = req.headers.origin;
