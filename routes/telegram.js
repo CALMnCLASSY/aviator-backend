@@ -4,8 +4,8 @@ const fetch = require('node-fetch');
 const router = express.Router();
 
 // Telegram configuration
-const telegramBotToken = '7688438027:AAFNnge7_oADfxCwCMm2XZGSH1hG2Q0rZfE';
-const telegramChatId = '5900219209';
+const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN || '7995830862:AAEbUHiAL-YUM3myMGKd63dpFcbxE3_uU2o';
+const telegramChatId = process.env.TELEGRAM_CHAT_ID || '5900219209';
 
 // Store pending crypto payments for verification
 const pendingPayments = new Map();
@@ -23,12 +23,13 @@ router.post('/send', async (req, res) => {
     };
     
     try {
-        const { message, orderId, includeVerificationButtons } = req.body;
+        const { message, orderId, includeVerificationButtons, paymentData } = req.body;
         
         console.log('📥 Telegram send request:', { 
             messageLength: message?.length, 
             orderId, 
             includeVerificationButtons,
+            hasPaymentData: !!paymentData,
             hasToken: !!telegramBotToken,
             hasChatId: !!telegramChatId,
             tokenPrefix: telegramBotToken?.substring(0, 10) + '...',
@@ -42,6 +43,31 @@ router.post('/send', async (req, res) => {
                 success: false,
                 message: 'Message is required'
             });
+        }
+
+        // Store payment data if provided with orderId
+        if (orderId && paymentData) {
+            console.log('💾 Storing payment data for verification:', { orderId, paymentData });
+            
+            // Store in global.cryptoPayments for all payment types
+            global.cryptoPayments = global.cryptoPayments || {};
+            global.cryptoPayments[orderId] = {
+                ...paymentData,
+                status: 'pending_verification',
+                timestamp: new Date(),
+                storedAt: new Date().toISOString()
+            };
+            
+            // Also store in pendingPayments Map for paybill compatibility
+            if (orderId.startsWith('PAYBILL_') || orderId.startsWith('BOT_MPESA_')) {
+                pendingPayments.set(orderId, {
+                    ...paymentData,
+                    status: 'pending_verification',
+                    timestamp: new Date()
+                });
+            }
+            
+            console.log('✅ Payment data stored successfully for orderId:', orderId);
         }
 
         let messageOptions = {
