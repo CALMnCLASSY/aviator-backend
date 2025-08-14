@@ -127,12 +127,6 @@ app.use('/api/payments', paymentRoutes);
 const telegramRoutes = require('./routes/telegram');
 app.use('/api/telegram', telegramRoutes);
 
-const supportRoutes = require('./routes/support');
-app.use('/api/support', supportRoutes);
-
-const chatRoutes = require('./routes/chat');
-app.use('/api', chatRoutes);
-
 // Simple logging system instead of MongoDB
 const fs = require('fs');
 const path = require('path');
