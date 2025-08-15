@@ -170,6 +170,15 @@ router.post('/webhook', async (req, res) => {
             } else if (data.startsWith('reply_')) {
                 const orderId = data.replace('reply_', '');
                 await handleCustomerReply(orderId, chatId, messageId);
+            } else if (data.startsWith('chat_reply_')) {
+                const chatSessionId = data.replace('chat_reply_', '');
+                await handleChatReply(chatSessionId, chatId, messageId);
+            } else if (data.startsWith('chat_read_')) {
+                const chatSessionId = data.replace('chat_read_', '');
+                await handleChatRead(chatSessionId, chatId, messageId);
+            } else if (data.startsWith('chat_history_')) {
+                const chatSessionId = data.replace('chat_history_', '');
+                await handleChatHistory(chatSessionId, chatId, messageId);
             }
             
             // Answer callback query to remove loading state
@@ -417,4 +426,76 @@ router.post('/set-webhook', async (req, res) => {
 
 // Export router and pendingPayments
 router.pendingPayments = pendingPayments;
+
+// Chat reply handlers
+async function handleChatReply(chatSessionId, chatId, messageId) {
+    try {
+        await updateMessage(chatId, messageId, 
+            `💬 REPLYING TO CUSTOMER
+
+🆔 Chat ID: ${chatSessionId}
+
+Please type your reply message in this chat and I'll send it to the customer.
+
+Format: Just type your message normally and send it.
+Example: "Hello! I'll help you with your question..."`
+        );
+        
+        // Store the chat session ID for the next message
+        global.awaitingChatReply = global.awaitingChatReply || {};
+        global.awaitingChatReply[chatId] = chatSessionId;
+        
+    } catch (error) {
+        console.error('Error handling chat reply:', error);
+    }
+}
+
+async function handleChatRead(chatSessionId, chatId, messageId) {
+    try {
+        await updateMessage(chatId, messageId, 
+            `✅ CHAT MARKED AS READ
+
+🆔 Chat ID: ${chatSessionId}
+⏰ Time: ${new Date().toLocaleString()}
+
+This chat has been marked as read.`
+        );
+        
+    } catch (error) {
+        console.error('Error handling chat read:', error);
+    }
+}
+
+async function handleChatHistory(chatSessionId, chatId, messageId) {
+    try {
+        // Get chat history from the chat route
+        const response = await fetch(`${process.env.BASE_URL}/api/chat/${chatSessionId}/messages`);
+        
+        if (response.ok) {
+            const result = await response.json();
+            const messages = result.messages || [];
+            
+            let historyText = `📝 CHAT HISTORY - ${chatSessionId}\n\n`;
+            
+            if (messages.length === 0) {
+                historyText += 'No messages in this chat yet.';
+            } else {
+                messages.slice(-10).forEach(msg => { // Last 10 messages
+                    const time = new Date(msg.timestamp).toLocaleTimeString();
+                    const sender = msg.senderType === 'customer' ? '👤 Customer' : '👨‍💼 Admin';
+                    historyText += `${sender} (${time}): ${msg.text}\n\n`;
+                });
+            }
+            
+            await updateMessage(chatId, messageId, historyText);
+        } else {
+            await updateMessage(chatId, messageId, `❌ Could not load chat history for ${chatSessionId}`);
+        }
+        
+    } catch (error) {
+        console.error('Error handling chat history:', error);
+        await updateMessage(chatId, messageId, `❌ Error loading chat history: ${error.message}`);
+    }
+}
+
 module.exports = router;
