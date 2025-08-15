@@ -152,6 +152,27 @@ router.post('/webhook', async (req, res) => {
     try {
         const update = req.body;
         
+        // Handle text messages (for /reply commands)
+        if (update.message && update.message.text) {
+            const text = update.message.text;
+            const chatId = update.message.chat.id;
+            const messageId = update.message.message_id;
+            
+            console.log('Received message:', text);
+            
+            // Handle /reply CHAT_ID message format
+            if (text.startsWith('/reply ')) {
+                const parts = text.split(' ');
+                if (parts.length >= 3) {
+                    const customerChatId = parts[1];
+                    const replyMessage = parts.slice(2).join(' ');
+                    await handleTelegramChatReply(customerChatId, replyMessage, chatId, messageId);
+                } else {
+                    await sendTelegramMessage(chatId, '❌ Invalid format. Use: /reply CHAT_ID_HERE Your message here');
+                }
+            }
+        }
+        
         // Handle callback queries (button clicks)
         if (update.callback_query) {
             const callbackQuery = update.callback_query;
@@ -495,6 +516,52 @@ async function handleChatHistory(chatSessionId, chatId, messageId) {
     } catch (error) {
         console.error('Error handling chat history:', error);
         await updateMessage(chatId, messageId, `❌ Error loading chat history: ${error.message}`);
+    }
+}
+
+// Handle Telegram /reply commands for chat
+async function handleTelegramChatReply(customerChatId, replyMessage, adminTelegramId, messageId) {
+    try {
+        console.log(`📞 TELEGRAM CHAT REPLY:`, { customerChatId, replyMessage });
+        
+        // Send the reply via the chat API
+        const response = await fetch(`${process.env.BASE_URL || 'http://localhost:5000'}/api/chat/${customerChatId}/reply`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: replyMessage,
+                adminName: 'Telegram Admin'
+            })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            await sendTelegramMessage(adminTelegramId, `✅ Reply sent to customer successfully!\n\n📝 Message: "${replyMessage}"`);
+        } else {
+            const errorText = await response.text();
+            await sendTelegramMessage(adminTelegramId, `❌ Failed to send reply: ${errorText}`);
+        }
+        
+    } catch (error) {
+        console.error('Telegram chat reply error:', error);
+        await sendTelegramMessage(adminTelegramId, `❌ Error sending reply: ${error.message}`);
+    }
+}
+
+// Helper function to send Telegram messages
+async function sendTelegramMessage(chatId, text) {
+    try {
+        await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: chatId,
+                text: text,
+                parse_mode: 'HTML'
+            })
+        });
+    } catch (error) {
+        console.error('Error sending Telegram message:', error);
     }
 }
 
