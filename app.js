@@ -3,23 +3,94 @@ require('dotenv').config(); // Load environment variables
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 // Initialize Express
 const app = express();
 
-// CORS Configuration - Add your frontend domain here
+// Security middleware - Helmet
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            scriptSrc: ["'self'"],
+            imgSrc: ["'self'", "data:", "https:"],
+        },
+    },
+    hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true
+    }
+}));
+
+// Rate limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    message: {
+        success: false,
+        message: 'Too many requests from this IP, please try again later.'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Apply rate limiting to all requests
+app.use(limiter);
+
+// Stricter rate limiting for payment endpoints
+const paymentLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // limit each IP to 10 payment requests per windowMs
+    message: {
+        success: false,
+        message: 'Too many payment requests, please try again later.'
+    }
+});
+
+// CORS Configuration - More restrictive for production
 const corsOptions = {
-    origin: [
-        'https://avisignals.com',
-        'https://avisignalss.netlify.app',
-        'file://',
-        /^file:\/\/.*$/,
-        'http://localhost:3000',
-        'http://127.0.0.1:4040',
-        'null'
-    ],
+    origin: function (origin, callback) {
+        // Allow requests with no origin (mobile apps, etc.)
+        if (!origin) return callback(null, true);
+        
+        const allowedOrigins = [
+            'https://avisignals.com',
+            'https://www.avisignals.com',
+            'https://avisignalss.netlify.app'
+        ];
+        
+        // Allow localhost in development
+        if (process.env.NODE_ENV !== 'production') {
+            allowedOrigins.push(
+                'http://localhost:3000',
+                'http://127.0.0.1:4040',
+                /^http:\/\/localhost:\d+$/,
+                /^http:\/\/127\.0\.0\.1:\d+$/
+            );
+        }
+        
+        const isAllowed = allowedOrigins.some(allowed => {
+            if (typeof allowed === 'string') {
+                return origin === allowed;
+            } else if (allowed instanceof RegExp) {
+                return allowed.test(origin);
+            }
+            return false;
+        });
+        
+        if (isAllowed) {
+            callback(null, true);
+        } else {
+            console.log('CORS blocked origin:', origin);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
         'Origin',
         'X-Requested-With',
@@ -27,8 +98,7 @@ const corsOptions = {
         'Accept',
         'Authorization',
         'Cache-Control',
-        'Pragma',
-        'ngrok-skip-browser-warning'
+        'Pragma'
     ],
     exposedHeaders: ['Content-Range', 'X-Content-Range']
 };
@@ -38,41 +108,6 @@ app.use(cors(corsOptions));
 
 // Handle preflight requests for all routes
 app.options('*', cors(corsOptions));
-
-// Legal Compliance & Security Headers Middleware
-app.use((req, res, next) => {
-    // Security Headers
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-    res.setHeader('X-XSS-Protection', '1; mode=block');
-    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-    res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
-    
-    next();
-});
-
-// Additional CORS headers for development and production
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  
-  // For development: be more permissive with localhost and file:// origins
-  // For production: allow specific domains
-  if (!origin || 
-      origin.includes('localhost') || 
-      origin.includes('127.0.0.1') || 
-      origin === 'https://avisignals.com' ||
-      origin === 'https://avisignalss.netlify.app' ||
-      origin === 'null' || // file:// protocol sends null origin
-      origin.startsWith('file://')) {
-    
-    res.header('Access-Control-Allow-Origin', origin || '*');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma, ngrok-skip-browser-warning');
-  }
-  
-  next();
-});
 
 // Raw body parser for Stripe webhooks (must be before JSON parser)
 app.use('/api/payments/stripe/webhook', express.raw({ type: 'application/json' }));
@@ -104,14 +139,6 @@ app.use((req, res, next) => {
     next();
 });
 
-// Additional security headers
-app.use((req, res, next) => {
-  res.header('X-Content-Type-Options', 'nosniff');
-  res.header('X-Frame-Options', 'DENY');
-  res.header('X-XSS-Protection', '1; mode=block');
-  next();
-});
-
 // Log incoming requests (helpful for debugging)
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.url} from ${req.get('origin') || 'unknown'}`);
@@ -122,13 +149,10 @@ const userRoutes = require('./routes/users');
 app.use('/api/users', userRoutes);
 
 const paymentRoutes = require('./routes/payments');
-app.use('/api/payments', paymentRoutes);
+app.use('/api/payments', paymentLimiter, paymentRoutes);
 
 const telegramRoutes = require('./routes/telegram');
 app.use('/api/telegram', telegramRoutes);
-
-const chatRoutes = require('./routes/chat');
-app.use('/api/chat', chatRoutes);
 
 // Simple logging system instead of MongoDB
 const fs = require('fs');

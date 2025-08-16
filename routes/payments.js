@@ -675,55 +675,6 @@ function generatePredictionMultipliers(packageName) {
   return predictions.sort((a, b) => b - a); // Sort descending
 }
 
-// Test Telegram notification
-router.post('/test-telegram', async (req, res) => {
-  try {
-    const { message } = req.body;
-    const telegramUrl = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
-    
-    const response = await axios.post(telegramUrl, {
-      chat_id: process.env.TELEGRAM_CHAT_ID,
-      text: message,
-      parse_mode: 'HTML'
-    });
-
-    res.json({ 
-      success: true, 
-      message: 'Telegram test message sent successfully',
-      telegramResponse: response.data
-    });
-
-  } catch (error) {
-    console.error('Telegram test error:', error);
-    res.status(500).json({ error: 'Telegram test failed', details: error.message });
-  }
-});
-
-// Demo payment verification (for testing)
-router.post('/demo/verify-payment', async (req, res) => {
-  try {
-    const { email, packageName, timeSlot, bettingSite } = req.body;
-
-    const user = await handleSuccessfulPayment({
-      email,
-      packageName,
-      timeSlot,
-      bettingSite
-    });
-
-    res.json({ 
-      success: true, 
-      message: 'Demo payment verified successfully',
-      user,
-      predictions: user.predictions
-    });
-
-  } catch (error) {
-    console.error('Demo payment verification error:', error);
-    res.status(500).json({ error: 'Demo payment verification failed' });
-  }
-});
-
 // Universal payment success handler (for frontend to call after successful verification)
 router.post('/payment-success', async (req, res) => {
   try {
