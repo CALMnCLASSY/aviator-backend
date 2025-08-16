@@ -10,6 +10,50 @@ class TelegramMarketingBot {
         this.isRunning = false;
         this.messagePool = this.loadMessagePool();
         this.lastPostTime = 0;
+        this.currentFlow = null; // Track current message flow
+        this.flowStep = 0; // Track step in current flow
+        
+        // Define logical message flows
+        this.messageFlows = {
+            // Premium Signal Flow (most common)
+            premiumSignal: [
+                { type: 'hype', weight: 1 },
+                { type: 'signal_confirmations', weight: 1, delay: [2, 5] }, // 2-5 minutes
+                { type: 'win_results', weight: 1, delay: [1, 3] }, // 1-3 minutes
+                { type: 'celebration', weight: 0.7, delay: [0.5, 1] } // 30-60 seconds
+            ],
+            
+            // Free Signal Flow
+            freeSignal: [
+                { type: 'analysis_updates', weight: 1 },
+                { type: 'signals', weight: 1, delay: [1, 3] },
+                { type: 'tips', weight: 0.8, delay: [2, 4] },
+                { type: 'promos', weight: 0.9, delay: [1, 2] }
+            ],
+            
+            // Cancelled Signal Flow (realistic)
+            cancelledSignal: [
+                { type: 'analysis_updates', weight: 1 },
+                { type: 'hype', weight: 0.8, delay: [1, 2] },
+                { type: 'cancelled_signals', weight: 1, delay: [2, 4] },
+                { type: 'analysis_updates', weight: 1, delay: [3, 5] },
+                { type: 'signal_confirmations', weight: 0.9, delay: [5, 8] }
+            ],
+            
+            // Educational Flow
+            educational: [
+                { type: 'tips', weight: 1 },
+                { type: 'site_promos', weight: 0.7, delay: [1, 2] },
+                { type: 'promos', weight: 0.8, delay: [1, 3] }
+            ],
+            
+            // Celebration Flow (after big wins)
+            celebration: [
+                { type: 'celebration', weight: 1 },
+                { type: 'hype', weight: 0.8, delay: [0.5, 1] },
+                { type: 'promos', weight: 0.9, delay: [1, 2] }
+            ]
+        };
         
         this.personas = {
             bot: {
@@ -55,6 +99,11 @@ class TelegramMarketingBot {
             .replace(/{{link}}/g, 'avisignals.com')
             .replace(/{{accuracy}}/g, '98.72%');
         
+        // Add betting site context for message types that need it
+        if (['signals', 'signal_confirmations', 'win_results', 'site_promos'].includes(category)) {
+            // Already handled by {{site}} placeholder in message templates
+        }
+        
         // Handle signal confirmation placeholders
         if (category === 'signal_confirmations') {
             const enterAt = (1.10 + Math.random() * 0.30).toFixed(2); // 1.10-1.40
@@ -97,6 +146,12 @@ class TelegramMarketingBot {
                 .replace(/{{losses}}/g, losses)
                 .replace(/{{accuracy}}/g, accuracy)
                 .replace(/{{bonus_type}}/g, bonusType);
+        }
+        
+        // Handle live updates with dynamic round numbers
+        if (category === 'live_updates') {
+            const roundNumber = Math.floor(Math.random() * 10000) + 1000;
+            processedMessage = processedMessage.replace(/{{round}}/g, roundNumber);
         }
         
         // Randomly add admin contact link (15% chance for non-win messages)
@@ -239,43 +294,134 @@ class TelegramMarketingBot {
 
     async sendMarketingPost() {
         try {
-            const randomValue = Math.random();
-            
-            // 20% chance for signal + win sequence (realistic wins)
-            if (randomValue < 0.20) {
-                return await this.sendSignalWinSequence();
+            // Check if we're in the middle of a flow sequence
+            if (this.currentFlow && this.flowStep < this.messageFlows[this.currentFlow].length) {
+                return await this.continueCurrentFlow();
             }
             
-            // 10% chance for cancelled signal sequence
-            if (randomValue < 0.30) {
-                return await this.sendSignalSequence();
+            // Start a new flow sequence
+            return await this.startNewFlow();
+        } catch (error) {
+            console.error('❌ Error sending marketing post:', error);
+            return false;
+        }
+    }
+    
+    async startNewFlow() {
+        // Determine which flow to start based on probabilities
+        const random = Math.random();
+        let selectedFlow;
+        
+        if (random < 0.35) {
+            selectedFlow = 'premiumSignal'; // 35% - Most engaging
+        } else if (random < 0.55) {
+            selectedFlow = 'freeSignal'; // 20% - Regular content
+        } else if (random < 0.70) {
+            selectedFlow = 'cancelledSignal'; // 15% - Realistic cancelled signals
+        } else if (random < 0.85) {
+            selectedFlow = 'educational'; // 15% - Tips and education
+        } else {
+            selectedFlow = 'celebration'; // 15% - Celebration content
+        }
+        
+        console.log(`🎯 Starting new flow: ${selectedFlow}`);
+        this.currentFlow = selectedFlow;
+        this.flowStep = 0;
+        
+        return await this.executeCurrentFlowStep();
+    }
+    
+    async continueCurrentFlow() {
+        console.log(`📈 Continuing ${this.currentFlow} flow - Step ${this.flowStep + 1}`);
+        return await this.executeCurrentFlowStep();
+    }
+    
+    async executeCurrentFlowStep() {
+        const flow = this.messageFlows[this.currentFlow];
+        const currentStep = flow[this.flowStep];
+        
+        // Check if we should execute this step based on weight (probability)
+        if (Math.random() > currentStep.weight) {
+            console.log(`⏭️ Skipping step ${this.flowStep} due to weight probability`);
+            this.flowStep++;
+            if (this.flowStep < flow.length) {
+                return await this.executeCurrentFlowStep();
+            } else {
+                return await this.completeFlow();
             }
+        }
+        
+        // Send the message for this step
+        const success = await this.sendMessageForType(currentStep.type);
+        
+        // Schedule next step if there is one
+        this.flowStep++;
+        if (this.flowStep < flow.length) {
+            const nextStep = flow[this.flowStep];
+            if (nextStep.delay) {
+                const delayMinutes = nextStep.delay[0] + Math.random() * (nextStep.delay[1] - nextStep.delay[0]);
+                const delayMs = delayMinutes * 60 * 1000;
+                
+                console.log(`⏰ Next step in ${delayMinutes.toFixed(1)} minutes`);
+                setTimeout(() => {
+                    if (this.isRunning) {
+                        this.continueCurrentFlow();
+                    }
+                }, delayMs);
+            }
+        } else {
+            await this.completeFlow();
+        }
+        
+        if (success) this.lastPostTime = Date.now();
+        return success;
+    }
+    
+    async completeFlow() {
+        console.log(`✅ Completed ${this.currentFlow} flow`);
+        this.currentFlow = null;
+        this.flowStep = 0;
+        
+        // Schedule next flow (normal interval)
+        this.scheduleNextPost();
+    }
+    
+    async sendMessageForType(messageType) {
+        try {
+            const message = this.randomFromArray(this.messagePool[messageType]);
+            const processedMessage = this.processMessage(message, messageType);
             
-            const messageData = this.selectMessageData();
-            console.log(`📤 Sending ${messageData.category} message from ${messageData.persona.name}`);
+            // Determine persona based on message type
+            const useBot = ['signals', 'cancelled_signals', 'analysis_updates', 'signal_confirmations', 'win_results'].includes(messageType);
+            const persona = useBot ? this.personas.bot : this.personas.trader;
             
-            // 25% chance to send with image (but not for cancelled_signals or analysis_updates)
-            const shouldSendImage = Math.random() < 0.25;
+            console.log(`📤 Sending ${messageType} message from ${persona.name}`);
             
-            if (shouldSendImage && (messageData.category === 'hype' || messageData.category === 'promos')) {
+            // 25% chance to send with image for certain types
+            const shouldSendImage = Math.random() < 0.25 && ['hype', 'promos', 'celebration'].includes(messageType);
+            
+            if (shouldSendImage) {
                 const imagePath = this.getRandomImage();
                 if (imagePath) {
-                    let caption = messageData.message;
-                    if (messageData.category !== 'signals' && messageData.persona) {
-                        caption += `\n\n${messageData.persona.emoji} ${messageData.persona.name}`;
+                    let caption = processedMessage;
+                    if (messageType !== 'signals' && persona) {
+                        caption += `\n\n${persona.emoji} ${persona.name}`;
                     }
-                    console.log('📸 Sending marketing post with image');
-                    const success = await this.sendImageToChannel(imagePath, caption);
-                    if (success) this.lastPostTime = Date.now();
-                    return success;
+                    console.log('📸 Sending with image');
+                    return await this.sendImageToChannel(imagePath, caption);
                 }
             }
             
-            const success = await this.sendToChannel(messageData);
-            if (success) this.lastPostTime = Date.now();
-            return success;
+            // Send regular message
+            const messageData = {
+                message: processedMessage,
+                persona: persona,
+                category: messageType
+            };
+            
+            return await this.sendToChannel(messageData);
         } catch (error) {
-            console.error('❌ Error sending marketing post:', error);
+            console.error(`❌ Error sending ${messageType} message:`, error);
             return false;
         }
     }
