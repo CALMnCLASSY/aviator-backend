@@ -98,7 +98,8 @@ const corsOptions = {
         'Accept',
         'Authorization',
         'Cache-Control',
-        'Pragma'
+        'Pragma',
+        'ngrok-skip-browser-warning'
     ],
     exposedHeaders: ['Content-Range', 'X-Content-Range']
 };
