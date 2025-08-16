@@ -156,6 +156,9 @@ app.use('/api/payments', paymentLimiter, paymentRoutes);
 const telegramRoutes = require('./routes/telegram');
 app.use('/api/telegram', telegramRoutes);
 
+const marketingRoutes = require('./routes/marketing');
+app.use('/api/marketing', marketingRoutes);
+
 // Simple logging system instead of MongoDB
 const fs = require('fs');
 const path = require('path');
@@ -241,6 +244,20 @@ const server = app.listen(PORT, () => {
   console.log(`📁 Local logs: ${logsDir}`);
   console.log(`✅ MongoDB: Removed - Using Telegram + file logs instead!`);
   console.log(`🎯 Simple, efficient, cost-effective solution!`);
+  
+  // Initialize Telegram Marketing Bot
+  console.log(`🚀 Initializing Telegram Marketing Bot...`);
+  const TelegramMarketingBot = require('./marketing/telegramMarketing');
+  const marketingBot = new TelegramMarketingBot();
+  
+  // Start marketing bot after 30 seconds (let server fully initialize)
+  setTimeout(() => {
+    marketingBot.start();
+    console.log(`📢 Marketing Bot: Started! Broadcasting to channel every 30-120 minutes`);
+  }, 30000);
+  
+  // Store marketing bot instance globally for admin controls
+  app.locals.marketingBot = marketingBot;
 });
 
 // Handle unhandled promise rejections
