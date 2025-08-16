@@ -98,7 +98,7 @@ router.post('/test', async (req, res) => {
             });
         }
         
-        await marketingBot.postMessage();
+        await marketingBot.sendMarketingPost();
         
         res.json({
             success: true,
