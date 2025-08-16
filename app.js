@@ -60,6 +60,7 @@ const corsOptions = {
         const allowedOrigins = [
             'https://avisignals.com',
             'https://www.avisignals.com',
+            'https://avisignal.netlify.app',
             'https://avisignalss.netlify.app'
         ];
         
