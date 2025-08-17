@@ -89,28 +89,43 @@ router.post('/send', async (req, res) => {
             parse_mode: 'HTML'
         };
 
-        // Add verification buttons for crypto payments
+        // Add verification buttons for crypto payments or support messages
         if (includeVerificationButtons && orderId) {
-            messageOptions.reply_markup = {
-                inline_keyboard: [
-                    [
-                        {
-                            text: '✅ VERIFY & SEND PREDICTIONS',
-                            callback_data: `verify_${orderId}`
-                        },
-                        {
-                            text: '❌ REJECT PAYMENT', 
-                            callback_data: `reject_${orderId}`
-                        }
-                    ],
-                    [
-                        {
-                            text: '💬 Reply to Customer',
-                            callback_data: `reply_${orderId}`
-                        }
+            if (paymentData && paymentData.messageType === 'support') {
+                // Support message buttons
+                messageOptions.reply_markup = {
+                    inline_keyboard: [
+                        [
+                            {
+                                text: '💬 Reply to Customer',
+                                callback_data: `reply_${orderId}`
+                            }
+                        ]
                     ]
-                ]
-            };
+                };
+            } else {
+                // Payment verification buttons
+                messageOptions.reply_markup = {
+                    inline_keyboard: [
+                        [
+                            {
+                                text: '✅ VERIFY & SEND PREDICTIONS',
+                                callback_data: `verify_${orderId}`
+                            },
+                            {
+                                text: '❌ REJECT PAYMENT', 
+                                callback_data: `reject_${orderId}`
+                            }
+                        ],
+                        [
+                            {
+                                text: '💬 Reply to Customer',
+                                callback_data: `reply_${orderId}`
+                            }
+                        ]
+                    ]
+                };
+            }
         }
 
         const url = `https://api.telegram.org/bot${telegramBotToken}/sendMessage`;
@@ -383,20 +398,37 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
 // Handle customer reply
 async function handleCustomerReply(orderId, chatId, messageId) {
     try {
-        const payment = pendingPayments.get(orderId);
+        // Try to get payment data first
+        let customerData = pendingPayments.get(orderId);
+        let messageType = 'payment';
         
-        if (!payment) {
-            await updateMessage(chatId, messageId, `❌ Order ${orderId} not found.`);
+        // If not found in payments, check if it's a support message
+        if (!customerData && global.supportMessages && global.supportMessages[orderId]) {
+            customerData = global.supportMessages[orderId];
+            messageType = 'support';
+        }
+        
+        if (!customerData) {
+            await updateMessage(chatId, messageId, `❌ Order/Support ${orderId} not found.`);
             return;
         }
         
-        await updateMessage(chatId, messageId, 
-            `💬 Reply to Customer\n\n` +
-            `📧 Email: ${payment.email}\n` +
-            `📦 Package: ${payment.packageName}\n` +
-            `🆔 Order: ${orderId}\n\n` +
-            `Type your reply in this chat and I'll forward it to the customer.`
-        );
+        let replyMessage;
+        if (messageType === 'support') {
+            replyMessage = `💬 Reply to Customer Support Message\n\n` +
+                `📧 Email: ${customerData.email}\n` +
+                `❓ Question: ${customerData.message}\n` +
+                `🆔 Support ID: ${orderId}\n\n` +
+                `Type your reply in this chat and I'll forward it to the customer.`;
+        } else {
+            replyMessage = `💬 Reply to Customer\n\n` +
+                `📧 Email: ${customerData.email}\n` +
+                `📦 Package: ${customerData.packageName}\n` +
+                `🆔 Order: ${orderId}\n\n` +
+                `Type your reply in this chat and I'll forward it to the customer.`;
+        }
+        
+        await updateMessage(chatId, messageId, replyMessage);
     } catch (error) {
         console.error('Error handling customer reply:', error);
     }
@@ -425,6 +457,19 @@ router.post('/store-payment', (req, res) => {
     const { orderId, paymentData } = req.body;
     pendingPayments.set(orderId, paymentData);
     res.json({ success: true, message: 'Payment stored for verification' });
+});
+
+// Store support message for reply tracking
+router.post('/store-support', (req, res) => {
+    const { orderId, supportData } = req.body;
+    
+    // Initialize global.supportMessages if it doesn't exist
+    if (!global.supportMessages) {
+        global.supportMessages = {};
+    }
+    
+    global.supportMessages[orderId] = supportData;
+    res.json({ success: true, message: 'Support message stored for reply tracking' });
 });
 
 // Set webhook for Telegram bot (call this once to enable button callbacks)

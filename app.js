@@ -84,6 +84,7 @@ const corsOptions = {
         });
         
         if (isAllowed) {
+            console.log('CORS allowed origin:', origin);
             callback(null, true);
         } else {
             console.log('CORS blocked origin:', origin);
@@ -102,7 +103,9 @@ const corsOptions = {
         'Pragma',
         'ngrok-skip-browser-warning'
     ],
-    exposedHeaders: ['Content-Range', 'X-Content-Range']
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
+    preflightContinue: false,
+    optionsSuccessStatus: 200
 };
 
 // Apply CORS middleware
