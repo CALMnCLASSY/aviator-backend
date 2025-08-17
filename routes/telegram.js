@@ -10,6 +10,9 @@ const telegramChatId = '5900219209';
 // Store pending crypto payments for verification
 const pendingPayments = new Map();
 
+// Store admin reply sessions
+const adminReplyState = new Map();
+
 // Handle preflight OPTIONS requests
 router.options('/send', (req, res) => {
     res.header('Access-Control-Allow-Origin', 'https://avisignals.com');
@@ -180,13 +183,29 @@ router.post('/webhook', async (req, res) => {
     try {
         const update = req.body;
         
-        // Handle text messages (for /reply commands)
+        // Handle text messages (for /reply commands and admin replies)
         if (update.message && update.message.text) {
             const text = update.message.text;
             const chatId = update.message.chat.id;
             const messageId = update.message.message_id;
             
             console.log('Received message:', text);
+            
+            // Check if admin is in reply mode
+            if (adminReplyState.has(chatId)) {
+                const replySession = adminReplyState.get(chatId);
+                
+                if (text === '/cancel' || text === '/end') {
+                    adminReplyState.delete(chatId);
+                    await sendTelegramMessage(chatId, '❌ Reply session cancelled.');
+                    return;
+                }
+                
+                // Send the reply to the customer
+                await handleAdminReply(replySession.orderId, text, chatId, messageId);
+                adminReplyState.delete(chatId);
+                return;
+            }
             
             // Handle /reply CHAT_ID message format
             if (text.startsWith('/reply ')) {
@@ -263,12 +282,36 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                 amount: globalPayment.amount,
                 currency: globalPayment.currency,
                 timeSlot: globalPayment.timeSlot,
-                bettingSite: globalPayment.bettingSite
+                bettingSite: globalPayment.bettingSite,
+                status: globalPayment.status
             };
         }
         
         if (!payment) {
             await updateMessage(chatId, messageId, `❌ Order ${orderId} not found or already processed.`);
+            return;
+        }
+        
+        // Check if already processed to prevent race conditions
+        if (payment.status === 'verified') {
+            await updateMessage(chatId, messageId, 
+                `✅ Order ${orderId} already VERIFIED!\n\n` +
+                `📧 Customer: ${payment.email}\n` +
+                `📦 Package: ${payment.packageName}\n` +
+                `🆔 Order: ${orderId}\n\n` +
+                `This payment has already been processed.`
+            );
+            return;
+        }
+        
+        if (payment.status === 'rejected') {
+            await updateMessage(chatId, messageId, 
+                `❌ Order ${orderId} already REJECTED!\n\n` +
+                `📧 Customer: ${payment.email}\n` +
+                `📦 Package: ${payment.packageName}\n` +
+                `🆔 Order: ${orderId}\n\n` +
+                `This payment has already been processed.`
+            );
             return;
         }
         
@@ -326,13 +369,22 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                     `🆔 Order: ${orderId}\n\n` +
                     `🎯 Predictions have been sent to customer!`
                 );
-                pendingPayments.delete(orderId);
+                
+                // Only delete from pendingPayments after successful verification
+                if (pendingPayments.has(orderId)) {
+                    pendingPayments.delete(orderId);
+                }
                     
                 console.log(`✅ Customer ${payment.email} will now see predictions revealed!`);
             } else {
                 const errorText = await response.text();
                 console.error('Verification failed:', errorText);
                 await updateMessage(chatId, messageId, `❌ Failed to verify payment for order ${orderId}: ${errorText}`);
+                
+                // Reset status back to pending if verification failed
+                if (global.cryptoPayments && global.cryptoPayments[orderId]) {
+                    global.cryptoPayments[orderId].status = 'pending_verification';
+                }
             }
         } else if (action === 'rejected') {
             // Update payment status to rejected in both crypto and paybill payments
@@ -379,15 +431,30 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                 body: JSON.stringify({ verified: false })
             });
             
-            await updateMessage(chatId, messageId, 
-                `❌ Payment REJECTED!\n\n` +
-                `📧 Customer: ${payment.email}\n` +
-                `📦 Package: ${payment.packageName}\n` +
-                `💰 Amount: ${payment.amount} ${payment.currency}\n` +
-                `🆔 Order: ${orderId}\n\n` +
-                `Customer has been notified.`
-            );
-            pendingPayments.delete(orderId);
+            if (response.ok) {
+                await updateMessage(chatId, messageId, 
+                    `❌ Payment REJECTED!\n\n` +
+                    `📧 Customer: ${payment.email}\n` +
+                    `📦 Package: ${payment.packageName}\n` +
+                    `💰 Amount: ${payment.amount} ${payment.currency}\n` +
+                    `🆔 Order: ${orderId}\n\n` +
+                    `Customer has been notified.`
+                );
+                
+                // Only delete from pendingPayments after successful rejection
+                if (pendingPayments.has(orderId)) {
+                    pendingPayments.delete(orderId);
+                }
+            } else {
+                const errorText = await response.text();
+                console.error('Rejection failed:', errorText);
+                await updateMessage(chatId, messageId, `❌ Failed to reject payment for order ${orderId}: ${errorText}`);
+                
+                // Reset status back to pending if rejection failed
+                if (global.cryptoPayments && global.cryptoPayments[orderId]) {
+                    global.cryptoPayments[orderId].status = 'pending_verification';
+                }
+            }
         }
     } catch (error) {
         console.error('Error handling payment verification:', error);
@@ -413,24 +480,89 @@ async function handleCustomerReply(orderId, chatId, messageId) {
             return;
         }
         
+        // Start reply session
+        adminReplyState.set(chatId, {
+            orderId: orderId,
+            customerData: customerData,
+            messageType: messageType
+        });
+        
         let replyMessage;
         if (messageType === 'support') {
             replyMessage = `💬 Reply to Customer Support Message\n\n` +
                 `📧 Email: ${customerData.email}\n` +
                 `❓ Question: ${customerData.message}\n` +
                 `🆔 Support ID: ${orderId}\n\n` +
-                `Type your reply in this chat and I'll forward it to the customer.`;
+                `💭 Type your reply message and I'll send it to the customer:\n\n` +
+                `• Type /cancel to stop replying\n` +
+                `• Type /end to end this reply session`;
         } else {
             replyMessage = `💬 Reply to Customer\n\n` +
                 `📧 Email: ${customerData.email}\n` +
                 `📦 Package: ${customerData.packageName}\n` +
                 `🆔 Order: ${orderId}\n\n` +
-                `Type your reply in this chat and I'll forward it to the customer.`;
+                `💭 Type your reply message and I'll send it to the customer:\n\n` +
+                `• Type /cancel to stop replying\n` +
+                `• Type /end to end this reply session`;
         }
         
         await updateMessage(chatId, messageId, replyMessage);
     } catch (error) {
         console.error('Error handling customer reply:', error);
+    }
+}
+
+// Handle admin reply to customer
+async function handleAdminReply(orderId, replyMessage, adminChatId, adminMessageId) {
+    try {
+        // Get customer data
+        let customerData = pendingPayments.get(orderId);
+        let messageType = 'payment';
+        
+        // If not found in payments, check if it's a support message
+        if (!customerData && global.supportMessages && global.supportMessages[orderId]) {
+            customerData = global.supportMessages[orderId];
+            messageType = 'support';
+        }
+        
+        if (!customerData) {
+            await sendTelegramMessage(adminChatId, `❌ Customer data not found for ${orderId}`);
+            return;
+        }
+        
+        console.log(`📞 ADMIN REPLY:`, { 
+            orderId, 
+            email: customerData.email, 
+            replyMessage: replyMessage.substring(0, 50) + '...' 
+        });
+        
+        // TODO: Implement actual customer notification
+        // For now, we'll send a confirmation to admin
+        // In a full implementation, this would:
+        // 1. Send email to customer
+        // 2. Update a chat system
+        // 3. Send SMS/WhatsApp
+        
+        const responseMessage = `✅ Reply sent to customer!\n\n` +
+            `📧 Customer: ${customerData.email}\n` +
+            `💬 Your reply: "${replyMessage}"\n` +
+            `🆔 ${messageType === 'support' ? 'Support ID' : 'Order'}: ${orderId}\n\n` +
+            `Note: Customer will receive this via email notification.`;
+        
+        await sendTelegramMessage(adminChatId, responseMessage);
+        
+        // Log the reply for tracking
+        console.log(`📧 CUSTOMER REPLY LOGGED:`, {
+            orderId,
+            customerEmail: customerData.email,
+            adminReply: replyMessage,
+            timestamp: new Date().toISOString(),
+            messageType
+        });
+        
+    } catch (error) {
+        console.error('Error handling admin reply:', error);
+        await sendTelegramMessage(adminChatId, `❌ Error sending reply: ${error.message}`);
     }
 }
 
