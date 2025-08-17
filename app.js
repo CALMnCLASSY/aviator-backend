@@ -159,6 +159,9 @@ app.use('/api/payments', paymentLimiter, paymentRoutes);
 const telegramRoutes = require('./routes/telegram');
 app.use('/api/telegram', telegramRoutes);
 
+const chatRoutes = require('./routes/chat');
+app.use('/api/chat', chatRoutes);
+
 const marketingRoutes = require('./routes/marketing');
 app.use('/api/marketing', marketingRoutes);
 

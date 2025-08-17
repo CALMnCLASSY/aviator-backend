@@ -270,12 +270,40 @@ router.post('/webhook', async (req, res) => {
 // Handle payment verification
 async function handlePaymentVerification(orderId, chatId, messageId, action) {
     try {
+        console.log(`🔄 Processing ${action} for order: ${orderId}`);
+        
+        // Check if this order is already being processed or completed
+        if (global.processingOrders && global.processingOrders[orderId]) {
+            console.log(`⚠️ Order ${orderId} is already being processed`);
+            await updateMessage(chatId, messageId, `⚠️ Order ${orderId} is already being processed. Please wait...`);
+            return;
+        }
+        
+        // Mark order as being processed
+        global.processingOrders = global.processingOrders || {};
+        global.processingOrders[orderId] = { action, timestamp: Date.now() };
+        
         // Get payment data from both sources (fallback to global if pendingPayments doesn't have it)
         let payment = pendingPayments.get(orderId);
         
         // If not found in pendingPayments, try to get from global.cryptoPayments
         if (!payment && global.cryptoPayments && global.cryptoPayments[orderId]) {
             const globalPayment = global.cryptoPayments[orderId];
+            
+            // Check if already processed
+            if (globalPayment.status === 'verified' || globalPayment.status === 'rejected') {
+                console.log(`⚠️ Order ${orderId} already has status: ${globalPayment.status}`);
+                delete global.processingOrders[orderId];
+                await updateMessage(chatId, messageId, 
+                    `⚠️ Order ${orderId} was already ${globalPayment.status}!\n\n` +
+                    `📧 Customer: ${globalPayment.email}\n` +
+                    `📦 Package: ${globalPayment.packageName}\n` +
+                    `🆔 Order: ${orderId}\n` +
+                    `🕒 Processed: ${globalPayment.verifiedAt || globalPayment.rejectedAt}`
+                );
+                return;
+            }
+            
             payment = {
                 email: globalPayment.email,
                 packageName: globalPayment.packageName,
@@ -288,6 +316,8 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
         }
         
         if (!payment) {
+            console.log(`❌ Order ${orderId} not found in any payment storage`);
+            delete global.processingOrders[orderId];
             await updateMessage(chatId, messageId, `❌ Order ${orderId} not found or already processed.`);
             return;
         }
@@ -374,11 +404,18 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                 if (pendingPayments.has(orderId)) {
                     pendingPayments.delete(orderId);
                 }
+                
+                // Clear processing state
+                delete global.processingOrders[orderId];
                     
                 console.log(`✅ Customer ${payment.email} will now see predictions revealed!`);
             } else {
                 const errorText = await response.text();
                 console.error('Verification failed:', errorText);
+                
+                // Clear processing state
+                delete global.processingOrders[orderId];
+                
                 await updateMessage(chatId, messageId, `❌ Failed to verify payment for order ${orderId}: ${errorText}`);
                 
                 // Reset status back to pending if verification failed
@@ -445,9 +482,16 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                 if (pendingPayments.has(orderId)) {
                     pendingPayments.delete(orderId);
                 }
+                
+                // Clear processing state
+                delete global.processingOrders[orderId];
             } else {
                 const errorText = await response.text();
                 console.error('Rejection failed:', errorText);
+                
+                // Clear processing state
+                delete global.processingOrders[orderId];
+                
                 await updateMessage(chatId, messageId, `❌ Failed to reject payment for order ${orderId}: ${errorText}`);
                 
                 // Reset status back to pending if rejection failed
@@ -458,6 +502,12 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
         }
     } catch (error) {
         console.error('Error handling payment verification:', error);
+        
+        // Clear processing state
+        if (global.processingOrders && global.processingOrders[orderId]) {
+            delete global.processingOrders[orderId];
+        }
+        
         await updateMessage(chatId, messageId, `❌ Error processing ${action} for order ${orderId}: ${error.message}`);
     }
 }
