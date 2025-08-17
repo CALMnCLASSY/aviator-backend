@@ -15,6 +15,22 @@ class TelegramMarketingBot {
         
         // Define logical message flows
         this.messageFlows = {
+            // Immediate Signal Flow (analysis -> immediate signal)
+            immediateSignal: [
+                { type: 'analysis_updates', weight: 1 },
+                { type: 'signal_confirmations', weight: 1, delay: [0.25, 0.5] }, // 15-30 seconds
+                { type: 'win_results', weight: 1, delay: [1.5, 2.5] }, // 90-150 seconds
+                { type: 'celebration', weight: 0.7, delay: [0.5, 1] } // 30-60 seconds
+            ],
+            
+            // Immediate Cancellation Flow (analysis -> immediate cancel)
+            immediateCancellation: [
+                { type: 'analysis_updates', weight: 1 },
+                { type: 'cancelled_signals', weight: 1, delay: [0.33, 0.67] }, // 20-40 seconds
+                { type: 'analysis_updates', weight: 1, delay: [1, 2] }, // 60-120 seconds
+                { type: 'signals', weight: 0.8, delay: [2, 3] } // Follow up with free signal
+            ],
+            
             // Premium Signal Flow (most common)
             premiumSignal: [
                 { type: 'hype', weight: 1 },
@@ -29,15 +45,6 @@ class TelegramMarketingBot {
                 { type: 'signals', weight: 1, delay: [1, 3] },
                 { type: 'tips', weight: 0.8, delay: [2, 4] },
                 { type: 'promos', weight: 0.9, delay: [1, 2] }
-            ],
-            
-            // Cancelled Signal Flow (realistic)
-            cancelledSignal: [
-                { type: 'analysis_updates', weight: 1 },
-                { type: 'hype', weight: 0.8, delay: [1, 2] },
-                { type: 'cancelled_signals', weight: 1, delay: [2, 4] },
-                { type: 'analysis_updates', weight: 1, delay: [3, 5] },
-                { type: 'signal_confirmations', weight: 0.9, delay: [5, 8] }
             ],
             
             // Educational Flow
@@ -312,16 +319,18 @@ class TelegramMarketingBot {
         const random = Math.random();
         let selectedFlow;
         
-        if (random < 0.35) {
-            selectedFlow = 'premiumSignal'; // 35% - Most engaging
-        } else if (random < 0.55) {
-            selectedFlow = 'freeSignal'; // 20% - Regular content
-        } else if (random < 0.70) {
-            selectedFlow = 'cancelledSignal'; // 15% - Realistic cancelled signals
-        } else if (random < 0.85) {
-            selectedFlow = 'educational'; // 15% - Tips and education
+        if (random < 0.30) {
+            selectedFlow = 'immediateSignal'; // 30% - Immediate signal flow
+        } else if (random < 0.45) {
+            selectedFlow = 'immediateCancellation'; // 15% - Immediate cancellation 
+        } else if (random < 0.65) {
+            selectedFlow = 'premiumSignal'; // 20% - Premium signal flow
+        } else if (random < 0.80) {
+            selectedFlow = 'freeSignal'; // 15% - Free signal flow
+        } else if (random < 0.90) {
+            selectedFlow = 'educational'; // 10% - Educational content
         } else {
-            selectedFlow = 'celebration'; // 15% - Celebration content
+            selectedFlow = 'celebration'; // 10% - Celebration content
         }
         
         console.log(`🎯 Starting new flow: ${selectedFlow}`);
