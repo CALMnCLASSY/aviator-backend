@@ -10,8 +10,21 @@ const telegramChatId = '5900219209';
 // Store pending crypto payments for verification
 const pendingPayments = new Map();
 
+// Handle preflight OPTIONS requests
+router.options('/send', (req, res) => {
+    res.header('Access-Control-Allow-Origin', 'https://avisignals.com');
+    res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.sendStatus(200);
+});
+
 // Send message to Telegram
 router.post('/send', async (req, res) => {
+    // Set CORS headers explicitly for this route
+    res.header('Access-Control-Allow-Origin', 'https://avisignals.com');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
     // Respond quickly to avoid client timeout
     let responseSent = false;
     
