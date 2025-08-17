@@ -273,4 +273,37 @@ router.post('/:chatSessionId/mark-read', (req, res) => {
     }
 });
 
+// Get pending reply for a customer email
+router.get('/pending-replies/:customerEmail', (req, res) => {
+    try {
+        const { customerEmail } = req.params;
+        
+        const pendingReply = global.pendingReplies && global.pendingReplies[customerEmail];
+        
+        if (pendingReply) {
+            // Mark as delivered and remove from pending
+            delete global.pendingReplies[customerEmail];
+            
+            res.json({
+                success: true,
+                hasPendingReply: true,
+                reply: pendingReply
+            });
+        } else {
+            res.json({
+                success: true,
+                hasPendingReply: false
+            });
+        }
+        
+    } catch (error) {
+        console.error('Error getting pending reply:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error checking for pending replies',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;

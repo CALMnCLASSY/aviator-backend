@@ -191,7 +191,32 @@ router.post('/webhook', async (req, res) => {
             
             console.log('Received message:', text);
             
-            // Check if admin is in reply mode
+            // Simple direct reply system - if admin replies to any message, treat it as a support reply
+            if (update.message.reply_to_message) {
+                const repliedToMessage = update.message.reply_to_message.text;
+                
+                // Check if this is a reply to a support message
+                if (repliedToMessage && (repliedToMessage.includes('CUSTOMER SUPPORT') || repliedToMessage.includes('SUPPORT REQUEST'))) {
+                    console.log('🔄 Direct admin reply detected');
+                    
+                    // Extract customer email from the original message
+                    const emailMatch = repliedToMessage.match(/📧.*?([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+                    
+                    if (emailMatch) {
+                        const customerEmail = emailMatch[1];
+                        console.log(`📤 Sending direct reply to ${customerEmail}: ${text}`);
+                        
+                        // Send reply directly to chat API
+                        await sendDirectReplyToCustomer(customerEmail, text, 'Telegram Admin');
+                        
+                        // Confirm to admin
+                        await sendTelegramMessage(chatId, `✅ Reply sent to ${customerEmail}:\n"${text}"`);
+                        return;
+                    }
+                }
+            }
+            
+            // Check if admin is in reply mode (keep existing system as fallback)
             if (adminReplyState.has(chatId)) {
                 const replySession = adminReplyState.get(chatId);
                 
@@ -207,15 +232,24 @@ router.post('/webhook', async (req, res) => {
                 return;
             }
             
-            // Handle /reply CHAT_ID message format
+            // Handle /reply EMAIL message format for direct replies
             if (text.startsWith('/reply ')) {
                 const parts = text.split(' ');
                 if (parts.length >= 3) {
-                    const customerChatId = parts[1];
+                    const customerIdentifier = parts[1];
                     const replyMessage = parts.slice(2).join(' ');
-                    await handleTelegramChatReply(customerChatId, replyMessage, chatId, messageId);
+                    
+                    // Check if it's an email or chat ID
+                    if (customerIdentifier.includes('@')) {
+                        // Direct email reply
+                        await sendDirectReplyToCustomer(customerIdentifier, replyMessage, 'Telegram Admin');
+                        await sendTelegramMessage(chatId, `✅ Reply sent to ${customerIdentifier}:\n"${replyMessage}"`);
+                    } else {
+                        // Original chat ID format
+                        await handleTelegramChatReply(customerIdentifier, replyMessage, chatId, messageId);
+                    }
                 } else {
-                    await sendTelegramMessage(chatId, '❌ Invalid format. Use: /reply CHAT_ID_HERE Your message here');
+                    await sendTelegramMessage(chatId, '❌ Invalid format. Use: /reply EMAIL_OR_CHAT_ID Your message here\nOr simply reply to any support message directly!');
                 }
             }
         }
@@ -384,7 +418,12 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
             });
                 
             // Send verification request to complete purchase
-            const response = await fetch(`${process.env.BASE_URL}/api/payments/crypto/personal/verify/${orderId}`, {
+            const baseUrl = process.env.BASE_URL?.replace(/\/$/, '') || 'https://aviator-backend-rho.vercel.app';
+            const verifyUrl = `${baseUrl}/api/payments/crypto/personal/verify/${orderId}`;
+            console.log('🔗 Verification URL:', verifyUrl);
+            console.log('🔗 BASE_URL from env:', process.env.BASE_URL);
+            
+            const response = await fetch(verifyUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ verified: true })
@@ -462,7 +501,12 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
             });
             
             // Send rejection request
-            const response = await fetch(`${process.env.BASE_URL}/api/payments/crypto/personal/verify/${orderId}`, {
+            const baseUrl = process.env.BASE_URL?.replace(/\/$/, '') || 'https://aviator-backend-rho.vercel.app';
+            const rejectUrl = `${baseUrl}/api/payments/crypto/personal/verify/${orderId}`;
+            console.log('🔗 Rejection URL:', rejectUrl);
+            console.log('🔗 BASE_URL from env:', process.env.BASE_URL);
+            
+            const response = await fetch(rejectUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ verified: false })
@@ -562,6 +606,57 @@ async function handleCustomerReply(orderId, chatId, messageId) {
     }
 }
 
+// Send direct reply to customer's active chat session
+async function sendDirectReplyToCustomer(customerEmail, replyMessage, adminName = 'Support Team') {
+    try {
+        console.log(`🔄 Looking for active chat sessions for ${customerEmail}`);
+        
+        // Find active chat session for this customer email
+        if (global.chatSessions) {
+            for (const [sessionId, session] of Object.entries(global.chatSessions)) {
+                if (session.customerEmail === customerEmail) {
+                    console.log(`✅ Found active chat session: ${sessionId}`);
+                    
+                    // Send reply via chat API
+                    const baseUrl = process.env.BASE_URL?.replace(/\/$/, '') || '';
+                    const response = await fetch(`${baseUrl}/api/chat/${sessionId}/reply`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            message: replyMessage,
+                            adminName: adminName
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        console.log(`✅ Direct reply sent to chat session ${sessionId}`);
+                        return { success: true, sessionId };
+                    } else {
+                        console.error('Failed to send reply via chat API');
+                    }
+                }
+            }
+        }
+        
+        // If no active session found, still store the message for when they open chat
+        console.log(`⚠️ No active chat session found for ${customerEmail}, storing message for next chat session`);
+        
+        // Create a temporary session or store for future delivery
+        global.pendingReplies = global.pendingReplies || {};
+        global.pendingReplies[customerEmail] = {
+            message: replyMessage,
+            adminName: adminName,
+            timestamp: new Date().toISOString()
+        };
+        
+        return { success: true, sessionId: 'pending' };
+        
+    } catch (error) {
+        console.error('Error sending direct reply to customer:', error);
+        return { success: false, error: error.message };
+    }
+}
+
 // Handle admin reply to customer
 async function handleAdminReply(orderId, replyMessage, adminChatId, adminMessageId) {
     try {
@@ -657,7 +752,8 @@ router.post('/store-support', (req, res) => {
 // Set webhook for Telegram bot (call this once to enable button callbacks)
 router.post('/set-webhook', async (req, res) => {
     try {
-        const webhookUrl = `${process.env.BASE_URL}/api/telegram/webhook`;
+        const baseUrl = process.env.BASE_URL?.replace(/\/$/, '') || '';
+        const webhookUrl = `${baseUrl}/api/telegram/webhook`;
         
         console.log('🔗 Setting webhook URL:', webhookUrl);
         
@@ -730,7 +826,8 @@ This chat has been marked as read.`
 async function handleChatHistory(chatSessionId, chatId, messageId) {
     try {
         // Get chat history from the chat route
-        const response = await fetch(`${process.env.BASE_URL}/api/chat/${chatSessionId}/messages`);
+        const baseUrl = process.env.BASE_URL?.replace(/\/$/, '') || '';
+        const response = await fetch(`${baseUrl}/api/chat/${chatSessionId}/messages`);
         
         if (response.ok) {
             const result = await response.json();
@@ -765,7 +862,8 @@ async function handleTelegramChatReply(customerChatId, replyMessage, adminTelegr
         console.log(`📞 TELEGRAM CHAT REPLY:`, { customerChatId, replyMessage });
         
         // Send the reply via the chat API
-        const response = await fetch(`${process.env.BASE_URL || 'http://localhost:5000'}/api/chat/${customerChatId}/reply`, {
+        const baseUrl = process.env.BASE_URL?.replace(/\/$/, '') || 'http://localhost:5000';
+        const response = await fetch(`${baseUrl}/api/chat/${customerChatId}/reply`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
