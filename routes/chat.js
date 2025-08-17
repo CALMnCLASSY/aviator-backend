@@ -5,22 +5,6 @@ const router = express.Router();
 // Store chat sessions in memory (you can later move this to a database)
 global.chatSessions = global.chatSessions || {};
 
-// Handle preflight OPTIONS requests
-router.options('*', (req, res) => {
-    res.header('Access-Control-Allow-Origin', 'https://avisignals.com');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.sendStatus(200);
-});
-
-// Middleware to set CORS headers for all chat routes
-router.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'https://avisignals.com');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    next();
-});
-
 // Get chat messages for a specific session
 router.get('/:chatSessionId/messages', (req, res) => {
     try {
