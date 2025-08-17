@@ -113,4 +113,37 @@ router.post('/test', async (req, res) => {
     }
 });
 
+// Debug endpoint to check bot state
+router.get('/debug', (req, res) => {
+    try {
+        const marketingBot = req.app.locals.marketingBot;
+        
+        if (!marketingBot) {
+            return res.status(404).json({
+                success: false,
+                message: 'Marketing bot not initialized'
+            });
+        }
+        
+        res.json({
+            success: true,
+            debug: {
+                isRunning: marketingBot.isRunning,
+                lastPostTime: marketingBot.lastPostTime,
+                currentFlow: marketingBot.currentFlow,
+                flowStep: marketingBot.flowStep,
+                botToken: marketingBot.botToken ? 'Present' : 'Missing',
+                channelId: marketingBot.channelId,
+                messagesLoaded: Object.keys(marketingBot.messagePool).length
+            }
+        });
+    } catch (error) {
+        console.error('Error getting debug info:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+});
+
 module.exports = router;

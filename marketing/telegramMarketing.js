@@ -12,6 +12,8 @@ class TelegramMarketingBot {
         this.lastPostTime = 0;
         this.currentFlow = null; // Track current message flow
         this.flowStep = 0; // Track step in current flow
+        this.lastSignalTarget = null; // Store last signal target for accurate results
+        this.lastSignalEntry = null; // Store last signal entry point
         
         // Define logical message flows
         this.messageFlows = {
@@ -115,26 +117,33 @@ class TelegramMarketingBot {
         if (category === 'signal_confirmations') {
             const enterAt = (1.10 + Math.random() * 0.30).toFixed(2); // 1.10-1.40
             const exitAt = (1.45 + Math.random() * 0.15).toFixed(2);  // 1.45-1.60
+            
+            // Store the target for accurate win results later
+            this.lastSignalTarget = parseFloat(exitAt);
+            this.lastSignalEntry = parseFloat(enterAt);
+            
             processedMessage = processedMessage
                 .replace(/{{enter_at}}/g, enterAt)
                 .replace(/{{exit_at}}/g, exitAt);
         }
         
-        // Handle win result placeholders
+        // Handle win result placeholders - Make results accurate to our predictions
         if (category === 'win_results') {
-            const targetExit = (1.45 + Math.random() * 0.15).toFixed(2); // 1.45-1.60
+            const targetExit = this.lastSignalTarget || (1.45 + Math.random() * 0.15);
             let result;
-            const winType = Math.random();
+            const accuracyType = Math.random();
             
-            if (winType < 0.7) {
-                // Normal win (target + 0.1 to 2.0)
-                result = (parseFloat(targetExit) + 0.1 + Math.random() * 1.9).toFixed(2);
-            } else if (winType < 0.9) {
-                // Good win (3x-8x)
-                result = (3 + Math.random() * 5).toFixed(2);
+            if (accuracyType < 0.4) {
+                // Exact prediction hit (40% chance) - Shows perfect accuracy
+                result = targetExit.toFixed(2);
+            } else if (accuracyType < 0.8) {
+                // Very close prediction (40% chance) - Within ±0.05x
+                const variance = (Math.random() - 0.5) * 0.10; // ±0.05x variance
+                result = Math.max(1.01, targetExit + variance).toFixed(2);
             } else {
-                // Mega win (10x+)
-                result = (10 + Math.random() * 15).toFixed(2);
+                // Slightly over target but still profitable (20% chance)
+                const bonus = 0.05 + Math.random() * 0.15; // +0.05x to +0.20x over target
+                result = (targetExit + bonus).toFixed(2);
             }
             
             const wins = 3200 + Math.floor(Math.random() * 100);
@@ -148,6 +157,7 @@ class TelegramMarketingBot {
             
             processedMessage = processedMessage
                 .replace(/{{result}}/g, result)
+                .replace(/{{target}}/g, targetExit.toFixed(2))
                 .replace(/{{target}}/g, targetExit)
                 .replace(/{{wins}}/g, wins)
                 .replace(/{{losses}}/g, losses)
@@ -512,8 +522,8 @@ class TelegramMarketingBot {
     }
 
     getNextPostDelay() {
-        const minDelay = 30 * 60 * 1000; // 30 minutes
-        const maxDelay = 60 * 60 * 1000; // 60 minutes
+        const minDelay = 15 * 60 * 1000; // 15 minutes (twice hourly)
+        const maxDelay = 30 * 60 * 1000; // 30 minutes maximum
         return Math.floor(Math.random() * (maxDelay - minDelay) + minDelay);
     }
 
