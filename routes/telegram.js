@@ -11,7 +11,8 @@ const telegramChatId = '5900219209';
 const pendingPayments = new Map();
 
 // Store admin reply sessions
-const adminReplyState = new Map();
+// Admin reply state disabled - Using Tawk.to for customer support
+// const adminReplyState = new Map();
 
 // Handle preflight OPTIONS requests
 router.options('/send', (req, res) => {
@@ -190,7 +191,9 @@ router.post('/webhook', async (req, res) => {
             const messageId = update.message.message_id;
             
             console.log('Received message:', text);
-            
+
+            // Chat reply functionality disabled - Using Tawk.to for customer support
+            /*
             // Simple direct reply system - if admin replies to any message, treat it as a support reply
             if (update.message.reply_to_message) {
                 const repliedToMessage = update.message.reply_to_message.text;
@@ -248,13 +251,23 @@ router.post('/webhook', async (req, res) => {
                         // Original chat ID format
                         await handleTelegramChatReply(customerIdentifier, replyMessage, chatId, messageId);
                     }
-                } else {
-                    await sendTelegramMessage(chatId, '❌ Invalid format. Use: /reply EMAIL_OR_CHAT_ID Your message here\nOr simply reply to any support message directly!');
-                }
+                    return;
+            }
+            */
+            
+            // Default help message for telegram commands
+            if (text === '/start' || text === '/help') {
+                await sendTelegramMessage(chatId, 
+                    `🤖 Aviator Support Bot\n\n` +
+                    `This bot notifies admins about:\n` +
+                    `• Payment verifications\n` +
+                    `• Customer support requests\n\n` +
+                    `Customer support is now handled via Tawk.to widget on the website.`
+                );
             }
         }
         
-        // Handle callback queries (button clicks)
+        // Handle callback queries (button clicks) - keeping payment verification
         if (update.callback_query) {
             const callbackQuery = update.callback_query;
             const data = callbackQuery.data;
@@ -272,7 +285,10 @@ router.post('/webhook', async (req, res) => {
             } else if (data.startsWith('reply_')) {
                 const orderId = data.replace('reply_', '');
                 await handleCustomerReply(orderId, chatId, messageId);
-            } else if (data.startsWith('chat_reply_')) {
+            } 
+            // Chat-related callbacks disabled - Using Tawk.to
+            /*
+            else if (data.startsWith('chat_reply_')) {
                 const chatSessionId = data.replace('chat_reply_', '');
                 await handleChatReply(chatSessionId, chatId, messageId);
             } else if (data.startsWith('chat_read_')) {
@@ -282,6 +298,7 @@ router.post('/webhook', async (req, res) => {
                 const chatSessionId = data.replace('chat_history_', '');
                 await handleChatHistory(chatSessionId, chatId, messageId);
             }
+            */
             
             // Answer callback query to remove loading state
             await fetch(`https://api.telegram.org/bot${telegramBotToken}/answerCallbackQuery`, {
@@ -606,7 +623,9 @@ async function handleCustomerReply(orderId, chatId, messageId) {
     }
 }
 
+// Chat functionality disabled - Using Tawk.to for customer support
 // Send direct reply to customer's active chat session
+/*
 async function sendDirectReplyToCustomer(customerEmail, replyMessage, adminName = 'Support Team') {
     try {
         console.log(`🔄 Looking for active chat sessions for ${customerEmail}`);
@@ -656,6 +675,7 @@ async function sendDirectReplyToCustomer(customerEmail, replyMessage, adminName 
         return { success: false, error: error.message };
     }
 }
+*/
 
 // Handle admin reply to customer
 async function handleAdminReply(orderId, replyMessage, adminChatId, adminMessageId) {
@@ -784,7 +804,8 @@ router.post('/set-webhook', async (req, res) => {
 // Export router and pendingPayments
 router.pendingPayments = pendingPayments;
 
-// Chat reply handlers
+// Chat reply handlers disabled - Using Tawk.to for customer support
+/*
 async function handleChatReply(chatSessionId, chatId, messageId) {
     try {
         await updateMessage(chatId, messageId, 
@@ -885,6 +906,7 @@ async function handleTelegramChatReply(customerChatId, replyMessage, adminTelegr
         await sendTelegramMessage(adminTelegramId, `❌ Error sending reply: ${error.message}`);
     }
 }
+*/
 
 // Helper function to send Telegram messages
 async function sendTelegramMessage(chatId, text) {
