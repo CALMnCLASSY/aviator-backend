@@ -293,4 +293,109 @@ router.post('/payment-success', async (req, res) => {
   }
 });
 
+// Bot activation verification endpoint
+router.post('/bot/verify/:orderId', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { verified } = req.body;
+    
+    console.log(`🤖 Bot verification request for order: ${orderId}, verified: ${verified}`);
+    
+    // Initialize bot payments storage if it doesn't exist
+    global.botPayments = global.botPayments || {};
+    
+    if (verified) {
+      // Store bot activation
+      global.botPayments[orderId] = {
+        status: 'activated',
+        activatedAt: new Date(),
+        orderId
+      };
+      
+      // Handle bot activation
+      try {
+        await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          chat_id: process.env.TELEGRAM_CHAT_ID,
+          text: `🤖 BOT ACTIVATED!\n\nOrder: ${orderId}\nStatus: Verified and activated\nCustomer can now use bot features.`,
+          parse_mode: 'HTML'
+        });
+      } catch (telegramError) {
+        console.error('❌ Failed to send bot activation notification:', telegramError.message);
+      }
+      
+      res.json({ 
+        success: true, 
+        message: 'Bot activation verified successfully',
+        orderId,
+        status: 'activated'
+      });
+    } else {
+      // Store bot rejection
+      global.botPayments[orderId] = {
+        status: 'rejected',
+        rejectedAt: new Date(),
+        orderId
+      };
+      
+      // Handle bot activation rejection
+      try {
+        await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          chat_id: process.env.TELEGRAM_CHAT_ID,
+          text: `❌ BOT ACTIVATION REJECTED!\n\nOrder: ${orderId}\nStatus: Payment rejected\nBot activation denied.`,
+          parse_mode: 'HTML'
+        });
+      } catch (telegramError) {
+        console.error('❌ Failed to send bot rejection notification:', telegramError.message);
+      }
+      
+      res.json({ 
+        success: true, 
+        message: 'Bot activation rejected',
+        orderId,
+        status: 'rejected'
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ Bot verification error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to process bot verification',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Bot payment status endpoint
+router.get('/bot/status/:orderId', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    
+    // Check bot payment status
+    const botPayment = global.botPayments?.[orderId];
+    
+    if (!botPayment) {
+      return res.json({ 
+        success: false, 
+        status: 'not_found',
+        message: 'Bot payment not found'
+      });
+    }
+    
+    res.json({ 
+      success: true, 
+      status: botPayment.status,
+      orderId,
+      processedAt: botPayment.activatedAt || botPayment.rejectedAt
+    });
+    
+  } catch (error) {
+    console.error('❌ Bot status check error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to check bot status'
+    });
+  }
+});
+
 module.exports = router;
