@@ -29,7 +29,7 @@ const userSchema = new mongoose.Schema({
   },
   paymentMethod: {
     type: String,
-    enum: ['stripe', 'paypal', 'mpesa', 'crypto', 'demo'],
+    enum: ['mpesa', 'selar', 'demo'],
     required: false
   },
   paymentAmount: {

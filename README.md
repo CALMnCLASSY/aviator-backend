@@ -1,20 +1,20 @@
 # Aviator Predictions Backend
 
-A comprehensive backend system for handling Aviator game predictions with multiple payment providers including  PayPal, M-Pesa, and cryptocurrency payments.
+A comprehensive backend system for handling Aviator game predictions with Selar payments and M-Pesa mobile money integration.
 
 ## Features
 
 ### 🎯 Core Features
 - **Prediction Generation**: Advanced algorithms for different multiplier packages (2x, 5x, 10x, 20x)
-- **Multi-Payment Support**: Stripe, PayPal, M-Pesa, and Cryptocurrency payments
+- **Multi-Payment Support**: Selar and M-Pesa payments
 - **Real-time Notifications**: Telegram bot and email notifications
 - **User Management**: Complete user lifecycle management
 - **Payment Verification**: Secure webhook handling for all payment providers
 
 ### 💳 Payment Providers
-- **PayPal**: PayPal account payments with redirect flow
-- **M-Pesa**: Mobile money payments for African markets
-- **Cryptocurrency**: Bitcoin and USDT payment verification
+- **Selar**: Digital product payments with instant verification
+- **M-Pesa**: Kenya mobile money integration
+- **Telegram Integration**: Real-time admin notifications and verification
 
 ### 📱 Notification System
 - **Telegram Bot**: Real-time payment and prediction notifications
@@ -25,7 +25,7 @@ A comprehensive backend system for handling Aviator game predictions with multip
 
 ### Prerequisites
 - Node.js (v14 or higher)
-- Payment provider accounts (Stripe, PayPal, etc.)
+- Payment provider accounts (Selar, M-Pesa)
 
 ### Quick Start
 
@@ -45,21 +45,12 @@ NODE_ENV=development
 BASE_URL=http://localhost:5000
 FRONTEND_URL=file:///C:/Users/Joshua/OneDrive/Desktop/Avsite%203.0/index.html
 
-# PayPal Configuration
-PAYPAL_CLIENT_ID=AdfHK5rkvJ5ovQlFeg4JcQeb7Y1dMLmDEM97f7eI-Y82tg3EUxPXiassP_np1qhXuGuL59cqc4QMz7Nj
-PAYPAL_CLIENT_SECRET=ELrawpQU2Swnpo_gjqZz-9QzYLGd-hz7oDrAm5ebaP90AvH2crBWt_09iJHhHYmz0T4bjJGmwzivlR6e
-PAYPAL_MODE=live
-
 # M-Pesa Configuration
 MPESA_CONSUMER_KEY=rYDOOcBmVw0B30jVxAQ1v0taJP2AsUqvdkXBGKD4TZqbMmwW
 MPESA_CONSUMER_SECRET=F0ZI0UbwK7U1N4VstGAxgPxxE6KUzqKtCCFuvfrjrARPs1JAWKbfB3HCRjHGjTsz
 MPESA_SHORTCODE=174379
 MPESA_PASSKEY=drdnL1/jdgUqD6AVPDnciu1STH5HSqhu53PjLfPV4supotB/aZUY52Zu/2FpXWPgP6FTcPc5hwYr74oVhtggck21cX578WPi0qiat6Gbc9TkxkaXd2FZfslaZzjVj9PnIF3XqE1zs1KpbxSsPYj5pEVNsZZRhxBoPY6k5xWHSnLT10ckMY8wkdOyRZ1mqRjO42L0yA2ymGfFe46LvuXQPTMm54BGndNzVkDFSmmJ44tbSz9TRS+Ez3Wy1RXxms3GgfsQG7sl5LfqUMbpdPZsfknlzAq1oCc4WQXaBSSZ7EvACY0qRLdbkT6TyLxZjwArWeoZnVflelKkm5girzCWWw==
 MPESA_BASE_URL=https://api.safaricom.co.ke
-
-# Cryptocurrency Wallets
-BTC_ADDRESS=135ox27LP9wG27iduyuf3KxkgNrLZWQptn
-USDT_ADDRESS=TCRwpXHYvcXY3y4FJThLHCc9hHbs9H4ExH
 
 # Telegram Bot
 TELEGRAM_BOT_TOKEN=7688438027:AAFNnge7_oADfxCwCMm2XZGSH1hG2Q0rZfE
@@ -89,14 +80,15 @@ npm start
 
 ### Payment Endpoints
 
+#### Selar Payments
+- `POST /api/payments/selar/create-order` - Create Selar payment order
+- `POST /api/payments/selar/verify/:reference` - Verify Selar payment
+- `POST /api/payments/selar/admin-verify/:reference` - Admin verify payment
+- `GET /api/payments/selar/status/:reference` - Check payment status
 
-#### PayPal
-- `POST /api/payments/paypal/create-payment` - Create PayPal payment
-- `GET /api/payments/paypal/success` - Handle PayPal success
-- `GET /api/payments/paypal/cancel` - Handle PayPal cancellation
-
-#### Cryptocurrency
-- `POST /api/payments/crypto/verify-payment` - Verify crypto transactions
+#### Bot Activation
+- `POST /api/payments/bot/verify/:orderId` - Verify bot payment
+- `GET /api/payments/bot/status/:orderId` - Check bot activation status
 
 #### Demo/Testing
 - `POST /api/payments/demo/verify-payment` - Demo payment verification

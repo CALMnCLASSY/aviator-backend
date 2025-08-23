@@ -115,10 +115,7 @@ app.use(cors(corsOptions));
 // Handle preflight requests for all routes
 app.options('*', cors(corsOptions));
 
-// Raw body parser for Stripe webhooks (must be before JSON parser)
-app.use('/api/payments/stripe/webhook', express.raw({ type: 'application/json' }));
-
-// Parse JSON bodies for all other routes with increased limits and timeout
+// Parse JSON bodies with increased limits and timeout
 app.use(bodyParser.json({ 
     limit: '50mb',
     extended: true

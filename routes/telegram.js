@@ -64,7 +64,7 @@ router.post('/send', async (req, res) => {
             parse_mode: 'HTML'
         };
 
-        // Add verification buttons for crypto payments or support messages
+        // Add verification buttons for support messages
         if (includeVerificationButtons && orderId) {
             if (paymentData && paymentData.messageType === 'support') {
                 // Support message buttons
@@ -229,39 +229,10 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
         global.processingOrders = global.processingOrders || {};
         global.processingOrders[orderId] = { action, timestamp: Date.now() };
         
-        // Get payment data from multiple sources
+        // Get payment data from storage sources
         let payment = pendingPayments.get(orderId);
         
-        // If not found in pendingPayments, try global.cryptoPayments
-        if (!payment && global.cryptoPayments && global.cryptoPayments[orderId]) {
-            const globalPayment = global.cryptoPayments[orderId];
-            
-            // Check if already processed
-            if (globalPayment.status === 'verified' || globalPayment.status === 'rejected') {
-                console.log(`⚠️ Order ${orderId} already has status: ${globalPayment.status}`);
-                delete global.processingOrders[orderId];
-                await updateMessage(chatId, messageId, 
-                    `⚠️ Order ${orderId} was already ${globalPayment.status}!\n\n` +
-                    `📧 Customer: ${globalPayment.email}\n` +
-                    `📦 Package: ${globalPayment.packageName}\n` +
-                    `🆔 Order: ${orderId}\n` +
-                    `🕒 Processed: ${globalPayment.verifiedAt || globalPayment.rejectedAt}`
-                );
-                return;
-            }
-            
-            payment = {
-                email: globalPayment.email,
-                packageName: globalPayment.packageName,
-                amount: globalPayment.amount,
-                currency: globalPayment.currency,
-                timeSlot: globalPayment.timeSlot,
-                bettingSite: globalPayment.bettingSite,
-                status: globalPayment.status
-            };
-        }
-        
-        // NEW: Try Selar payments storage
+        // Try Selar payments storage
         if (!payment && global.selarPayments && global.selarPayments[orderId]) {
             const selarPayment = global.selarPayments[orderId];
             
@@ -322,12 +293,6 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
         }
         
         if (action === 'verified') {
-            // Update payment status to verified based on payment type
-            if (global.cryptoPayments && global.cryptoPayments[orderId]) {
-                global.cryptoPayments[orderId].status = 'verified';
-                global.cryptoPayments[orderId].verifiedAt = new Date();
-            } 
-            
             // Update Selar payments
             if (global.selarPayments && global.selarPayments[orderId]) {
                 global.selarPayments[orderId].status = 'verified';
@@ -342,20 +307,6 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                     currentData.status = 'verified';
                     currentData.verifiedAt = new Date();
                     pendingPayments.set(orderId, currentData);
-                }
-                
-                // Also update in global.pendingPayments for crypto status endpoint
-                global.pendingPayments = global.pendingPayments || {};
-                if (global.pendingPayments[orderId]) {
-                    global.pendingPayments[orderId].status = 'verified';
-                    global.pendingPayments[orderId].verifiedAt = new Date();
-                } else {
-                    // Create entry if it doesn't exist
-                    global.pendingPayments[orderId] = {
-                        ...payment,
-                        status: 'verified',
-                        verifiedAt: new Date()
-                    };
                 }
             }
                 
@@ -374,11 +325,11 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                 // Use Selar admin verification endpoint
                 verifyUrl = `${baseUrl}/api/payments/selar/admin-verify/${orderId}`;
             } else if (orderId.startsWith('BOT_') && payment.packageName?.toLowerCase().includes('bot')) {
-                // Bot activation endpoint (create if doesn't exist)
+                // Bot activation endpoint
                 verifyUrl = `${baseUrl}/api/payments/bot/verify/${orderId}`;
             } else {
-                // Default crypto verification endpoint
-                verifyUrl = `${baseUrl}/api/payments/crypto/personal/verify/${orderId}`;
+                // Default to Selar for compatibility
+                verifyUrl = `${baseUrl}/api/payments/selar/admin-verify/${orderId}`;
             }
             
             console.log('🔗 Verification URL:', verifyUrl);
@@ -397,7 +348,7 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                     `📦 Package: ${payment.packageName}\n` +
                     `💰 Amount: ${payment.amount} ${payment.currency}\n` +
                     `🆔 Order: ${orderId}\n` +
-                    `🔗 Type: ${payment.paymentType || 'crypto'}\n\n` +
+                    `🔗 Type: ${payment.paymentType || 'selar'}\n\n` +
                     `🎯 Access has been granted to customer!`
                 );
                 
@@ -420,20 +371,11 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                 await updateMessage(chatId, messageId, `❌ Failed to verify payment for order ${orderId}: ${errorText}`);
                 
                 // Reset status back to pending if verification failed
-                if (global.cryptoPayments && global.cryptoPayments[orderId]) {
-                    global.cryptoPayments[orderId].status = 'pending_verification';
-                }
                 if (global.selarPayments && global.selarPayments[orderId]) {
                     global.selarPayments[orderId].status = 'pending_verification';
                 }
             }
         } else if (action === 'rejected') {
-            // Update payment status to rejected based on payment type
-            if (global.cryptoPayments && global.cryptoPayments[orderId]) {
-                global.cryptoPayments[orderId].status = 'rejected';
-                global.cryptoPayments[orderId].rejectedAt = new Date();
-            } 
-            
             // Update Selar payments
             if (global.selarPayments && global.selarPayments[orderId]) {
                 global.selarPayments[orderId].status = 'rejected';
@@ -448,20 +390,6 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                     currentData.status = 'rejected';
                     currentData.rejectedAt = new Date();
                     pendingPayments.set(orderId, currentData);
-                }
-                
-                // Also update in global.pendingPayments for crypto status endpoint
-                global.pendingPayments = global.pendingPayments || {};
-                if (global.pendingPayments[orderId]) {
-                    global.pendingPayments[orderId].status = 'rejected';
-                    global.pendingPayments[orderId].rejectedAt = new Date();
-                } else {
-                    // Create entry if it doesn't exist
-                    global.pendingPayments[orderId] = {
-                        ...payment,
-                        status: 'rejected',
-                        rejectedAt: new Date()
-                    };
                 }
             }
                 
@@ -480,11 +408,11 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                 // Use Selar admin verification endpoint with rejection
                 rejectUrl = `${baseUrl}/api/payments/selar/admin-verify/${orderId}`;
             } else if (orderId.startsWith('BOT_') && payment.packageName?.toLowerCase().includes('bot')) {
-                // Bot activation endpoint (create if doesn't exist)
+                // Bot activation endpoint
                 rejectUrl = `${baseUrl}/api/payments/bot/verify/${orderId}`;
             } else {
-                // Default crypto verification endpoint
-                rejectUrl = `${baseUrl}/api/payments/crypto/personal/verify/${orderId}`;
+                // Default to Selar for compatibility
+                rejectUrl = `${baseUrl}/api/payments/selar/admin-verify/${orderId}`;
             }
             
             console.log('🔗 Rejection URL:', rejectUrl);
@@ -503,7 +431,7 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                     `📦 Package: ${payment.packageName}\n` +
                     `💰 Amount: ${payment.amount} ${payment.currency}\n` +
                     `🆔 Order: ${orderId}\n` +
-                    `🔗 Type: ${payment.paymentType || 'crypto'}\n\n` +
+                    `🔗 Type: ${payment.paymentType || 'selar'}\n\n` +
                     `Customer has been notified.`
                 );
                 
@@ -524,9 +452,6 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                 await updateMessage(chatId, messageId, `❌ Failed to reject payment for order ${orderId}: ${errorText}`);
                 
                 // Reset status back to pending if rejection failed
-                if (global.cryptoPayments && global.cryptoPayments[orderId]) {
-                    global.cryptoPayments[orderId].status = 'pending_verification';
-                }
                 if (global.selarPayments && global.selarPayments[orderId]) {
                     global.selarPayments[orderId].status = 'pending_verification';
                 }
