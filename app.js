@@ -154,6 +154,9 @@ app.use((req, res, next) => {
 const userRoutes = require('./routes/users');
 app.use('/api/users', userRoutes);
 
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
+
 const paymentRoutes = require('./routes/payments');
 app.use('/api/payments', paymentLimiter, paymentRoutes);
 
