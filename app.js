@@ -151,8 +151,10 @@ app.use((req, res, next) => {
 const userRoutes = require('./routes/users');
 app.use('/api/users', userRoutes);
 
-const authRoutes = require('./routes/auth');
-app.use('/api/auth', authRoutes);
+// Auth routes moved to respective modules:
+// - Bot login: /api/telegram/bot-login
+// - Card payments: /api/payments/card-payment  
+// - Index login: /api/users/index-login
 
 const paymentRoutes = require('./routes/payments');
 app.use('/api/payments', paymentLimiter, paymentRoutes);

