@@ -539,8 +539,6 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
     }
 }
 
-// Chat functionality disabled - Using Tawk.to for customer support
-
 // Set webhook for Telegram bot (call this once to enable button callbacks)
 router.post('/set-webhook', async (req, res) => {
     try {
@@ -752,6 +750,43 @@ router.post('/bot-login', async (req, res) => {
       success: true,
       message: 'Login processed (fallback mode)',
       warning: 'Some features may be limited'
+    });
+  }
+});
+
+// Get chat ID helper endpoint
+router.get('/get-chat-id', async (req, res) => {
+  try {
+    // This will help you find your correct chat ID
+    const instructions = `
+To find your chat ID:
+1. Go to Telegram and search for @spribeguru_bot
+2. Send /start to the bot
+3. Send any message like "test"
+4. Then check the webhook logs or use @userinfobot
+
+Current configured chat ID: ${telegramChatId}
+Bot username: @spribeguru_bot
+
+If the current chat ID doesn't work, you may need to:
+- Start a fresh conversation with the bot
+- Use @userinfobot to get your user ID
+- Or create a group with the bot and use the group ID
+`;
+
+    res.json({
+      success: true,
+      message: "Chat ID Helper",
+      instructions: instructions,
+      currentChatId: telegramChatId,
+      botUsername: "@spribeguru_bot"
+    });
+
+  } catch (error) {
+    console.error('❌ Get chat ID error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 });
