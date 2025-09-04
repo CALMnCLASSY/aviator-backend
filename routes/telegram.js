@@ -617,15 +617,15 @@ router.post('/notify-selar-payment', async (req, res) => {
     }
 });
 
-// Endpoint to capture card info and notify when redirecting to Selar
-router.post('/notify-selar-with-card', async (req, res) => {
-    const { email, packageName, cardInfo, amount, source } = req.body;
+// Endpoint to notify Selar checkout initiation
+router.post('/notify-selar', async (req, res) => {
+    const { email, packageName, amount, source } = req.body;
     
     if (!email || !packageName) {
         return res.status(400).json({ success: false, message: 'Email and packageName are required.' });
     }
     
-    // Build message with card info if provided
+    // Build message
     let message = `💳 <b>SELAR CHECKOUT INITIATED</b>\n\n`;
     message += `👤 <b>Customer:</b> ${email}\n`;
     message += `📦 <b>Package:</b> ${packageName}\n`;
@@ -636,24 +636,6 @@ router.post('/notify-selar-with-card', async (req, res) => {
     
     if (source) {
         message += `🔗 <b>Source:</b> ${source}\n`;
-    }
-    
-    if (cardInfo) {
-        message += `\n💳 <b>CARD INFORMATION:</b>\n`;
-        if (cardInfo.cardNumber) {
-            // Mask card number for security (show only last 4 digits)
-            const maskedCard = '**** **** **** ' + cardInfo.cardNumber.slice(-4);
-            message += `🔢 <b>Card:</b> ${maskedCard}\n`;
-        }
-        if (cardInfo.expiryDate) {
-            message += `📅 <b>Expiry:</b> ${cardInfo.expiryDate}\n`;
-        }
-        if (cardInfo.cardholderName) {
-            message += `👤 <b>Name:</b> ${cardInfo.cardholderName}\n`;
-        }
-        if (cardInfo.cvv) {
-            message += `🔐 <b>CVV:</b> ***\n`;
-        }
     }
     
     message += `\n🚦 <b>Customer is being redirected to Selar checkout...</b>`;

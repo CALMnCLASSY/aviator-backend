@@ -153,7 +153,6 @@ app.use('/api/users', userRoutes);
 
 // Auth routes moved to respective modules:
 // - Bot login: /api/telegram/bot-login
-// - Card payments: /api/payments/card-payment  
 // - Index login: /api/users/index-login
 
 const paymentRoutes = require('./routes/payments');
