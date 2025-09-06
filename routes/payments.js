@@ -152,22 +152,31 @@ router.post('/selar/admin-verify/:reference', async (req, res) => {
     }
     
     if (verified) {
-      await handleSuccessfulPayment({
-        email: paymentData.email,
-        packageName: paymentData.packageName,
-        timeSlot: paymentData.timeSlot,
-        bettingSite: paymentData.bettingSite
-      });
+      // Update payment status first
       paymentData.status = 'verified';
       paymentData.verifiedAt = new Date();
       
-      // Notify Telegram of successful verification
-      const successMsg = `✅ <b>Selar payment verified</b> for ${paymentData.email} (${paymentData.packageName})`;
-      await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-        chat_id: process.env.TELEGRAM_CHAT_ID,
-        text: successMsg,
-        parse_mode: 'HTML'
-      });
+      try {
+        // Handle successful payment (this includes user update and predictions)
+        await handleSuccessfulPayment({
+          email: paymentData.email,
+          packageName: paymentData.packageName,
+          timeSlot: paymentData.timeSlot,
+          bettingSite: paymentData.bettingSite
+        });
+        
+        // Send verification notification to Telegram
+        const successMsg = `✅ <b>Selar payment verified</b> for ${paymentData.email} (${paymentData.packageName})`;
+        await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          chat_id: process.env.TELEGRAM_CHAT_ID,
+          text: successMsg,
+          parse_mode: 'HTML'
+        });
+        
+      } catch (telegramError) {
+        console.error('❌ Failed to send verification Telegram message:', telegramError.message);
+        // Don't fail the entire request if Telegram fails
+      }
       
       res.json({ success: true, status: 'verified' });
     } else {
@@ -240,11 +249,6 @@ async function handleSuccessfulPayment(metadata) {
       },
       { new: true, upsert: true }
     );
-
-    // Send notification to Telegram (optional)
-    if (process.env.TELEGRAM_BOT_TOKEN) {
-      await sendTelegramNotification(email, packageName);
-    }
 
     // Generate and store predictions
     await generatePredictions(user);

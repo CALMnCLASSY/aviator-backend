@@ -422,6 +422,19 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                     `🎯 Access has been granted to customer!`
                 );
                 
+                // Send separate notification message for successful verification
+                const successNotification = 
+                    `🎉 PAYMENT VERIFICATION SUCCESS!\n\n` +
+                    `📧 Customer: ${payment.email}\n` +
+                    `📦 Package: ${payment.packageName}\n` +
+                    `💰 Amount: ${payment.amount} ${payment.currency}\n` +
+                    `🆔 Order: ${orderId}\n` +
+                    `⏰ Verified: ${new Date().toLocaleString()}\n` +
+                    `🔗 Type: ${payment.paymentType || 'selar'}\n\n` +
+                    `✅ Customer access granted successfully!`;
+                
+                await sendToTelegram(successNotification);
+                
                 // Only delete from pendingPayments after successful verification
                 if (pendingPayments.has(orderId)) {
                     pendingPayments.delete(orderId);
@@ -431,6 +444,7 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                 delete global.processingOrders[orderId];
                     
                 console.log(`✅ Customer ${payment.email} will now see access granted!`);
+                console.log(`📢 Verification success notification sent to admin`);
             } else {
                 const errorText = await response.text();
                 console.error('Verification failed:', errorText);
@@ -505,6 +519,19 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                     `Customer has been notified.`
                 );
                 
+                // Send separate notification message for rejection
+                const rejectionNotification = 
+                    `❌ PAYMENT REJECTION PROCESSED!\n\n` +
+                    `📧 Customer: ${payment.email}\n` +
+                    `📦 Package: ${payment.packageName}\n` +
+                    `💰 Amount: ${payment.amount} ${payment.currency}\n` +
+                    `🆔 Order: ${orderId}\n` +
+                    `⏰ Rejected: ${new Date().toLocaleString()}\n` +
+                    `🔗 Type: ${payment.paymentType || 'selar'}\n\n` +
+                    `❌ Customer access denied and notified.`;
+                
+                await sendToTelegram(rejectionNotification);
+                
                 // Only delete from pendingPayments after successful rejection
                 if (pendingPayments.has(orderId)) {
                     pendingPayments.delete(orderId);
@@ -512,6 +539,8 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                 
                 // Clear processing state
                 delete global.processingOrders[orderId];
+                
+                console.log(`📢 Rejection notification sent to admin`);
             } else {
                 const errorText = await response.text();
                 console.error('Rejection failed:', errorText);
