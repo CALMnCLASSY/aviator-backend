@@ -29,7 +29,7 @@ app.use(helmet({
 // Rate limiting
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
+    max: 200, // limit each IP to 200 requests per windowMs (increased from 100)
     message: {
         success: false,
         message: 'Too many requests from this IP, please try again later.'
@@ -41,10 +41,10 @@ const limiter = rateLimit({
 // Apply rate limiting to all requests
 app.use(limiter);
 
-// Stricter rate limiting for payment endpoints
+// More reasonable rate limiting for payment endpoints
 const paymentLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10, // limit each IP to 10 payment requests per windowMs
+    max: 50, // limit each IP to 50 payment requests per windowMs (increased from 10)
     message: {
         success: false,
         message: 'Too many payment requests, please try again later.'
