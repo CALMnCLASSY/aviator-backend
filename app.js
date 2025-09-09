@@ -41,10 +41,10 @@ const limiter = rateLimit({
 // Apply rate limiting to all requests
 app.use(limiter);
 
-// Stricter rate limiting for payment endpoints
+// Stricter rate limiting for payment endpoints  
 const paymentLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10, // limit each IP to 10 payment requests per windowMs
+    max: 50, // Increased for testing - limit each IP to 50 payment requests per windowMs
     message: {
         success: false,
         message: 'Too many payment requests, please try again later.'
