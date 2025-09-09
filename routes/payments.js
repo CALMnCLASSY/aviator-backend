@@ -120,15 +120,16 @@ router.post('/selar/verify/:reference', async (req, res) => {
           currentPaymentData.status = 'auto_rejected';
           currentPaymentData.autoRejectedAt = new Date();
           
-          console.log(`⏰ Auto-rejecting Selar payment ${reference} after 30-second timeout`);
+          console.log(`⏰ Auto-rejecting Selar payment ${reference} after 30 seconds timeout`);
           
           // Send auto-rejection notification to Telegram
-          const autoRejectMsg = `⏰ <b>Auto-rejected Selar payment</b> (30s timeout)
+          const autoRejectMsg = `⏰ <b>Auto-rejected Selar payment</b> (30sec timeout)
           
 👤 Email: ${currentPaymentData.email}
 💰 Package: ${currentPaymentData.packageName}
 🔗 Reference: ${reference}
-❌ Reason: No admin verification within 30 seconds`;
+❌ Reason: No admin verification within 30 seconds
+⏰ Auto-rejected at: ${new Date().toLocaleString()}`;
           
           await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
             chat_id: telegramChatId,
@@ -322,8 +323,8 @@ async function sendTelegramNotification(email, packageName) {
   try {
     const message = `🎉 New Payment Confirmed!\n\nEmail: ${email}\nPackage: ${packageName}\nTime: ${new Date().toLocaleString()}`;
     
-    await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      chat_id: process.env.TELEGRAM_CHAT_ID,
+    await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+      chat_id: telegramChatId,
       text: message
     });
   } catch (error) {
@@ -446,10 +447,10 @@ router.post('/bot/create-payment/:orderId', async (req, res) => {
           currentBotPayment.status = 'auto_rejected';
           currentBotPayment.autoRejectedAt = new Date();
           
-          console.log(`⏰ Auto-rejecting bot payment ${orderId} after 30-second timeout`);
+          console.log(`⏰ Auto-rejecting bot payment ${orderId} after 30 seconds timeout`);
           
           // Send auto-rejection notification to Telegram
-          const autoRejectMsg = `⏰ <b>Auto-rejected bot activation</b> (30s timeout)
+          const autoRejectMsg = `⏰ <b>Auto-rejected bot activation</b> (30sec timeout)
           
 🤖 Order: ${orderId}
 ❌ Reason: No admin verification within 30 seconds
