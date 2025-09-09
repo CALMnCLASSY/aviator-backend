@@ -110,31 +110,28 @@ router.post('/selar/verify/:reference', async (req, res) => {
     paymentData.status = 'pending_verification';
     paymentData.verificationStartTime = new Date();
     
-    // Set auto-rejection timeout (1 minute)
+    // Set auto-rejection timeout (30 seconds)
     setTimeout(async () => {
       try {
         // Check if payment is still pending verification
         const currentPaymentData = global.selarPayments && global.selarPayments[reference];
         if (currentPaymentData && currentPaymentData.status === 'pending_verification') {
-          // Auto-reject the payment
-          currentPaymentData.status = 'auto_rejected';
-          currentPaymentData.autoRejectedAt = new Date();
+          console.log(`⏰ Auto-rejecting payment ${reference} after 30 seconds - simulating admin reject`);
           
-          console.log(`⏰ Auto-rejecting Selar payment ${reference} after 1 minute timeout`);
-          
-          // Send auto-rejection notification to Telegram
-          const autoRejectMsg = `⏰ <b>Auto-rejected Selar payment</b> (1min timeout)
-          
-👤 Email: ${currentPaymentData.email}
-💰 Package: ${currentPaymentData.packageName}
-🔗 Reference: ${reference}
-❌ Reason: No admin verification within 1 minute`;
-          
-          await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            chat_id: process.env.TELEGRAM_CHAT_ID,
-            text: autoRejectMsg,
-            parse_mode: 'HTML'
-          });
+          // Simulate admin clicking reject button by calling the same admin-verify endpoint
+          try {
+            const axios = require('axios');
+            await axios.post(`http://localhost:${process.env.PORT || 5000}/api/payments/selar/admin-verify/${reference}`, {
+              verified: false
+            });
+            console.log(`✅ Auto-rejection completed for ${reference}`);
+          } catch (adminError) {
+            console.error(`❌ Failed to auto-reject ${reference}:`, adminError.message);
+            // Fallback: manually set status
+            currentPaymentData.status = 'rejected';
+            currentPaymentData.rejectedAt = new Date();
+            currentPaymentData.autoRejected = true;
+          }
         }
       } catch (timeoutError) {
         console.error('❌ Auto-rejection timeout error:', timeoutError.message);
@@ -147,7 +144,7 @@ router.post('/selar/verify/:reference', async (req, res) => {
 <b>Package:</b> ${paymentData.packageName}
 <b>Reference:</b> ${reference}
 
-⚠️ <b>Auto-rejects in 1 minute if not verified</b>`;
+⚠️ <b>Auto-rejects in 30 seconds if not verified</b>`;
     
     const url = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
     const messageOptions = {
@@ -185,11 +182,11 @@ router.post('/selar/admin-verify/:reference', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Order not found' });
     }
     
-    // Check if payment was already auto-rejected
-    if (paymentData.status === 'auto_rejected') {
+    // Don't allow verification/rejection of already processed payments
+    if (paymentData.status !== 'pending_verification') {
       return res.status(400).json({ 
         success: false, 
-        error: 'Payment was auto-rejected due to timeout (1 minute expired)' 
+        error: `Payment is already ${paymentData.status}` 
       });
     }
     
@@ -269,18 +266,7 @@ function getSelarStatusMessage(status) {
   const statusMessages = {
     'pending_verification': 'Waiting for admin verification...',
     'verified': 'Payment verified successfully!',
-    'rejected': 'Payment verification rejected',
-    'auto_rejected': 'Payment auto-rejected due to timeout (1 minute)'
-  };
-  return statusMessages[status] || 'Unknown status';
-}
-
-function getBotStatusMessage(status) {
-  const statusMessages = {
-    'pending_verification': 'Bot activation pending admin verification...',
-    'verified': 'Bot activation verified successfully!',
-    'rejected': 'Bot activation verification rejected',
-    'auto_rejected': 'Bot activation auto-rejected due to timeout (1 minute)'
+    'rejected': 'Payment verification rejected'
   };
   return statusMessages[status] || 'Unknown status';
 }
