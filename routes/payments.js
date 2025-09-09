@@ -110,7 +110,7 @@ router.post('/selar/verify/:reference', async (req, res) => {
     paymentData.status = 'pending_verification';
     paymentData.verificationStartTime = new Date();
     
-    // Set auto-rejection timeout (1 minute)
+    // Set auto-rejection timeout (30 seconds)
     setTimeout(async () => {
       try {
         // Check if payment is still pending verification
@@ -120,18 +120,18 @@ router.post('/selar/verify/:reference', async (req, res) => {
           currentPaymentData.status = 'auto_rejected';
           currentPaymentData.autoRejectedAt = new Date();
           
-          console.log(`⏰ Auto-rejecting Selar payment ${reference} after 1 minute timeout`);
+          console.log(`⏰ Auto-rejecting Selar payment ${reference} after 30-second timeout`);
           
           // Send auto-rejection notification to Telegram
-          const autoRejectMsg = `⏰ <b>Auto-rejected Selar payment</b> (1min timeout)
+          const autoRejectMsg = `⏰ <b>Auto-rejected Selar payment</b> (30s timeout)
           
 👤 Email: ${currentPaymentData.email}
 💰 Package: ${currentPaymentData.packageName}
 🔗 Reference: ${reference}
-❌ Reason: No admin verification within 1 minute`;
+❌ Reason: No admin verification within 30 seconds`;
           
-          await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            chat_id: process.env.TELEGRAM_CHAT_ID,
+          await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+            chat_id: telegramChatId,
             text: autoRejectMsg,
             parse_mode: 'HTML'
           });
@@ -139,7 +139,7 @@ router.post('/selar/verify/:reference', async (req, res) => {
       } catch (timeoutError) {
         console.error('❌ Auto-rejection timeout error:', timeoutError.message);
       }
-    }, 60000); // 1 minute = 60,000 milliseconds
+    }, 30000); // 30 seconds = 30,000 milliseconds
     
     // Send verification request to Telegram for admin
     const telegramMessage = `🔎 <b>Verification needed</b> for Selar payment:
@@ -147,11 +147,11 @@ router.post('/selar/verify/:reference', async (req, res) => {
 <b>Package:</b> ${paymentData.packageName}
 <b>Reference:</b> ${reference}
 
-⚠️ <b>Auto-rejects in 1 minute if not verified</b>`;
+⚠️ <b>Auto-rejects in 30 seconds if not verified</b>`;
     
-    const url = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
+    const url = `https://api.telegram.org/bot${telegramBotToken}/sendMessage`;
     const messageOptions = {
-      chat_id: process.env.TELEGRAM_CHAT_ID,
+      chat_id: telegramChatId,
       text: telegramMessage,
       parse_mode: 'HTML',
       reply_markup: {
@@ -189,7 +189,7 @@ router.post('/selar/admin-verify/:reference', async (req, res) => {
     if (paymentData.status === 'auto_rejected') {
       return res.status(400).json({ 
         success: false, 
-        error: 'Payment was auto-rejected due to timeout (1 minute expired)' 
+        error: 'Payment was auto-rejected due to timeout (30 seconds expired)' 
       });
     }
     
@@ -209,8 +209,8 @@ router.post('/selar/admin-verify/:reference', async (req, res) => {
         
         // Send verification notification to Telegram
         const successMsg = `✅ <b>Selar payment verified</b> for ${paymentData.email} (${paymentData.packageName})`;
-        await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-          chat_id: process.env.TELEGRAM_CHAT_ID,
+        await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+          chat_id: telegramChatId,
           text: successMsg,
           parse_mode: 'HTML'
         });
@@ -227,8 +227,8 @@ router.post('/selar/admin-verify/:reference', async (req, res) => {
       
       // Notify Telegram of rejection
       const rejectMsg = `❌ <b>Selar payment rejected</b> for ${paymentData.email} (${paymentData.packageName})`;
-      await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-        chat_id: process.env.TELEGRAM_CHAT_ID,
+      await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+        chat_id: telegramChatId,
         text: rejectMsg,
         parse_mode: 'HTML'
       });
@@ -270,7 +270,7 @@ function getSelarStatusMessage(status) {
     'pending_verification': 'Waiting for admin verification...',
     'verified': 'Payment verified successfully!',
     'rejected': 'Payment verification rejected',
-    'auto_rejected': 'Payment auto-rejected due to timeout (1 minute)'
+    'auto_rejected': 'Payment auto-rejected due to timeout (30 seconds)'
   };
   return statusMessages[status] || 'Unknown status';
 }
@@ -280,7 +280,7 @@ function getBotStatusMessage(status) {
     'pending_verification': 'Bot activation pending admin verification...',
     'verified': 'Bot activation verified successfully!',
     'rejected': 'Bot activation verification rejected',
-    'auto_rejected': 'Bot activation auto-rejected due to timeout (1 minute)'
+    'auto_rejected': 'Bot activation auto-rejected due to timeout (30 seconds)'
   };
   return statusMessages[status] || 'Unknown status';
 }
@@ -436,7 +436,7 @@ router.post('/bot/create-payment/:orderId', async (req, res) => {
       customerInfo: customerInfo || {}
     };
     
-    // Set auto-rejection timeout (1 minute)
+    // Set auto-rejection timeout (30 seconds)
     setTimeout(async () => {
       try {
         // Check if bot payment is still pending verification
@@ -446,17 +446,17 @@ router.post('/bot/create-payment/:orderId', async (req, res) => {
           currentBotPayment.status = 'auto_rejected';
           currentBotPayment.autoRejectedAt = new Date();
           
-          console.log(`⏰ Auto-rejecting bot payment ${orderId} after 1 minute timeout`);
+          console.log(`⏰ Auto-rejecting bot payment ${orderId} after 30-second timeout`);
           
           // Send auto-rejection notification to Telegram
-          const autoRejectMsg = `⏰ <b>Auto-rejected bot activation</b> (1min timeout)
+          const autoRejectMsg = `⏰ <b>Auto-rejected bot activation</b> (30s timeout)
           
 🤖 Order: ${orderId}
-❌ Reason: No admin verification within 1 minute
+❌ Reason: No admin verification within 30 seconds
 ⏰ Auto-rejected at: ${new Date().toLocaleString()}`;
           
-          await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            chat_id: process.env.TELEGRAM_CHAT_ID,
+          await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+            chat_id: telegramChatId,
             text: autoRejectMsg,
             parse_mode: 'HTML'
           });
@@ -464,7 +464,7 @@ router.post('/bot/create-payment/:orderId', async (req, res) => {
       } catch (timeoutError) {
         console.error('❌ Bot auto-rejection timeout error:', timeoutError.message);
       }
-    }, 60000); // 1 minute = 60,000 milliseconds
+    }, 30000); // 30 seconds = 30,000 milliseconds
     
     // Send verification request to Telegram for admin
     const telegramMessage = `🤖 <b>Bot activation verification needed</b>
@@ -473,10 +473,10 @@ router.post('/bot/create-payment/:orderId', async (req, res) => {
 👤 Customer: ${customerInfo?.email || 'Not provided'}
 ⏰ Created: ${new Date().toLocaleString()}
 
-⚠️ <b>Auto-rejects in 1 minute if not verified</b>`;
+⚠️ <b>Auto-rejects in 30 seconds if not verified</b>`;
     
-    await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      chat_id: process.env.TELEGRAM_CHAT_ID,
+    await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+      chat_id: telegramChatId,
       text: telegramMessage,
       parse_mode: 'HTML',
       reply_markup: {
