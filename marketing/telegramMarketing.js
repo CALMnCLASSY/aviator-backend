@@ -98,9 +98,12 @@ class TelegramMarketingBot {
     }
 
     processMessage(message, category = null) {
-        const sites = ['1Win', 'Bet365', '1xBet', '22Bet', 'Betway', 'SportPesa'];
-        const preferredSites = ['1Win', 'Bet365', '1xBet', '22Bet'];
-        const siteList = Math.random() < 0.7 ? preferredSites : sites;
+        // Updated to prioritize Kenyan betting sites
+        const sites = ['Betika', 'OdiBets', 'SportPesa', '1Win', 'Bet365', '1xBet', '22Bet', 'Betway'];
+        const preferredSites = ['Betika', 'OdiBets', 'SportPesa', '1Win'];
+        
+        // 80% chance to use preferred sites (Kenyan sites first)
+        const siteList = Math.random() < 0.8 ? preferredSites : sites;
         const randomSite = this.randomFromArray(siteList);
         
         let processedMessage = message
@@ -147,8 +150,8 @@ class TelegramMarketingBot {
             }
             
             const wins = 3200 + Math.floor(Math.random() * 100);
-            const losses = 40 + Math.floor(Math.random() * 10);
-            const accuracy = ((wins / (wins + losses)) * 100).toFixed(2);
+            // Removed losses data - only showing wins for positive messaging
+            const accuracy = (97 + Math.random() * 2).toFixed(2); // 97-99% accuracy
             
             let bonusType = '';
             if (parseFloat(result) >= 10) bonusType = '10X+';
@@ -160,7 +163,7 @@ class TelegramMarketingBot {
                 .replace(/{{target}}/g, targetExit.toFixed(2))
                 .replace(/{{target}}/g, targetExit)
                 .replace(/{{wins}}/g, wins)
-                .replace(/{{losses}}/g, losses)
+                .replace(/{{losses}}/g, '0') // Always show 0 losses for positive messaging
                 .replace(/{{accuracy}}/g, accuracy)
                 .replace(/{{bonus_type}}/g, bonusType);
         }
@@ -274,11 +277,21 @@ class TelegramMarketingBot {
         try {
             const imagesDir = path.join(__dirname, 'images');
             const imageFiles = fs.readdirSync(imagesDir)
-                .filter(file => file.endsWith('.jpeg') || file.endsWith('.jpg') || file.endsWith('.png'));
+                .filter(file => file.endsWith('.svg') || file.endsWith('.jpeg') || file.endsWith('.jpg') || file.endsWith('.png'));
+            
+            // Strongly prefer SVG files (90% chance to pick SVG if available)
+            const svgFiles = imageFiles.filter(file => file.endsWith('.svg'));
+            const otherFiles = imageFiles.filter(file => !file.endsWith('.svg'));
             
             if (imageFiles.length === 0) return null;
             
-            const randomImage = this.randomFromArray(imageFiles);
+            let randomImage;
+            if (svgFiles.length > 0 && Math.random() < 0.90) {
+                randomImage = this.randomFromArray(svgFiles);
+            } else {
+                randomImage = this.randomFromArray(imageFiles);
+            }
+            
             return path.join(imagesDir, randomImage);
         } catch (error) {
             console.error('❌ Error getting random image:', error);
@@ -407,7 +420,19 @@ class TelegramMarketingBot {
     
     async sendMessageForType(messageType) {
         try {
-            const message = this.randomFromArray(this.messagePool[messageType]);
+            // Handle Kenyan site-specific messages with higher frequency
+            let selectedMessages = this.messagePool[messageType];
+            
+            // 40% chance to use Kenyan-specific variants when available
+            if (Math.random() < 0.4) {
+                if (messageType === 'signals' && this.messagePool.kenyan_site_signals) {
+                    selectedMessages = this.messagePool.kenyan_site_signals;
+                } else if (messageType === 'site_promos' && this.messagePool.kenyan_site_promos) {
+                    selectedMessages = this.messagePool.kenyan_site_promos;
+                }
+            }
+            
+            const message = this.randomFromArray(selectedMessages);
             const processedMessage = this.processMessage(message, messageType);
             
             // Determine persona based on message type
@@ -416,8 +441,8 @@ class TelegramMarketingBot {
             
             console.log(`📤 Sending ${messageType} message from ${persona.name}`);
             
-            // 25% chance to send with image for certain types
-            const shouldSendImage = Math.random() < 0.25 && ['hype', 'promos', 'celebration'].includes(messageType);
+            // 30% chance to send with image for certain types (increased from 25%)
+            const shouldSendImage = Math.random() < 0.30 && ['hype', 'promos', 'celebration', 'win_results'].includes(messageType);
             
             if (shouldSendImage) {
                 const imagePath = this.getRandomImage();

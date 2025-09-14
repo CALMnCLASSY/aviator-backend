@@ -3,13 +3,21 @@
     "🎰 {{site}} AVIATOR\n🚀 Free Signal: Safe play at x2.1 ✅ (Basic prediction)\n💡 Want x10+ signals? → {{link}}",
     "🎰 {{site}} AVIATOR\n⚡ Low Risk Alert: x1.8-x2.3 range recommended 💯\n🔥 Premium gets x20+ → {{link}}",
     "🎰 {{site}} AVIATOR\n🔥 Conservative play: Cashout at x2.5 for steady gains\n📈 Upgrade for mega wins → {{link}}",
-    "� {{site}} AVIATOR\n�🎯 Safe Zone: x1.5-x2.0 looking solid this round ✅\n💰 Premium = x50+ predictions → {{link}}",
+    "🎰 {{site}} AVIATOR\n🎯 Safe Zone: x1.5-x2.0 looking solid this round ✅\n💰 Premium = x50+ predictions → {{link}}",
     "🎰 {{site}} AVIATOR\n📊 Basic Analysis: x2.8 max recommended (free tier)\n🚀 Get x100+ signals → {{link}}",
     "🎰 {{site}} AVIATOR\n⚡ Starter Signal: x1.7 cashout, safe and steady 💯\n🔥 Premium users get x30+ → {{link}}",
     "🎰 {{site}} AVIATOR\n🔥 Free tier: x2.2 target - want higher? Get premium!\n💎 Upgrade at → {{link}}",
     "🎰 {{site}} AVIATOR\n🎲 Budget play: x1.9 cashout, then upgrade for BIG wins\n📈 Premium access → {{link}}",
     "🎰 {{site}} AVIATOR\n📈 Basic Signal: x2.4 potential (Premium gets x10+ predictions!)\n🚀 Upgrade → {{link}}",
     "🎰 {{site}} AVIATOR\n🚨 Free Signal: x2.6 max - Premium users get x20+ alerts! 🔥\n💰 Join premium → {{link}}"
+  ],
+  "kenyan_site_signals": [
+    "🇰🇪 BETIKA AVIATOR\n🔥 Kenyan Favorite: x3.2 target recommended! 🚀\n💰 Perfect for M-Pesa deposits → {{link}}",
+    "🇰🇪 ODIBETS AVIATOR\n⚡ Odi Special: x2.8 cashout looking solid! 💯\n🎯 Best odds for Kenyan players → {{link}}",
+    "🇰🇪 SPORTPESA AVIATOR\n🏆 SportPesa Classic: x4.1 potential this round! 🔥\n📱 Mobile-friendly betting → {{link}}",
+    "🇰🇪 BETIKA AVIATOR\n🎲 Betika Bonus Round: x5.3 target - act fast! ⚡\n💸 Withdraw via M-Pesa → {{link}}",
+    "🇰🇪 ODIBETS AVIATOR\n💎 OdiBets Premium: x6.7 multiplier incoming! 🚀\n🎊 Best for Kenyan punters → {{link}}",
+    "🇰🇪 SPORTPESA AVIATOR\n🔥 SportPesa Power Play: x3.9 cashout recommended! 💰\n🇰🇪 Trusted by Kenyans → {{link}}"
   ],
   "cancelled_signals": [
     "❌ SIGNAL CANCELLED\n\n🔄 Analysis continuing...\n⏳ Waiting for new signal...\n💡 Be patient, opportunity will come!",
@@ -31,21 +39,21 @@
     "🎰 {{site}} AVIATOR\n🎯 LIVE SIGNAL ACTIVE! 🚀\n\n💰 Enter after: {{enter_at}}x\n🎯 Cash out at: {{exit_at}}x\n⚡ MOVE QUICKLY!\n\n⚠️ MAXIMUM 3 MARTINGALES\n🔥 STAY FOCUSED!\n\n📈 Advanced Predictions: {{link}}\n\n❓ Support: https://t.me/Aadmin4cnc"
   ],
   "win_results": [
-    "🎉 YOU WON! 💰\n\n🎯 Result: {{result}}x\n✅ Target: {{target}}x SUCCESS!\n\n📊 DAILY STATISTICS:\n━━━━━━━━━━━━━━━━━━━━\n✅ Wins: {{wins}}\n❌ Losses: {{losses}}\n━━━━━━━━━━━━━━━━━━━━\n💎 Success Rate: {{accuracy}}%\n\n🎰 PLAY: {{link}}\n\n❓ Contact: https://t.me/Aadmin4cnc",
-    "🚀 MEGA WIN! 🔥\n\n🎯 Amazing Result: {{result}}x\n✅ Target: {{target}}x EXCEEDED!\n🎊 {{bonus_type}} BONUS!\n\n📊 DAILY STATISTICS:\n━━━━━━━━━━━━━━━━━━━━\n✅ Wins: {{wins}}\n❌ Losses: {{losses}}\n━━━━━━━━━━━━━━━━━━━━\n💎 Success Rate: {{accuracy}}%\n\n🎰 PLAY: {{link}}\n\n❓ Support: https://t.me/Aadmin4cnc",
-    "💰 PERFECT HIT! ✅\n\n🎯 Result: {{result}}x\n✅ Target: {{target}}x SUCCESS!\n🔥 EXACTLY AS PREDICTED!\n\n📊 DAILY STATISTICS:\n━━━━━━━━━━━━━━━━━━━━\n✅ Wins: {{wins}}\n❌ Losses: {{losses}}\n━━━━━━━━━━━━━━━━━━━━\n💎 Success Rate: {{accuracy}}%\n\n🎰 PLAY: {{link}}\n\n❓ Help: https://t.me/Aadmin4cnc"
+    "🎉 YOU WON! 💰\n\n🎯 Result: {{result}}x\n✅ Target: {{target}}x SUCCESS!\n\n📊 TODAY'S SUCCESS:\n━━━━━━━━━━━━━━━━━━━━\n✅ Total Wins: {{wins}}\n━━━━━━━━━━━━━━━━━━━━\n💎 Success Rate: {{accuracy}}%\n\n🎰 PLAY: {{link}}\n\n❓ Contact: https://t.me/Aadmin4cnc",
+    "🚀 MEGA WIN! 🔥\n\n🎯 Amazing Result: {{result}}x\n✅ Target: {{target}}x EXCEEDED!\n🎊 {{bonus_type}} BONUS!\n\n📊 TODAY'S SUCCESS:\n━━━━━━━━━━━━━━━━━━━━\n✅ Total Wins: {{wins}}\n━━━━━━━━━━━━━━━━━━━━\n💎 Success Rate: {{accuracy}}%\n\n🎰 PLAY: {{link}}\n\n❓ Support: https://t.me/Aadmin4cnc",
+    "💰 PERFECT HIT! ✅\n\n🎯 Result: {{result}}x\n✅ Target: {{target}}x SUCCESS!\n🔥 EXACTLY AS PREDICTED!\n\n📊 TODAY'S SUCCESS:\n━━━━━━━━━━━━━━━━━━━━\n✅ Total Wins: {{wins}}\n━━━━━━━━━━━━━━━━━━━━\n💎 Success Rate: {{accuracy}}%\n\n🎰 PLAY: {{link}}\n\n❓ Help: https://t.me/Aadmin4cnc"
   ],
   "tips": [
     "📊 Pro Tip: Always split stake between low (x2) and high (x10) odds",
-    "⏳ Timing is everything. Don't chase losses 🚀",
+    "⏳ Timing is everything. Stay focused on wins 🚀",
     "✅ Smart betting means steady profits",
     "💡 Best strategy: 70% safe bets (x2-x3), 30% high risk (x10+)",
     "🎯 Never bet more than 5% of your balance on one round",
-    "📈 Track your wins/losses. Consistency beats big wins",
+    "📈 Track your wins. Consistency leads to success",
     "🔥 Patience pays: Wait for the right moment to strike",
     "💰 Set daily limits and stick to them. Discipline = Profit",
     "⚡ Use our 98.72% accuracy predictions for guaranteed success",
-    "🎲 Risk management: Stop at 3 consecutive losses",
+    "🎲 Risk management: Follow our signals for consistent wins",
     "🌐 Tech Tip: Microsoft Edge browser gives the smoothest site experience!",
     "🌐 Pro Browser Tip: Microsoft Edge loads our site 40% faster than others!",
     "🌐 Microsoft Edge users report better performance on avisignals.com!",
@@ -88,10 +96,10 @@
     "🎯 Bullseye: x14.2 win! 98.72% accuracy speaks for itself!"
   ],
   "betting_sites": [
-    "1win", "Bet365", "1xBet", "22Bet", "Betway", "SportPesa", 
-    "Betika", "Melbet", "Hollywoodbets", "Parimatch", "Stake"
+    "Betika", "OdiBets", "SportPesa", "1win", "Bet365", "1xBet", "22Bet", "Betway", 
+    "Melbet", "Hollywoodbets", "Parimatch", "Stake"
   ],
-  "priority_sites": ["1win", "Bet365", "1xBet", "22Bet"],
+  "priority_sites": ["Betika", "OdiBets", "SportPesa", "1win"],
   "site_promos": [
     "🔥 {{site}} players are winning BIG with our signals! Join them at avisignals.com\n🌐 Best experience: Use Microsoft Edge browser!",
     "⚡ {{site}} + Our predictions = Guaranteed profits! 💰 → avisignals.com\n🌐 Pro tip: Microsoft Edge for optimal site performance!",
@@ -99,6 +107,14 @@
     "💸 Break {{site}} records with our 98.72% accurate predictions!\n🌐 Microsoft Edge recommended for smooth browsing!",
     "🎯 {{site}} VIPs choose avisignals.com for consistent wins!\n🌐 They use Microsoft Edge - you should too!",
     "🔥 Why {{site}} players trust our AI predictions → avisignals.com\n🌐 Enhanced experience with Microsoft Edge browser!"
+  ],
+  "kenyan_site_promos": [
+    "🇰🇪 BETIKA AVIATOR CHAMPIONS! 🏆\n💰 Kenyan players hitting x20+ with our signals!\n📱 M-Pesa deposits/withdrawals → avisignals.com",
+    "🇰🇪 ODIBETS SUCCESS STORIES! ⚡\n🎯 OdiBets users crushing it with 97% accuracy!\n💸 Perfect for mobile betting → avisignals.com",
+    "🇰🇪 SPORTPESA LEGENDS! 🏆\n🔥 SportPesa players making millions with our AI!\n🚀 Trusted by Kenyan winners → avisignals.com",
+    "🇰🇪 BETIKA BONUS ALERTS! 💎\n⚡ Special signals for Betika Aviator players!\n💰 Higher payouts guaranteed → avisignals.com",
+    "🇰🇪 ODIBETS PREMIUM CLUB! 🔥\n🎲 Exclusive predictions for OdiBets members!\n💸 Join the winning team → avisignals.com",
+    "🇰🇪 SPORTPESA POWER PLAYERS! ⚡\n🏆 SportPesa VIPs use our 98% accurate signals!\n🚀 Become a champion → avisignals.com"
   ],
   "image_captions": [
     "💸 Big win incoming! Who's next?",
