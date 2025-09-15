@@ -146,9 +146,9 @@ router.post('/selar/verify/:reference', async (req, res) => {
 
 ⚠️ <b>Auto-rejects in 30 seconds if not verified</b>`;
     
-    const url = `https://api.telegram.org/bot${telegramBotToken}/sendMessage`;
+    const url = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
     const messageOptions = {
-      chat_id: telegramChatId,
+      chat_id: process.env.TELEGRAM_CHAT_ID,
       text: telegramMessage,
       parse_mode: 'HTML',
       reply_markup: {
@@ -206,8 +206,8 @@ router.post('/selar/admin-verify/:reference', async (req, res) => {
         
         // Send verification notification to Telegram
         const successMsg = `✅ <b>Selar payment verified</b> for ${paymentData.email} (${paymentData.packageName})`;
-        await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-          chat_id: telegramChatId,
+        await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          chat_id: process.env.TELEGRAM_CHAT_ID,
           text: successMsg,
           parse_mode: 'HTML'
         });
@@ -224,8 +224,8 @@ router.post('/selar/admin-verify/:reference', async (req, res) => {
       
       // Notify Telegram of rejection
       const rejectMsg = `❌ <b>Selar payment rejected</b> for ${paymentData.email} (${paymentData.packageName})`;
-      await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-        chat_id: telegramChatId,
+      await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        chat_id: process.env.TELEGRAM_CHAT_ID,
         text: rejectMsg,
         parse_mode: 'HTML'
       });
@@ -308,8 +308,8 @@ async function sendTelegramNotification(email, packageName) {
   try {
     const message = `🎉 New Payment Confirmed!\n\nEmail: ${email}\nPackage: ${packageName}\nTime: ${new Date().toLocaleString()}`;
     
-    await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-      chat_id: telegramChatId,
+    await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      chat_id: process.env.TELEGRAM_CHAT_ID,
       text: message
     });
   } catch (error) {
@@ -441,8 +441,8 @@ router.post('/bot/create-payment/:orderId', async (req, res) => {
 ❌ Reason: No admin verification within 1 minute
 ⏰ Auto-rejected at: ${new Date().toLocaleString()}`;
           
-          await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-            chat_id: telegramChatId,
+          await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            chat_id: process.env.TELEGRAM_CHAT_ID,
             text: autoRejectMsg,
             parse_mode: 'HTML'
           });
