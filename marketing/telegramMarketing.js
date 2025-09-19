@@ -279,14 +279,21 @@ class TelegramMarketingBot {
             const imageFiles = fs.readdirSync(imagesDir)
                 .filter(file => file.endsWith('.svg') || file.endsWith('.jpeg') || file.endsWith('.jpg') || file.endsWith('.png'));
             
-            // Strongly prefer SVG files (90% chance to pick SVG if available)
+            if (imageFiles.length === 0) return null;
+            
+            // Prioritize PROMOCODE.jpeg (70% chance)
+            const promoCodeFile = imageFiles.find(file => file.toLowerCase().includes('promocode'));
+            if (promoCodeFile && Math.random() < 0.70) {
+                console.log('🎯 Using PROMOCODE image for marketing');
+                return path.join(imagesDir, promoCodeFile);
+            }
+            
+            // If not using promo code, prefer SVG files (85% chance)
             const svgFiles = imageFiles.filter(file => file.endsWith('.svg'));
             const otherFiles = imageFiles.filter(file => !file.endsWith('.svg'));
             
-            if (imageFiles.length === 0) return null;
-            
             let randomImage;
-            if (svgFiles.length > 0 && Math.random() < 0.90) {
+            if (svgFiles.length > 0 && Math.random() < 0.85) {
                 randomImage = this.randomFromArray(svgFiles);
             } else {
                 randomImage = this.randomFromArray(imageFiles);
@@ -547,8 +554,9 @@ class TelegramMarketingBot {
     }
 
     getNextPostDelay() {
-        const minDelay = 15 * 60 * 1000; // 15 minutes (twice hourly)
-        const maxDelay = 30 * 60 * 1000; // 30 minutes maximum
+        // Increased frequency for better engagement
+        const minDelay = 8 * 60 * 1000; // 8 minutes minimum
+        const maxDelay = 15 * 60 * 1000; // 15 minutes maximum
         return Math.floor(Math.random() * (maxDelay - minDelay) + minDelay);
     }
 
