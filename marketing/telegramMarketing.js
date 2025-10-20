@@ -14,6 +14,7 @@ class TelegramMarketingBot {
         this.flowStep = 0; // Track step in current flow
         this.lastSignalTarget = null; // Store last signal target for accurate results
         this.lastSignalEntry = null; // Store last signal entry point
+        this.imageQueue = [];
         
         // Define logical message flows
         this.messageFlows = {
@@ -273,33 +274,28 @@ class TelegramMarketingBot {
         }
     }
 
+    refreshImageQueue(imageFiles) {
+        this.imageQueue = [...imageFiles]
+            .sort(() => Math.random() - 0.5);
+    }
+
     getRandomImage() {
         try {
             const imagesDir = path.join(__dirname, 'images');
             const imageFiles = fs.readdirSync(imagesDir)
                 .filter(file => file.endsWith('.svg') || file.endsWith('.jpeg') || file.endsWith('.jpg') || file.endsWith('.png'));
-            
+
             if (imageFiles.length === 0) return null;
-            
-            // Prioritize PROMOCODE.jpeg (70% chance)
-            const promoCodeFile = imageFiles.find(file => file.toLowerCase().includes('promocode'));
-            if (promoCodeFile && Math.random() < 0.70) {
-                console.log('🎯 Using PROMOCODE image for marketing');
-                return path.join(imagesDir, promoCodeFile);
+
+            this.imageQueue = this.imageQueue.filter(file => imageFiles.includes(file));
+
+            if (this.imageQueue.length === 0) {
+                this.refreshImageQueue(imageFiles);
             }
-            
-            // If not using promo code, prefer SVG files (85% chance)
-            const svgFiles = imageFiles.filter(file => file.endsWith('.svg'));
-            const otherFiles = imageFiles.filter(file => !file.endsWith('.svg'));
-            
-            let randomImage;
-            if (svgFiles.length > 0 && Math.random() < 0.85) {
-                randomImage = this.randomFromArray(svgFiles);
-            } else {
-                randomImage = this.randomFromArray(imageFiles);
-            }
-            
-            return path.join(imagesDir, randomImage);
+
+            const nextImage = this.imageQueue.shift();
+
+            return path.join(imagesDir, nextImage);
         } catch (error) {
             console.error('❌ Error getting random image:', error);
             return null;
