@@ -299,18 +299,35 @@ router.post('/webhook', async (req, res) => {
 async function handlePaymentVerification(orderId, chatId, messageId, action) {
     try {
         console.log(`🔄 Processing ${action} for order: ${orderId}`);
-        
+
+        const updateMessage = async (chatId, messageId, text) => {
+            try {
+                await fetch(`https://api.telegram.org/bot${telegramBotToken}/editMessageText`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        message_id: messageId,
+                        text,
+                        parse_mode: 'HTML'
+                    })
+                });
+            } catch (error) {
+                console.error('❌ Failed to update Telegram message:', error.message);
+            }
+        };
+
         // Check if this order is already being processed or completed
         if (global.processingOrders && global.processingOrders[orderId]) {
             console.log(`⚠️ Order ${orderId} is already being processed`);
             await updateMessage(chatId, messageId, `⚠️ Order ${orderId} is already being processed. Please wait...`);
             return;
         }
-        
+
         // Mark order as being processed
         global.processingOrders = global.processingOrders || {};
         global.processingOrders[orderId] = { action, timestamp: Date.now() };
-        
+
         // Get payment data from storage sources
         let payment = pendingPayments.get(orderId);
         
@@ -584,13 +601,25 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
         }
     } catch (error) {
         console.error('Error handling payment verification:', error);
-        
+
         // Clear processing state
         if (global.processingOrders && global.processingOrders[orderId]) {
             delete global.processingOrders[orderId];
         }
-        
-        await updateMessage(chatId, messageId, `❌ Error processing ${action} for order ${orderId}: ${error.message}`);
+
+        try {
+            await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    text: `❌ Error processing ${action} for order ${orderId}: ${error.message}`,
+                    parse_mode: 'HTML'
+                })
+            });
+        } catch (notifyError) {
+            console.error('Failed to notify Telegram about verification error:', notifyError.message);
+        }
     }
 }
 
