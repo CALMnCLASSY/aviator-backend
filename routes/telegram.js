@@ -343,6 +343,35 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                 paymentType: 'selar'
             };
         }
+
+        // Try USDT payments
+        if (!payment && global.usdtPayments && global.usdtPayments[orderId]) {
+            const usdtPayment = global.usdtPayments[orderId];
+
+            if (usdtPayment.status === 'verified' || usdtPayment.status === 'rejected') {
+                console.log(`⚠️ USDT order ${orderId} already has status: ${usdtPayment.status}`);
+                delete global.processingOrders[orderId];
+                await updateMessage(chatId, messageId,
+                    `⚠️ USDT Order ${orderId} was already ${usdtPayment.status.toUpperCase()}!
+\n` +
+                    `👤 Contact: ${usdtPayment.contact || 'Unknown'}\n` +
+                    `📦 Package: ${usdtPayment.packageName}\n` +
+                    `💵 Amount: ${usdtPayment.priceUsd} USDT\n` +
+                    `🕒 Processed: ${usdtPayment.verifiedAt || usdtPayment.rejectedAt}`
+                );
+                return;
+            }
+
+            payment = {
+                email: usdtPayment.contact || 'Unknown',
+                packageName: usdtPayment.packageName,
+                amount: usdtPayment.priceUsd || 'N/A',
+                currency: 'USDT',
+                siteName: usdtPayment.siteName,
+                status: usdtPayment.status,
+                paymentType: 'usdt'
+            };
+        }
         
         if (!payment) {
             console.log(`❌ Order ${orderId} not found in any payment storage`);
@@ -380,6 +409,11 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                 global.selarPayments[orderId].status = 'verified';
                 global.selarPayments[orderId].verifiedAt = new Date();
             }
+
+            if (global.usdtPayments && global.usdtPayments[orderId]) {
+                global.usdtPayments[orderId].status = 'verified';
+                global.usdtPayments[orderId].verifiedAt = new Date();
+            }
             
             // Handle paybill and mobile payment verification
             if (orderId.startsWith('PAYBILL_') || orderId.startsWith('BOT_MPESA_')) {
@@ -402,10 +436,12 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
             // Determine the correct verification endpoint based on payment type
             const baseUrl = process.env.BASE_URL?.replace(/\/$/, '') || 'https://aviator-backend-komp.onrender.com';
             let verifyUrl;
-            
+
             if (payment.paymentType === 'selar' || global.selarPayments?.[orderId]) {
                 // Use Selar admin verification endpoint
                 verifyUrl = `${baseUrl}/api/payments/selar/admin-verify/${orderId}`;
+            } else if (payment.paymentType === 'usdt' || orderId.startsWith('USDT_')) {
+                verifyUrl = `${baseUrl}/api/payments/usdt/admin-verify/${orderId}`;
             } else if (orderId.startsWith('BOT_') && payment.packageName?.toLowerCase().includes('bot')) {
                 // Bot activation endpoint
                 verifyUrl = `${baseUrl}/api/payments/bot/verify/${orderId}`;
@@ -463,6 +499,11 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                 global.selarPayments[orderId].status = 'rejected';
                 global.selarPayments[orderId].rejectedAt = new Date();
             }
+
+            if (global.usdtPayments && global.usdtPayments[orderId]) {
+                global.usdtPayments[orderId].status = 'rejected';
+                global.usdtPayments[orderId].rejectedAt = new Date();
+            }
             
             // Handle paybill and mobile payment rejection
             if (orderId.startsWith('PAYBILL_') || orderId.startsWith('BOT_MPESA_')) {
@@ -485,10 +526,12 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
             // Determine the correct rejection endpoint based on payment type
             const baseUrl = process.env.BASE_URL?.replace(/\/$/, '') || 'https://aviator-backend-komp.onrender.com';
             let rejectUrl;
-            
+
             if (payment.paymentType === 'selar' || global.selarPayments?.[orderId]) {
                 // Use Selar admin verification endpoint with rejection
                 rejectUrl = `${baseUrl}/api/payments/selar/admin-verify/${orderId}`;
+            } else if (payment.paymentType === 'usdt' || orderId.startsWith('USDT_')) {
+                rejectUrl = `${baseUrl}/api/payments/usdt/admin-verify/${orderId}`;
             } else if (orderId.startsWith('BOT_') && payment.packageName?.toLowerCase().includes('bot')) {
                 // Bot activation endpoint
                 rejectUrl = `${baseUrl}/api/payments/bot/verify/${orderId}`;

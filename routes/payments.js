@@ -11,6 +11,25 @@ const BASE_PORT = process.env.PORT || 5000;
 const SERVER_BASE_URL = (process.env.BASE_URL || `http://localhost:${BASE_PORT}`).replace(/\/$/, '');
 const USDT_WALLET_ADDRESS = process.env.USDT_WALLET_ADDRESS || 'TCRwpXHYvcXY3y4FJThLHCc9hHbs9H4ExH';
 
+const TOKEN_LIBRARY = {
+  '30min': { code: 'AVS-30M-77DJ', label: '30 Minutes', durationMinutes: 30 },
+  '1hour': { code: 'AVS-1H-F28J', label: '1 Hour', durationMinutes: 60 },
+  '3hours': { code: 'AVS-3H-8K2L', label: '3 Hours', durationMinutes: 180 },
+  '6hours': { code: 'AVS-6H-4P9S', label: '6 Hours', durationMinutes: 360 },
+  '24hour': { code: 'AVS-24H-2E1J', label: '24 Hours', durationMinutes: 1440 },
+  '72hour': { code: 'AVS-72H-9X2B', label: '72 Hours', durationMinutes: 4320 }
+};
+
+const getTokenInfo = (durationKey) => {
+  const token = TOKEN_LIBRARY[durationKey];
+  if (!token) return null;
+  return {
+    code: token.code,
+    label: token.label,
+    durationMinutes: token.durationMinutes
+  };
+};
+
 // Telegram configuration
 const telegramBotToken = '7995830862:AAEbUHiAL-YUM3myMGKd63dpFcbxE3_uU2o';
 const telegramChatId = '5900219209';
@@ -87,6 +106,8 @@ router.post('/usdt/create-order', async (req, res) => {
     const reference = `USDT_${Date.now()}_${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
 
     global.usdtPayments = global.usdtPayments || {};
+    const tokenInfo = getTokenInfo(durationKey);
+
     global.usdtPayments[reference] = {
       contact: contact || 'Not provided',
       packageName,
@@ -94,7 +115,8 @@ router.post('/usdt/create-order', async (req, res) => {
       priceUsd,
       durationKey,
       status: 'awaiting_payment',
-      createdAt: new Date()
+      createdAt: new Date(),
+      tokenInfo
     };
 
     logPaymentData({
@@ -104,7 +126,8 @@ router.post('/usdt/create-order', async (req, res) => {
       priceUsd,
       contact,
       siteName,
-      durationKey
+      durationKey,
+      tokenInfo: tokenInfo?.code || 'manual_dispatch'
     });
 
     res.json({
@@ -209,8 +232,14 @@ router.post('/usdt/admin-verify/:reference', async (req, res) => {
     if (verified) {
       paymentData.status = 'verified';
       paymentData.verifiedAt = new Date();
-      await sendToTelegram(`✅ <b>USDT payment verified</b> for ${paymentData.contact || 'client'} (${paymentData.packageName})`);
-      return res.json({ success: true, status: 'verified' });
+      const tokenDetails = paymentData.tokenInfo || null;
+      await sendToTelegram(`✅ <b>USDT payment verified</b> for ${paymentData.contact || 'client'} (${paymentData.packageName})${tokenDetails ? `\n\n🔑 Token: <code>${tokenDetails.code}</code> (${tokenDetails.label})` : ''}`);
+
+      return res.json({ 
+        success: true, 
+        status: 'verified',
+        tokenDetails
+      });
     }
 
     paymentData.status = 'rejected';
@@ -241,7 +270,8 @@ router.get('/usdt/status/:reference', async (req, res) => {
       priceUsd: paymentData.priceUsd,
       contact: paymentData.contact,
       siteName: paymentData.siteName,
-      autoRejected: paymentData.autoRejected || false
+      autoRejected: paymentData.autoRejected || false,
+      tokenDetails: paymentData.tokenInfo || null
     });
   } catch (error) {
     console.error('USDT status check error:', error);
