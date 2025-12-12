@@ -7,6 +7,9 @@ const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const path = require('path');
 const fetch = require('node-fetch');
+const BASE_PORT = process.env.PORT || 5000;
+const SERVER_BASE_URL = (process.env.BASE_URL || `http://localhost:${BASE_PORT}`).replace(/\/$/, '');
+const USDT_WALLET_ADDRESS = process.env.USDT_WALLET_ADDRESS || 'TCRwpXHYvcXY3y4FJThLHCc9hHbs9H4ExH';
 
 // Telegram configuration
 const telegramBotToken = '7995830862:AAEbUHiAL-YUM3myMGKd63dpFcbxE3_uU2o';
@@ -71,335 +74,178 @@ router.use((req, res, next) => {
   next();
 });
 
-// ==================== SELAR PAYMENT ROUTES ====================
+// ==================== USDT PAYMENT ROUTES ====================
 
-// Create Selar Order (Frontend will redirect to Selar checkout)
-router.post('/selar/create-order', async (req, res) => {
+router.post('/usdt/create-order', async (req, res) => {
   try {
-    const { email, packageName, timeSlot, bettingSite } = req.body;
-    // Generate a reference for tracking
-    const reference = uuidv4();
-    // Store payment metadata temporarily (in production, use DB)
-    global.selarPayments = global.selarPayments || {};
-    global.selarPayments[reference] = {
-      email,
+    const { contact, packageName, siteName, priceUsd, durationKey } = req.body;
+
+    if (!packageName || !priceUsd) {
+      return res.status(400).json({ success: false, error: 'Package name and price are required.' });
+    }
+
+    const reference = `USDT_${Date.now()}_${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+
+    global.usdtPayments = global.usdtPayments || {};
+    global.usdtPayments[reference] = {
+      contact: contact || 'Not provided',
       packageName,
-      timeSlot,
-      bettingSite,
-      timestamp: new Date(),
-      status: 'pending_verification'
+      siteName,
+      priceUsd,
+      durationKey,
+      status: 'awaiting_payment',
+      createdAt: new Date()
     };
-    // Respond with reference for manual verification
-    res.json({ reference });
+
+    logPaymentData({
+      type: 'usdt_create_order',
+      reference,
+      packageName,
+      priceUsd,
+      contact,
+      siteName,
+      durationKey
+    });
+
+    res.json({
+      success: true,
+      reference,
+      walletAddress: USDT_WALLET_ADDRESS
+    });
   } catch (error) {
-    console.error('Selar order error:', error);
-    res.status(500).json({ error: 'Failed to create Selar order', details: error.message });
+    console.error('USDT create order error:', error);
+    res.status(500).json({ success: false, error: 'Failed to create USDT order.' });
   }
 });
 
-// Manual verification endpoint (called after user clicks "I've Sent Payment")
-router.post('/selar/verify/:reference', async (req, res) => {
+router.post('/usdt/verify/:reference', async (req, res) => {
   try {
     const { reference } = req.params;
-    const paymentData = global.selarPayments && global.selarPayments[reference];
+    const paymentData = global.usdtPayments && global.usdtPayments[reference];
+
     if (!paymentData) {
-      return res.status(404).json({ success: false, error: 'Order not found' });
+      return res.status(404).json({ success: false, error: 'Payment reference not found.' });
     }
-    
-    // Update status to pending verification
+
+    if (paymentData.status === 'verified') {
+      return res.json({ success: true, status: 'verified', message: 'Payment already verified.' });
+    }
+
+    if (paymentData.status === 'pending_verification') {
+      return res.json({ success: true, status: 'pending_verification', message: 'Verification already in progress.' });
+    }
+
     paymentData.status = 'pending_verification';
     paymentData.verificationStartTime = new Date();
-    
-    // Set auto-rejection timeout (30 seconds)
+
     setTimeout(async () => {
       try {
-        // Check if payment is still pending verification
-        const currentPaymentData = global.selarPayments && global.selarPayments[reference];
-        if (currentPaymentData && currentPaymentData.status === 'pending_verification') {
-          console.log(`⏰ Auto-rejecting payment ${reference} after 30 seconds - simulating admin reject`);
-          
-          // Simulate admin clicking reject button by calling the same admin-verify endpoint
+        const currentData = global.usdtPayments && global.usdtPayments[reference];
+        if (currentData && currentData.status === 'pending_verification') {
+          console.log(`⏰ Auto-rejecting USDT payment ${reference} after 30 seconds.`);
           try {
-            const axios = require('axios');
-            await axios.post(`http://localhost:${process.env.PORT || 5000}/api/payments/selar/admin-verify/${reference}`, {
-              verified: false
+            await axios.post(`${SERVER_BASE_URL}/api/payments/usdt/admin-verify/${reference}`, {
+              verified: false,
+              autoRejected: true
             });
-            console.log(`✅ Auto-rejection completed for ${reference}`);
           } catch (adminError) {
-            console.error(`❌ Failed to auto-reject ${reference}:`, adminError.message);
-            // Fallback: manually set status
-            currentPaymentData.status = 'rejected';
-            currentPaymentData.rejectedAt = new Date();
-            currentPaymentData.autoRejected = true;
+            console.error(`❌ Failed to auto-reject USDT payment ${reference}:`, adminError.message);
+            currentData.status = 'rejected';
+            currentData.rejectedAt = new Date();
+            currentData.autoRejected = true;
           }
         }
       } catch (timeoutError) {
-        console.error('❌ Auto-rejection timeout error:', timeoutError.message);
+        console.error('❌ USDT auto-rejection error:', timeoutError.message);
       }
-    }, 30000); // 30 seconds = 30,000 milliseconds
+    }, 30000);
 
-    // Send verification request to Telegram for admin
-    const telegramMessage = `🔎 <b>Verification needed</b> for Selar payment:
-<b>Email:</b> ${paymentData.email}
-<b>Package:</b> ${paymentData.packageName}
-<b>Reference:</b> ${reference}
+    const botToken = process.env.TELEGRAM_BOT_TOKEN || telegramBotToken;
+    const chatId = process.env.TELEGRAM_CHAT_ID || telegramChatId;
 
-⚠️ <b>Auto-rejects in 30 seconds if not verified</b>`;
-    
-    const url = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
-    const messageOptions = {
-      chat_id: process.env.TELEGRAM_CHAT_ID,
+    const telegramMessage = `🔔 <b>USDT payment verification</b>\n` +
+      `👤 <b>Contact:</b> ${paymentData.contact || 'Unknown'}\n` +
+      `📦 <b>Package:</b> ${paymentData.packageName}\n` +
+      `💵 <b>Amount:</b> ${paymentData.priceUsd} USDT\n` +
+      `🎯 <b>Site:</b> ${paymentData.siteName || 'Not specified'}\n` +
+      `🆔 <b>Reference:</b> ${reference}\n\n` +
+      `⚠️ <b>Auto-rejects in 30 seconds if not verified</b>`;
+
+    await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      chat_id: chatId,
       text: telegramMessage,
       parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [
           [
-            { text: '✅ VERIFY & SEND PREDICTIONS', callback_data: `verify_${reference}` },
+            { text: '✅ VERIFY & RELEASE TOKEN', callback_data: `verify_${reference}` },
             { text: '❌ REJECT PAYMENT', callback_data: `reject_${reference}` }
           ]
         ]
       }
-    };
-    
-    await axios.post(url, messageOptions);
-    
-    res.json({ success: true, status: 'pending_verification', message: 'Verification request sent to admin' });
-    
+    });
+
+    res.json({ success: true, status: 'pending_verification', reference });
   } catch (error) {
-    console.error('Selar manual verification error:', error);
+    console.error('USDT manual verification error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// Admin verification endpoint (called by Telegram webhook)
-router.post('/selar/admin-verify/:reference', async (req, res) => {
+router.post('/usdt/admin-verify/:reference', async (req, res) => {
   try {
     const { reference } = req.params;
     const { verified } = req.body;
-    const paymentData = global.selarPayments && global.selarPayments[reference];
-    
+    const paymentData = global.usdtPayments && global.usdtPayments[reference];
+
     if (!paymentData) {
-      return res.status(404).json({ success: false, error: 'Order not found' });
+      return res.status(404).json({ success: false, error: 'Payment reference not found.' });
     }
-    
-    // Don't allow verification/rejection of already processed payments
+
     if (paymentData.status !== 'pending_verification') {
-      return res.status(400).json({ 
-        success: false, 
-        error: `Payment is already ${paymentData.status}` 
-      });
+      return res.status(400).json({ success: false, error: `Payment already ${paymentData.status}` });
     }
-    
+
     if (verified) {
-      // Update payment status first
       paymentData.status = 'verified';
       paymentData.verifiedAt = new Date();
-      
-      try {
-        // Handle successful payment (this includes user update and predictions)
-        await handleSuccessfulPayment({
-          email: paymentData.email,
-          packageName: paymentData.packageName,
-          timeSlot: paymentData.timeSlot,
-          bettingSite: paymentData.bettingSite
-        });
-        
-        // Send verification notification to Telegram
-        const successMsg = `✅ <b>Selar payment verified</b> for ${paymentData.email} (${paymentData.packageName})`;
-        await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-          chat_id: process.env.TELEGRAM_CHAT_ID,
-          text: successMsg,
-          parse_mode: 'HTML'
-        });
-        
-      } catch (telegramError) {
-        console.error('❌ Failed to send verification Telegram message:', telegramError.message);
-        // Don't fail the entire request if Telegram fails
-      }
-      
-      res.json({ success: true, status: 'verified' });
-    } else {
-      paymentData.status = 'rejected';
-      paymentData.rejectedAt = new Date();
-      
-      // Notify Telegram of rejection
-      const rejectMsg = `❌ <b>Selar payment rejected</b> for ${paymentData.email} (${paymentData.packageName})`;
-      await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-        chat_id: process.env.TELEGRAM_CHAT_ID,
-        text: rejectMsg,
-        parse_mode: 'HTML'
-      });
-      
-      res.json({ success: true, status: 'rejected' });
+      await sendToTelegram(`✅ <b>USDT payment verified</b> for ${paymentData.contact || 'client'} (${paymentData.packageName})`);
+      return res.json({ success: true, status: 'verified' });
     }
+
+    paymentData.status = 'rejected';
+    paymentData.rejectedAt = new Date();
+    paymentData.autoRejected = Boolean(req.body?.autoRejected);
+    await sendToTelegram(`❌ <b>USDT payment rejected</b> for ${paymentData.contact || 'client'} (${paymentData.packageName})`);
+    res.json({ success: true, status: 'rejected' });
   } catch (error) {
-    console.error('Admin verification error:', error);
+    console.error('USDT admin verification error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// Check Selar payment status
-router.get('/selar/status/:reference', async (req, res) => {
+router.get('/usdt/status/:reference', async (req, res) => {
   try {
     const { reference } = req.params;
-    const paymentData = global.selarPayments && global.selarPayments[reference];
+    const paymentData = global.usdtPayments && global.usdtPayments[reference];
+
     if (!paymentData) {
-      return res.json({ success: false, status: 'not_found', message: `Payment order ${reference} not found` });
+      return res.status(404).json({ success: false, status: 'not_found', message: 'Payment reference not found.' });
     }
+
     res.json({
       success: true,
       reference,
-      status: paymentData.status || 'pending_verification',
-      email: paymentData.email,
+      status: paymentData.status,
       packageName: paymentData.packageName,
-      timestamp: paymentData.timestamp,
-      message: getSelarStatusMessage(paymentData.status)
+      priceUsd: paymentData.priceUsd,
+      contact: paymentData.contact,
+      siteName: paymentData.siteName,
+      autoRejected: paymentData.autoRejected || false
     });
   } catch (error) {
-    console.error('Selar status check error:', error);
-    res.status(500).json({ success: false, status: 'error', message: 'Unable to check payment status. Please try again.' });
-  }
-});
-
-// Helper function for Selar status messages
-function getSelarStatusMessage(status) {
-  const statusMessages = {
-    'pending_verification': 'Waiting for admin verification...',
-    'verified': 'Payment verified successfully!',
-    'rejected': 'Payment verification rejected'
-  };
-  return statusMessages[status] || 'Unknown status';
-}
-
-// ==================== SHARED PAYMENT HANDLER ====================
-
-async function handleSuccessfulPayment(metadata) {
-  try {
-    const { email, packageName, timeSlot, bettingSite } = metadata;
-
-    // Update user payment status
-    const user = await User.findOneAndUpdate(
-      { email },
-      { 
-        paymentVerified: true,
-        paymentDate: new Date(),
-        packageName,
-        timeSlot,
-        bettingSite
-      },
-      { new: true, upsert: true }
-    );
-
-    // Generate and store predictions
-    await generatePredictions(user);
-
-    console.log(`Payment verified for ${email}. Predictions unlocked!`);
-    return user;
-
-  } catch (error) {
-    console.error('Payment handling error:', error);
-    throw error;
-  }
-}
-
-// ==================== UTILITY FUNCTIONS ====================
-
-async function sendTelegramNotification(email, packageName) {
-  try {
-    const message = `🎉 New Payment Confirmed!\n\nEmail: ${email}\nPackage: ${packageName}\nTime: ${new Date().toLocaleString()}`;
-    
-    await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      chat_id: process.env.TELEGRAM_CHAT_ID,
-      text: message
-    });
-  } catch (error) {
-    console.error('Telegram notification error:', error);
-  }
-}
-
-async function generatePredictions(user) {
-  try {
-    // Generate predictions based on package
-    const predictions = generatePredictionMultipliers(user.packageName);
-    
-    // Store predictions (you might want to add a Predictions model)
-    user.predictions = predictions;
-    user.predictionTime = new Date();
-    await user.save();
-
-    return predictions;
-  } catch (error) {
-    console.error('Prediction generation error:', error);
-    throw error;
-  }
-}
-
-function generatePredictionMultipliers(packageName) {
-  const match = packageName.match(/^(\d+)x/i);
-  const targetMultiplier = match ? parseInt(match[1]) : 2;
-  const predictions = [];
-  
-  // Generate 5 predictions (3 close to target, 2 random)
-  for (let i = 0; i < 3; i++) {
-    const variance = Math.random() * 0.5 - 0.25; // +/- 25%
-    const multiplier = Math.max(1.1, targetMultiplier + variance);
-    predictions.push(parseFloat(multiplier.toFixed(2)));
-  }
-  
-  // Add 2 random predictions
-  for (let i = 0; i < 2; i++) {
-    const randomMultiplier = Math.random() * 10 + 1.1;
-    predictions.push(parseFloat(randomMultiplier.toFixed(2)));
-  }
-  
-  return predictions.sort((a, b) => b - a); // Sort descending
-}
-
-// Universal payment success handler (for Selar integration)
-router.post('/payment-success', async (req, res) => {
-  try {
-    const { reference, email, packageName, timeSlot, bettingSite } = req.body;
-    
-    if (!reference || !email || !packageName) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Missing required fields: reference, email, packageName' 
-      });
-    }
-
-    // Process the successful payment
-    const user = await handleSuccessfulPayment({
-      email,
-      packageName,
-      timeSlot,
-      bettingSite
-    });
-
-    // Clean up payment data from storage
-    if (global.selarPayments && global.selarPayments[reference]) {
-      delete global.selarPayments[reference];
-    }
-
-    res.json({ 
-      success: true, 
-      message: `Payment completed successfully via Selar!`,
-      user: {
-        email: user.email,
-        packageName: user.packageName,
-        paymentVerified: user.paymentVerified,
-        paymentDate: user.paymentDate
-      },
-      predictions: user.predictions,
-      redirect: '/dashboard' // Frontend can use this to redirect user
-    });
-
-  } catch (error) {
-    console.error('Payment success handler error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Failed to process payment success. Please contact support.',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    console.error('USDT status check error:', error);
+    res.status(500).json({ success: false, status: 'error', message: 'Unable to fetch payment status.' });
   }
 });
 
