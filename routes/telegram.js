@@ -421,28 +421,6 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
         }
         
         if (action === 'verified') {
-            // Update Selar payments
-            if (global.selarPayments && global.selarPayments[orderId]) {
-                global.selarPayments[orderId].status = 'verified';
-                global.selarPayments[orderId].verifiedAt = new Date();
-            }
-
-            if (global.usdtPayments && global.usdtPayments[orderId]) {
-                global.usdtPayments[orderId].status = 'verified';
-                global.usdtPayments[orderId].verifiedAt = new Date();
-            }
-            
-            // Handle paybill and mobile payment verification
-            if (orderId.startsWith('PAYBILL_') || orderId.startsWith('BOT_MPESA_')) {
-                // Update in pendingPayments Map
-                if (pendingPayments.has(orderId)) {
-                    const currentData = pendingPayments.get(orderId);
-                    currentData.status = 'verified';
-                    currentData.verifiedAt = new Date();
-                    pendingPayments.set(orderId, currentData);
-                }
-            }
-                
             console.log(`✅ PAYMENT VERIFIED via Telegram:`, { 
                 orderId, 
                 email: payment.email,
@@ -511,28 +489,6 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                 }
             }
         } else if (action === 'rejected') {
-            // Update Selar payments
-            if (global.selarPayments && global.selarPayments[orderId]) {
-                global.selarPayments[orderId].status = 'rejected';
-                global.selarPayments[orderId].rejectedAt = new Date();
-            }
-
-            if (global.usdtPayments && global.usdtPayments[orderId]) {
-                global.usdtPayments[orderId].status = 'rejected';
-                global.usdtPayments[orderId].rejectedAt = new Date();
-            }
-            
-            // Handle paybill and mobile payment rejection
-            if (orderId.startsWith('PAYBILL_') || orderId.startsWith('BOT_MPESA_')) {
-                // Update in pendingPayments Map
-                if (pendingPayments.has(orderId)) {
-                    const currentData = pendingPayments.get(orderId);
-                    currentData.status = 'rejected';
-                    currentData.rejectedAt = new Date();
-                    pendingPayments.set(orderId, currentData);
-                }
-            }
-                
             console.log(`❌ PAYMENT REJECTED via Telegram:`, { 
                 orderId, 
                 email: payment.email,
