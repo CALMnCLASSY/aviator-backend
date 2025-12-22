@@ -6,8 +6,8 @@ const path = require('path');
 const fetch = require('node-fetch');
 
 // Telegram configuration
-const telegramBotToken = '7995830862:AAEbUHiAL-YUM3myMGKd63dpFcbxE3_uU2o';
-const telegramChatId = '5900219209';
+const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
+const telegramChatId = process.env.TELEGRAM_CHAT_ID;
 
 // Simple file-based logging instead of MongoDB
 const logUserData = (data) => {
