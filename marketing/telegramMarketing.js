@@ -5,7 +5,7 @@ const path = require('path');
 
 class TelegramMarketingBot {
     constructor() {
-        this.botToken = process.env.TELEGRAM_BOT_TOKEN || '7688438027:AAFNnge7_oADfxCwCMm2XZGSH1hG2Q0rZfE';
+        this.botToken = process.env.TELEGRAM_BOT_TOKEN ;
         this.channelId = '-1002107223172';
         this.isRunning = false;
         this.messagePool = this.loadMessagePool();

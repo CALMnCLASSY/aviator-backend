@@ -31,8 +31,8 @@ const getTokenInfo = (durationKey) => {
 };
 
 // Telegram configuration
-const telegramBotToken = '7995830862:AAEbUHiAL-YUM3myMGKd63dpFcbxE3_uU2o';
-const telegramChatId = '5900219209';
+const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
+const telegramChatId = process.env.TELEGRAM_CHAT_ID;
 
 // Helper function to log payment attempts
 const logPaymentData = (data) => {
