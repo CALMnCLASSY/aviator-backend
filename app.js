@@ -11,31 +11,31 @@ const app = express();
 
 // Security middleware - Helmet
 app.use(helmet({
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            scriptSrc: ["'self'"],
-            imgSrc: ["'self'", "data:", "https:"],
-        },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
     },
-    hsts: {
-        maxAge: 31536000,
-        includeSubDomains: true,
-        preload: true
-    }
+  },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  }
 }));
 
 // Rate limiting
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 200, // limit each IP to 200 requests per windowMs (increased from 100)
-    message: {
-        success: false,
-        message: 'Too many requests from this IP, please try again later.'
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 200, // limit each IP to 200 requests per windowMs (increased from 100)
+  message: {
+    success: false,
+    message: 'Too many requests from this IP, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 // Apply rate limiting to all requests
@@ -43,71 +43,71 @@ app.use(limiter);
 
 // More reasonable rate limiting for payment endpoints
 const paymentLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 50, // limit each IP to 50 payment requests per windowMs (increased from 10)
-    message: {
-        success: false,
-        message: 'Too many payment requests, please try again later.'
-    }
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 50, // limit each IP to 50 payment requests per windowMs (increased from 10)
+  message: {
+    success: false,
+    message: 'Too many payment requests, please try again later.'
+  }
 });
 
 // CORS Configuration - More restrictive for production
 const corsOptions = {
-    origin: function (origin, callback) {
-        // Allow requests with no origin (mobile apps, etc.)
-        if (!origin) return callback(null, true);
-        
-        const allowedOrigins = [
-            'https://avisignals.com',
-            'https://aviatorhub.xyz',
-            'https://www.avisignals.com',
-            'https://avisignal.netlify.app',
-            'https://avisignalss.netlify.app'
-        ];
-        
-        // Allow localhost in development
-        if (process.env.NODE_ENV !== 'production') {
-            allowedOrigins.push(
-                'http://localhost:3000',
-                'http://127.0.0.1:4040',
-                /^http:\/\/localhost:\d+$/,
-                /^http:\/\/127\.0\.0\.1:\d+$/
-            );
-        }
-        
-        const isAllowed = allowedOrigins.some(allowed => {
-            if (typeof allowed === 'string') {
-                return origin === allowed;
-            } else if (allowed instanceof RegExp) {
-                return allowed.test(origin);
-            }
-            return false;
-        });
-        
-        if (isAllowed) {
-            console.log('CORS allowed origin:', origin);
-            callback(null, true);
-        } else {
-            console.log('CORS blocked origin:', origin);
-            // Still allow the request but log it
-            callback(null, true);
-        }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: [
-        'Origin',
-        'X-Requested-With',
-        'Content-Type',
-        'Accept',
-        'Authorization',
-        'Cache-Control',
-        'Pragma',
-        'ngrok-skip-browser-warning'
-    ],
-    exposedHeaders: ['Content-Range', 'X-Content-Range'],
-    preflightContinue: false,
-    optionsSuccessStatus: 200
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, etc.)
+    if (!origin) return callback(null, true);
+
+    const allowedOrigins = [
+      'https://avisignals.com',
+      'https://aviatorhub.xyz',
+      'https://www.avisignals.com',
+      'https://avisignal.netlify.app',
+      'https://avisignalss.netlify.app'
+    ];
+
+    // Allow localhost in development
+    if (process.env.NODE_ENV !== 'production') {
+      allowedOrigins.push(
+        'http://localhost:3000',
+        'http://127.0.0.1:4040',
+        /^http:\/\/localhost:\d+$/,
+        /^http:\/\/127\.0\.0\.1:\d+$/
+      );
+    }
+
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (typeof allowed === 'string') {
+        return origin === allowed;
+      } else if (allowed instanceof RegExp) {
+        return allowed.test(origin);
+      }
+      return false;
+    });
+
+    if (isAllowed) {
+      console.log('CORS allowed origin:', origin);
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      // Still allow the request but log it
+      callback(null, true);
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: [
+    'Origin',
+    'X-Requested-With',
+    'Content-Type',
+    'Accept',
+    'Authorization',
+    'Cache-Control',
+    'Pragma',
+    'ngrok-skip-browser-warning'
+  ],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  preflightContinue: false,
+  optionsSuccessStatus: 200
 };
 
 // Apply CORS middleware
@@ -117,30 +117,30 @@ app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
 // Parse JSON bodies with increased limits and timeout
-app.use(bodyParser.json({ 
-    limit: '50mb',
-    extended: true
+app.use(bodyParser.json({
+  limit: '50mb',
+  extended: true
 }));
 
 // Parse URL-encoded bodies
-app.use(bodyParser.urlencoded({ 
-    limit: '50mb',
-    extended: true
+app.use(bodyParser.urlencoded({
+  limit: '50mb',
+  extended: true
 }));
 
 // Add timeout handling
 app.use((req, res, next) => {
-    // Set timeout for all requests
-    req.setTimeout(30000, () => {
-        console.log('Request timeout:', req.method, req.url);
-        if (!res.headersSent) {
-            res.status(408).json({
-                success: false,
-                message: 'Request timeout'
-            });
-        }
-    });
-    next();
+  // Set timeout for all requests
+  req.setTimeout(30000, () => {
+    console.log('Request timeout:', req.method, req.url);
+    if (!res.headersSent) {
+      res.status(408).json({
+        success: false,
+        message: 'Request timeout'
+      });
+    }
+  });
+  next();
 });
 
 // Log incoming requests (helpful for debugging)
@@ -169,6 +169,9 @@ app.use('/api/telegram', telegramRoutes);
 const marketingRoutes = require('./routes/marketing');
 app.use('/api/marketing', marketingRoutes);
 
+const roundRoutes = require('./routes/rounds');
+app.use('/api/rounds', roundRoutes);
+
 // Simple logging system instead of MongoDB
 const fs = require('fs');
 const path = require('path');
@@ -195,9 +198,9 @@ app.get('/', (req, res) => {
 // Health check endpoint
 app.get('/health', (req, res) => {
   const logFiles = fs.existsSync(logsDir) ? fs.readdirSync(logsDir).length : 0;
-  
-  res.json({ 
-    status: 'OK', 
+
+  res.json({
+    status: 'OK',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
     database: 'File-based logging (MongoDB removed)',
@@ -215,9 +218,9 @@ app.use((error, req, res, next) => {
     // Don't send response as client has already disconnected
     return;
   }
-  
+
   console.error('Global error handler:', error);
-  
+
   // CORS error
   if (error.message === 'Not allowed by CORS') {
     return res.status(403).json({
@@ -226,7 +229,7 @@ app.use((error, req, res, next) => {
       origin: req.get('origin')
     });
   }
-  
+
   // Only send response if headers haven't been sent
   if (!res.headersSent) {
     res.status(error.status || 500).json({
@@ -254,18 +257,18 @@ const server = app.listen(PORT, () => {
   console.log(`📁 Local logs: ${logsDir}`);
   console.log(`✅ MongoDB: Removed - Using Telegram + file logs instead!`);
   console.log(`🎯 Simple, efficient, cost-effective solution!`);
-  
+
   // Initialize Telegram Marketing Bot
   console.log(`🚀 Initializing Telegram Marketing Bot...`);
   const TelegramMarketingBot = require('./marketing/telegramMarketing');
   const marketingBot = new TelegramMarketingBot();
-  
+
   // Start marketing bot after 30 seconds (let server fully initialize)
   setTimeout(() => {
     marketingBot.start();
     console.log(`📢 Marketing Bot: Started! Broadcasting to channel every 30-120 minutes`);
   }, 30000);
-  
+
   // Store marketing bot instance globally for admin controls
   app.locals.marketingBot = marketingBot;
 });
