@@ -40,7 +40,7 @@ const logPaymentData = (data) => {
   if (!fs.existsSync(logsDir)) {
     fs.mkdirSync(logsDir);
   }
-  
+
   const logFile = path.join(logsDir, `payments-${new Date().toISOString().split('T')[0]}.log`);
   const logEntry = `${new Date().toISOString()} - ${JSON.stringify(data)}\n`;
   fs.appendFileSync(logFile, logEntry);
@@ -51,7 +51,7 @@ const logPaymentData = (data) => {
 const sendToTelegram = async (message) => {
   try {
     console.log('📤 Sending to Telegram:', message.substring(0, 100) + '...');
-    
+
     const response = await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
       method: 'POST',
       headers: {
@@ -63,17 +63,17 @@ const sendToTelegram = async (message) => {
         parse_mode: 'HTML'
       })
     });
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`❌ Telegram API error: ${response.status} - ${errorText}`);
       return { success: false, error: `Telegram API error: ${response.status}`, details: errorText };
     }
-    
+
     const result = await response.json();
     console.log('✅ Telegram message sent successfully:', result.message_id);
     return { success: true, result };
-    
+
   } catch (error) {
     console.error('❌ Failed to send to Telegram:', error.message);
     return { success: false, error: error.message };
@@ -86,7 +86,7 @@ router.use((req, res, next) => {
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, ngrok-skip-browser-warning');
   res.header('Access-Control-Allow-Credentials', 'true');
-  
+
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
@@ -235,8 +235,8 @@ router.post('/usdt/admin-verify/:reference', async (req, res) => {
       const tokenDetails = paymentData.tokenInfo || null;
       await sendToTelegram(`✅ <b>USDT payment verified</b> for ${paymentData.contact || 'client'} (${paymentData.packageName})${tokenDetails ? `\n\n🔑 Token: <code>${tokenDetails.code}</code> (${tokenDetails.label})` : ''}`);
 
-      return res.json({ 
-        success: true, 
+      return res.json({
+        success: true,
         status: 'verified',
         tokenDetails
       });
@@ -284,12 +284,12 @@ router.post('/bot/create-payment/:orderId', async (req, res) => {
   try {
     const { orderId } = req.params;
     const { customerInfo } = req.body; // Optional customer info
-    
+
     console.log(`🤖 Creating bot payment verification for order: ${orderId}`);
-    
+
     // Initialize bot payments storage if it doesn't exist
     global.botPayments = global.botPayments || {};
-    
+
     // Store bot payment data
     global.botPayments[orderId] = {
       status: 'pending_verification',
@@ -297,7 +297,7 @@ router.post('/bot/create-payment/:orderId', async (req, res) => {
       orderId,
       customerInfo: customerInfo || {}
     };
-    
+
     // Set auto-rejection timeout (1 minute)
     setTimeout(async () => {
       try {
@@ -307,16 +307,16 @@ router.post('/bot/create-payment/:orderId', async (req, res) => {
           // Auto-reject the bot payment
           currentBotPayment.status = 'auto_rejected';
           currentBotPayment.autoRejectedAt = new Date();
-          
+
           console.log(`⏰ Auto-rejecting bot payment ${orderId} after 1 minute timeout`);
-          
+
           // Send auto-rejection notification to Telegram
           const autoRejectMsg = `⏰ <b>Auto-rejected bot activation</b> (1min timeout)
           
 🤖 Order: ${orderId}
 ❌ Reason: No admin verification within 1 minute
 ⏰ Auto-rejected at: ${new Date().toLocaleString()}`;
-          
+
           await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
             chat_id: process.env.TELEGRAM_CHAT_ID,
             text: autoRejectMsg,
@@ -327,7 +327,7 @@ router.post('/bot/create-payment/:orderId', async (req, res) => {
         console.error('❌ Bot auto-rejection timeout error:', timeoutError.message);
       }
     }, 60000); // 1 minute = 60,000 milliseconds
-    
+
     // Send verification request to Telegram for admin
     const telegramMessage = `🤖 <b>Bot activation verification needed</b>
     
@@ -336,7 +336,7 @@ router.post('/bot/create-payment/:orderId', async (req, res) => {
 ⏰ Created: ${new Date().toLocaleString()}
 
 ⚠️ <b>Auto-rejects in 1 minute if not verified</b>`;
-    
+
     await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
       chat_id: process.env.TELEGRAM_CHAT_ID,
       text: telegramMessage,
@@ -350,76 +350,95 @@ router.post('/bot/create-payment/:orderId', async (req, res) => {
         ]
       }
     });
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       orderId,
       status: 'pending_verification',
-      message: 'Bot payment verification request sent to admin' 
+      message: 'Bot payment verification request sent to admin'
     });
-    
+
   } catch (error) {
     console.error('❌ Bot payment creation error:', error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: 'Failed to create bot payment verification',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
 
-// Bot activation verification endpoint
+// Bot activation verification endpoint (handles both approve and reject)
 router.post('/bot/verify/:orderId', async (req, res) => {
   try {
     const { orderId } = req.params;
-    const { adminId } = req.body;
-    
+    const { adminId, action } = req.body; // action: 'approve' or 'reject'
+
+    console.log(`🔄 Bot verify endpoint called for ${orderId} with action: ${action}`);
+
     // Initialize bot payments storage if it doesn't exist
     global.botPayments = global.botPayments || {};
-    
+
     const botPayment = global.botPayments[orderId];
-    
+
     if (!botPayment) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Bot payment not found' 
+      console.log(`❌ Bot payment ${orderId} not found in global.botPayments`);
+      return res.status(404).json({
+        success: false,
+        error: 'Bot payment not found'
       });
     }
-    
+
     // Check if payment was already auto-rejected
     if (botPayment.status === 'auto_rejected') {
-      return res.status(400).json({ 
-        success: false, 
+      return res.status(400).json({
+        success: false,
         error: 'Cannot verify - bot payment was auto-rejected due to timeout',
         autoRejectedAt: botPayment.autoRejectedAt
       });
     }
-    
+
     if (botPayment.status !== 'pending_verification') {
-      return res.status(400).json({ 
-        success: false, 
-        error: `Bot payment is already ${botPayment.status}` 
+      return res.status(400).json({
+        success: false,
+        error: `Bot payment is already ${botPayment.status}`
       });
     }
-    
-    // Update bot payment status to verified
+
+    // Handle approve or reject based on action
+    if (action === 'reject') {
+      botPayment.status = 'rejected';
+      botPayment.rejectedAt = new Date();
+      botPayment.rejectedBy = adminId;
+
+      console.log(`❌ Bot payment ${orderId} rejected by admin ${adminId}`);
+
+      return res.json({
+        success: true,
+        orderId,
+        status: 'rejected',
+        message: 'Bot activation rejected successfully'
+      });
+    }
+
+    // Default: approve
     botPayment.status = 'verified';
     botPayment.verifiedAt = new Date();
     botPayment.verifiedBy = adminId;
-    
+
     console.log(`✅ Bot payment ${orderId} verified by admin ${adminId}`);
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       orderId,
       status: 'verified',
-      message: 'Bot activation verified successfully' 
+      message: 'Bot activation verified successfully'
     });
-    
+
   } catch (error) {
     console.error('❌ Bot verification error:', error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: 'Bot verification failed',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
@@ -430,29 +449,29 @@ router.post('/bot/verify/:orderId', async (req, res) => {
 router.get('/bot/status/:orderId', async (req, res) => {
   try {
     const { orderId } = req.params;
-    
+
     // Check bot payment status
     const botPayment = global.botPayments?.[orderId];
-    
+
     if (!botPayment) {
-      return res.json({ 
-        success: false, 
+      return res.json({
+        success: false,
         status: 'not_found',
         message: 'Bot payment not found'
       });
     }
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       status: botPayment.status,
       orderId,
       processedAt: botPayment.activatedAt || botPayment.rejectedAt
     });
-    
+
   } catch (error) {
     console.error('❌ Bot status check error:', error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: 'Failed to check bot status'
     });
   }
@@ -464,21 +483,21 @@ router.get('/bot/status/:orderId', async (req, res) => {
 // Payment verification endpoints
 router.post('/verify-payment', async (req, res) => {
   try {
-    const { 
-      contact, 
-      packageName, 
-      amount, 
+    const {
+      contact,
+      packageName,
+      amount,
       paymentMethod,
       transactionId,
       source,
-      timestamp 
+      timestamp
     } = req.body;
 
     // Validate required fields
     if (!contact || !packageName) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        error: 'Contact and package name are required' 
+        error: 'Contact and package name are required'
       });
     }
 
@@ -515,7 +534,7 @@ Please verify this payment and approve/reject access.`;
     await sendToTelegram(telegramMessage);
 
     // Return success with verification ID
-    res.json({ 
+    res.json({
       success: true,
       message: 'Payment verification request submitted successfully',
       verificationId: Date.now().toString(),
@@ -525,7 +544,7 @@ Please verify this payment and approve/reject access.`;
 
   } catch (error) {
     console.error('❌ Payment verification error:', error);
-    
+
     // Log error
     logPaymentData({
       error: error.message,
@@ -535,7 +554,7 @@ Please verify this payment and approve/reject access.`;
       action: 'verification_error'
     });
 
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       error: 'Failed to submit payment verification',
       message: 'Please try again or contact support'
@@ -546,12 +565,12 @@ Please verify this payment and approve/reject access.`;
 // Admin payment approval endpoint
 router.post('/approve-payment', async (req, res) => {
   try {
-    const { 
-      contact, 
-      packageName, 
+    const {
+      contact,
+      packageName,
       verificationId,
       adminNote,
-      timestamp 
+      timestamp
     } = req.body;
 
     const approvalData = {
@@ -581,7 +600,7 @@ User can now access their package.`;
 
     await sendToTelegram(telegramMessage);
 
-    res.json({ 
+    res.json({
       success: true,
       message: 'Payment approved successfully',
       status: 'approved',
@@ -590,7 +609,7 @@ User can now access their package.`;
 
   } catch (error) {
     console.error('❌ Payment approval error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       error: 'Failed to approve payment'
     });
@@ -600,12 +619,12 @@ User can now access their package.`;
 // Admin payment rejection endpoint
 router.post('/reject-payment', async (req, res) => {
   try {
-    const { 
-      contact, 
-      packageName, 
+    const {
+      contact,
+      packageName,
       verificationId,
       rejectionReason,
-      timestamp 
+      timestamp
     } = req.body;
 
     const rejectionData = {
@@ -635,7 +654,7 @@ User payment was not verified.`;
 
     await sendToTelegram(telegramMessage);
 
-    res.json({ 
+    res.json({
       success: true,
       message: 'Payment rejected',
       status: 'rejected',
@@ -644,7 +663,7 @@ User payment was not verified.`;
 
   } catch (error) {
     console.error('❌ Payment rejection error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       error: 'Failed to reject payment'
     });
@@ -655,21 +674,21 @@ User payment was not verified.`;
 router.get('/bot/status/:orderId', async (req, res) => {
   try {
     const { orderId } = req.params;
-    
+
     // Initialize bot payments storage if it doesn't exist
     global.botPayments = global.botPayments || {};
-    
+
     const botPayment = global.botPayments[orderId];
-    
+
     if (!botPayment) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Bot payment not found' 
+      return res.status(404).json({
+        success: false,
+        error: 'Bot payment not found'
       });
     }
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       orderId,
       status: botPayment.status,
       message: getBotStatusMessage(botPayment.status),
@@ -677,11 +696,11 @@ router.get('/bot/status/:orderId', async (req, res) => {
       verifiedAt: botPayment.verifiedAt || null,
       autoRejectedAt: botPayment.autoRejectedAt || null
     });
-    
+
   } catch (error) {
     console.error('❌ Bot status check error:', error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: 'Failed to check bot payment status',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });

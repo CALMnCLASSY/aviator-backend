@@ -7,9 +7,14 @@ const ADMIN_PASSWORD = 'thecnccompanybot';
 
 // CORS middleware for admin routes
 router.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
+    // Allow file:// access (origin: null) and all other origins
+    const origin = req.headers.origin || 'null';
+    res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.header('Access-Control-Allow-Credentials', 'true');
+
+    console.log(`Admin route accessed from origin: ${origin}`);
 
     if (req.method === 'OPTIONS') {
         return res.sendStatus(200);
@@ -43,12 +48,25 @@ router.get('/stats', (req, res) => {
     const onlineUsers = global.activeSessions ? global.activeSessions.size : 0;
 
     let pendingCount = 0;
+
+    // Count pending from all sources
     if (global.botPayments) {
         Object.values(global.botPayments).forEach(p => {
             if (p.status === 'pending_verification') pendingCount++;
         });
     }
-    // Also check other payment globals if needed
+
+    if (global.usdtPayments) {
+        Object.values(global.usdtPayments).forEach(p => {
+            if (p.status === 'pending_verification') pendingCount++;
+        });
+    }
+
+    if (global.selarPayments) {
+        Object.values(global.selarPayments).forEach(p => {
+            if (p.status === 'pending_verification') pendingCount++;
+        });
+    }
 
     // Revenue mock (in real app, this would query DB)
     const todayRevenue = 0; // consistent with current in-memory structure
@@ -64,73 +82,42 @@ router.get('/stats', (req, res) => {
     });
 });
 
-// Get Pending Verifications
+// Get Pending Verifications (SIMPLIFIED - Only Bot Activations)
 router.get('/pending-verifications', (req, res) => {
+    console.log('📊 Admin panel requesting pending verifications');
     const pendingList = [];
 
-    // 1. Bot Payments
+    // Only Bot Payments (1-hour activations)
     try {
         if (global.botPayments) {
-            Object.values(global.botPayments).forEach(payment => {
+            console.log(`📦 Checking ${Object.keys(global.botPayments).length} bot payments`);
+            Object.entries(global.botPayments).forEach(([orderId, payment]) => {
+                console.log(`  - ${orderId}: status=${payment.status}`);
                 if (payment.status === 'pending_verification') {
                     pendingList.push({
-                        id: payment.orderId,
+                        id: orderId,
                         type: 'bot_activation',
-                        user: payment.customerInfo?.email || 'Unknown',
-                        amount: 'Free Trial / Bot',
-                        site: 'Aviator Bot',
-                        timestamp: payment.createdAt,
+                        user: payment.customerInfo?.email || payment.customerInfo?.contact || 'Unknown',
+                        amount: 'Free Trial / Bot Activation',
+                        site: payment.customerInfo?.bettingSite || 'Aviator Bot',
+                        timestamp: payment.createdAt || new Date(),
+                        packageName: payment.customerInfo?.packageName || '1 Hour Trial',
+                        duration: '1 hour',
                         raw: payment
                     });
                 }
             });
+        } else {
+            console.log('⚠️ global.botPayments is not initialized');
         }
-    } catch (e) { console.error('Error fetching bot payments', e); }
-
-    // 2. USDT Payments
-    try {
-        if (global.usdtPayments) {
-            Object.values(global.usdtPayments).forEach(payment => {
-                if (payment.status === 'pending_verification') {
-                    // Find key for this payment
-                    const key = Object.keys(global.usdtPayments).find(k => global.usdtPayments[k] === payment);
-                    pendingList.push({
-                        id: key || 'unknown',
-                        type: 'usdt',
-                        user: payment.contact,
-                        amount: `${payment.priceUsd} USDT`,
-                        site: payment.siteName,
-                        timestamp: payment.createdAt,
-                        raw: payment
-                    });
-                }
-            });
-        }
-    } catch (e) { console.error('Error fetching usdt payments', e); }
-
-    // 3. Selar/Card Payments (if stored in global.selarPayments)
-    try {
-        if (global.selarPayments) {
-            Object.values(global.selarPayments).forEach(payment => {
-                if (payment.status === 'pending_verification') {
-                    const key = Object.keys(global.selarPayments).find(k => global.selarPayments[k] === payment);
-                    pendingList.push({
-                        id: key || 'unknown',
-                        type: 'selar',
-                        user: payment.email,
-                        amount: `${payment.amount} ${payment.currency}`,
-                        site: payment.bettingSite,
-                        timestamp: payment.createdAt,
-                        raw: payment
-                    });
-                }
-            });
-        }
-    } catch (e) { console.error('Error fetching selar payments', e); }
+    } catch (e) {
+        console.error('❌ Error fetching bot payments:', e);
+    }
 
     // Sort by timestamp desc
     pendingList.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
+    console.log(`✅ Returning ${pendingList.length} pending verifications to admin panel`);
     res.json({
         success: true,
         count: pendingList.length,

@@ -178,6 +178,10 @@ app.use('/api/admin', adminRoutes);
 // Initialize global in-memory session store for "Online Users"
 global.activeSessions = new Map();
 
+// Initialize global bot payments store
+global.botPayments = global.botPayments || {};
+console.log('✅ Initialized global.botPayments storage');
+
 // Middleware to track online users
 app.use((req, res, next) => {
   // Try to identify user from request
