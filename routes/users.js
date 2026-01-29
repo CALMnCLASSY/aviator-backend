@@ -15,7 +15,7 @@ const logUserData = (data) => {
   if (!fs.existsSync(logsDir)) {
     fs.mkdirSync(logsDir);
   }
-  
+
   const logFile = path.join(logsDir, `users-${new Date().toISOString().split('T')[0]}.log`);
   const logEntry = `${new Date().toISOString()} - ${JSON.stringify(data)}\n`;
   fs.appendFileSync(logFile, logEntry);
@@ -26,7 +26,7 @@ const logUserData = (data) => {
 const sendToTelegram = async (message) => {
   try {
     console.log('📤 Sending to Telegram:', message.substring(0, 100) + '...');
-    
+
     const response = await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
       method: 'POST',
       headers: {
@@ -38,17 +38,17 @@ const sendToTelegram = async (message) => {
         parse_mode: 'HTML'
       })
     });
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`❌ Telegram API error: ${response.status} - ${errorText}`);
       return { success: false, error: `Telegram API error: ${response.status}`, details: errorText };
     }
-    
+
     const result = await response.json();
     console.log('✅ Telegram message sent successfully:', result.message_id);
     return { success: true, result };
-    
+
   } catch (error) {
     console.error('❌ Failed to send to Telegram:', error.message);
     return { success: false, error: error.message };
@@ -61,7 +61,7 @@ router.use((req, res, next) => {
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, ngrok-skip-browser-warning');
   res.header('Access-Control-Allow-Credentials', 'true');
-  
+
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
@@ -75,9 +75,9 @@ router.post('/', async (req, res) => {
 
     // Validate required fields
     if (!email || !packageName) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        error: 'Email and package name are required' 
+        error: 'Email and package name are required'
       });
     }
 
@@ -94,7 +94,20 @@ router.post('/', async (req, res) => {
     logUserData(userData);
 
     // Return success (Telegram will have the actual data)
-    res.status(201).json({ 
+
+    // Explicitly update global session
+    if (global.activeSessions) {
+      global.activeSessions.set(email, {
+        email,
+        package: packageName,
+        site: bettingSite,
+        timeSlot,
+        lastSeen: Date.now(),
+        ip: req.ip
+      });
+    }
+
+    res.status(201).json({
       success: true,
       message: 'User data received and logged successfully',
       data: userData,
@@ -103,7 +116,7 @@ router.post('/', async (req, res) => {
 
   } catch (err) {
     console.error('Error in user route:', err);
-    
+
     // Still log the data even if there's an error
     const { email, packageName, timeSlot, bettingSite } = req.body;
     logUserData({
@@ -114,8 +127,8 @@ router.post('/', async (req, res) => {
       timestamp: new Date().toISOString(),
       error: err.message
     });
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       success: false,
       error: 'Server error',
       message: err.message
@@ -127,19 +140,19 @@ router.post('/', async (req, res) => {
 router.get('/:email', async (req, res) => {
   try {
     const { email } = req.params;
-    
+
     // This is simplified - in practice, Telegram has all the data you need
     // For demonstration purposes, we'll return a success response
-    res.json({ 
+    res.json({
       success: true,
       message: 'User lookup completed',
       note: 'All user data is available in your Telegram chat',
       email: email
     });
-    
+
   } catch (err) {
     console.error('Error in get user route:', err);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       error: 'Server error',
       message: err.message
@@ -156,9 +169,9 @@ router.post('/index-login', async (req, res) => {
 
     // Validate required fields
     if (!contact) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        error: 'Contact is required' 
+        error: 'Contact is required'
       });
     }
 
@@ -190,7 +203,7 @@ router.post('/index-login', async (req, res) => {
     console.log('✅ Index login Telegram result:', telegramResult);
 
     // Return success with session info
-    res.json({ 
+    res.json({
       success: true,
       message: 'Access logged successfully',
       sessionData: {
@@ -203,7 +216,7 @@ router.post('/index-login', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Index login error:', error);
-    
+
     // Log error but still return success to avoid breaking frontend flow
     logUserData({
       error: error.message,
@@ -212,7 +225,7 @@ router.post('/index-login', async (req, res) => {
       source: 'index-login-error'
     });
 
-    res.json({ 
+    res.json({
       success: true,
       message: 'Access logged (fallback mode)',
       warning: 'Some features may be limited'
@@ -226,9 +239,9 @@ router.post('/validate-session', async (req, res) => {
     const { contact, sessionToken, timestamp } = req.body;
 
     if (!contact || !sessionToken) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        error: 'Contact and session token are required' 
+        error: 'Contact and session token are required'
       });
     }
 
@@ -249,7 +262,7 @@ router.post('/validate-session', async (req, res) => {
       valid: sessionData.valid
     });
 
-    res.json({ 
+    res.json({
       success: true,
       sessionData,
       message: 'Session is valid'
@@ -257,8 +270,8 @@ router.post('/validate-session', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Session validation error:', error);
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       success: false,
       error: 'Session validation failed'
     });
@@ -293,15 +306,15 @@ router.post('/logout', async (req, res) => {
       }
     }
 
-    res.json({ 
+    res.json({
       success: true,
       message: 'Logout successful'
     });
 
   } catch (error) {
     console.error('❌ Logout error:', error);
-    
-    res.json({ 
+
+    res.json({
       success: true,
       message: 'Logout processed'
     });

@@ -172,6 +172,50 @@ app.use('/api/marketing', marketingRoutes);
 const roundRoutes = require('./routes/rounds');
 app.use('/api/rounds', roundRoutes);
 
+const adminRoutes = require('./routes/admin');
+app.use('/api/admin', adminRoutes);
+
+// Initialize global in-memory session store for "Online Users"
+global.activeSessions = new Map();
+
+// Middleware to track online users
+app.use((req, res, next) => {
+  // Try to identify user from request
+  let userId = null;
+  let userInfo = {};
+
+  // Check query params, body, or headers
+  if (req.query.email) userId = req.query.email;
+  else if (req.body && req.body.email) userId = req.body.email;
+  else if (req.body && req.body.contact) userId = req.body.contact; // Phone/Email
+
+  // If not explicit, track by IP
+  if (!userId) {
+    userId = `anon_${req.ip}`;
+    userInfo.isAnonymous = true;
+  }
+
+  // Capture extra info if available
+  if (req.body && req.body.packageName) userInfo.package = req.body.packageName;
+  if (req.body && req.body.bettingSite) userInfo.site = req.body.bettingSite;
+
+  // Update session
+  if (global.activeSessions) {
+    const now = Date.now();
+    const existing = global.activeSessions.get(userId) || {};
+
+    global.activeSessions.set(userId, {
+      ...existing,
+      ...userInfo,
+      lastSeen: now,
+      ip: req.ip,
+      userAgent: req.headers['user-agent']
+    });
+  }
+
+  next();
+});
+
 // Simple logging system instead of MongoDB
 const fs = require('fs');
 const path = require('path');

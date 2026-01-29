@@ -11,14 +11,6 @@
     "🎰 {{site}} AVIATOR\n📈 Basic Signal: x2.4 potential\n🚀 Premium signals: https://avisignals.com\n🎁 Get FREE TRIAL access now!",
     "🎰 {{site}} AVIATOR\n🚨 Free Signal: x2.6 max recommended 🔥\n💰 More predictions: https://avisignals.com\n🆓 Start FREE TRIAL - No payment required!"
   ],
-  "kenyan_site_signals": [
-    "🇰🇪 BETIKA AVIATOR\n🔥 Kenyan Favorite: x3.2 target recommended! 🚀\n💰 Perfect for M-Pesa deposits → {{link}}",
-    "🇰🇪 ODIBETS AVIATOR\n⚡ Odi Special: x2.8 cashout looking solid! 💯\n🎯 Best odds for Kenyan players → {{link}}",
-    "🇰🇪 SPORTPESA AVIATOR\n🏆 SportPesa Classic: x4.1 potential this round! 🔥\n📱 Mobile-friendly betting → {{link}}",
-    "🇰🇪 BETIKA AVIATOR\n🎲 Betika Bonus Round: x5.3 target - act fast! ⚡\n💸 Withdraw via M-Pesa → {{link}}",
-    "🇰🇪 ODIBETS AVIATOR\n💎 OdiBets Premium: x6.7 multiplier incoming! 🚀\n🎊 Best for Kenyan punters → {{link}}",
-    "🇰🇪 SPORTPESA AVIATOR\n🔥 SportPesa Power Play: x3.9 cashout recommended! 💰\n🇰🇪 Trusted by Kenyans → {{link}}"
-  ],
   "cancelled_signals": [
     "❌ SIGNAL CANCELLED\n\n🔄 Analysis continuing...\n⏳ Waiting for new signal...\n💡 Be patient, opportunity will come!",
     "❌ SIGNAL CANCELLED\n\n📊 Market conditions changed\n🔄 Recalculating predictions...\n⏳ New signal incoming soon!",
@@ -69,11 +61,33 @@
     "🚨 ALERT: Exceptional patterns forming right now!"
   ],
   "betting_sites": [
-    "1Win", "Betika", "OdiBets", "SportPesa", "Bet365", "1xBet", "22Bet", "Betway", 
-    "Melbet", "Hollywoodbets", "Parimatch", "Stake"
+    "1Win",
+    "Betika",
+    "OdiBets",
+    "SportPesa",
+    "Bet365",
+    "1xBet",
+    "22Bet",
+    "Betway",
+    "Melbet",
+    "Hollywoodbets",
+    "Parimatch",
+    "Stake"
   ],
-  "priority_sites": ["1Win", "Betika", "OdiBets", "SportPesa", "Bet365", "1xBet", "22Bet", "Betway", "Melbet", "Hollywoodbets", "Parimatch", "Stake"],
-  
+  "priority_sites": [
+    "1Win",
+    "Betika",
+    "OdiBets",
+    "SportPesa",
+    "Bet365",
+    "1xBet",
+    "22Bet",
+    "Betway",
+    "Melbet",
+    "Hollywoodbets",
+    "Parimatch",
+    "Stake"
+  ],
   "image_captions": [
     "💸 Big win incoming! Who's next?",
     "🤑 Jackpot vibes today 🚀",
@@ -90,7 +104,7 @@
     "📊 LIVE: Round #{round} - Pattern analysis in progress...",
     "⚡ LIVE UPDATE: High volatility detected. Big multiplier incoming!",
     "🔥 LIVE: Current session showing 94% win rate!",
-    "📈 LIVE STATS: 8/10 predictions hit target today!",
+    "📈 LIVE STATS: 9/10 predictions hit target today!",
     "🎯 LIVE: Tracking multiple high-value opportunities...",
     "⚡ LIVE FEED: AI confidence level at 96% for next round!"
   ]
