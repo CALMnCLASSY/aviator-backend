@@ -567,10 +567,9 @@ class TelegramMarketingBot {
     }
 
     getNextPostDelay() {
-        // Updated interval: 2 hours to 4 hours to reduce daily volume
-        // 120 minutes to 240 minutes
-        const minDelay = 120 * 60 * 1000;
-        const maxDelay = 240 * 60 * 1000;
+        // Updated interval: 30 to 90 minutes (User Requested)
+        const minDelay = 30 * 60 * 1000;
+        const maxDelay = 90 * 60 * 1000;
         return Math.floor(Math.random() * (maxDelay - minDelay) + minDelay);
     }
 
@@ -590,6 +589,12 @@ class TelegramMarketingBot {
         this.isRunning = true;
         console.log('✅ Marketing bot started successfully');
         console.log(`📊 Daily Limits: Max 3 signals, ~20 total messages.`);
+
+        // Send first post immediately (as requested)
+        console.log('🚀 Sending immediate startup post...');
+        this.sendMarketingPost();
+
+        // Then schedule the next one
         this.scheduleNextPost();
     }
 
