@@ -20,6 +20,8 @@ class TelegramMarketingBot {
         this.signalsToday = 0;
         this.messagesSentToday = 0;
         this.videoSentToday = false;
+        this.howToPaySentToday = false;
+        this.isFirstRun = true;
         this.lastDay = new Date().getDate();
 
         // Define logical message flows
@@ -82,6 +84,12 @@ class TelegramMarketingBot {
                 { type: 'promos', weight: 0.7, delay: [2, 5] }
             ]
         };
+
+        // How to Pay Flow
+        this.messageFlows.howToPayFlow = [
+            { type: 'how_to_pay_video', weight: 1 },
+            { type: 'classy_promos', weight: 0.8, delay: [5, 10] } // Follow up 5-10 mins later
+        ];
 
         this.personas = {
             bot: {
@@ -368,6 +376,7 @@ class TelegramMarketingBot {
                 this.signalsToday = 0;
                 this.messagesSentToday = 0;
                 this.videoSentToday = false;
+                this.howToPaySentToday = false;
                 this.lastDay = today;
             }
 
@@ -396,9 +405,19 @@ class TelegramMarketingBot {
         const random = Math.random();
 
         // Priority 1: Send daily video if not sent yet
-        if (!this.videoSentToday) {
-            selectedFlow = 'videoTutorial';
-            console.log('🎥 Priority: Sending daily video tutorial');
+        // Create pool of pending videos
+        const pendingVideos = [];
+        if (!this.videoSentToday) pendingVideos.push('videoTutorial');
+        if (!this.howToPaySentToday) pendingVideos.push('howToPayFlow');
+
+        // Priority 1: Send daily videos if not sent yet
+        // But if it's the very first run, 50% chance to skip video priority to avoid predictability
+        let skipVideoPriority = this.isFirstRun && Math.random() < 0.5;
+
+        if (pendingVideos.length > 0 && !skipVideoPriority) {
+            // Pick a random pending video flow
+            selectedFlow = this.randomFromArray(pendingVideos);
+            console.log(`🎥 Priority: Sending daily video (${selectedFlow})`);
         }
         // Priority 2: Manage signals (limit to 3 per day)
         else if (this.signalsToday < 3) {
@@ -428,6 +447,8 @@ class TelegramMarketingBot {
 
             console.log('📊 quota met. Switching to marketing flows.');
         }
+
+        this.isFirstRun = false; // Mark first run as complete
 
         console.log(`🎯 Starting new flow: ${selectedFlow}`);
         this.currentFlow = selectedFlow;
@@ -464,6 +485,8 @@ class TelegramMarketingBot {
         // Mark video as sent if this was the video step
         if (currentStep.type === 'tutorial_video' && success) {
             this.videoSentToday = true;
+        } else if (currentStep.type === 'how_to_pay_video' && success) {
+            this.howToPaySentToday = true;
         }
 
         // Schedule next step if there is one
@@ -507,6 +530,13 @@ class TelegramMarketingBot {
                 const caption = this.randomFromArray(messages);
 
                 console.log('🎥 Sending tutorial video');
+                return await this.sendVideoToChannel(videoPath, caption);
+            } else if (messageType === 'how_to_pay_video') {
+                const videoPath = path.join(__dirname, 'howtopay.mp4');
+                const messages = this.messagePool[messageType] || ["💳 How to pay and activate the bot!"];
+                const caption = this.randomFromArray(messages);
+
+                console.log('💳 Sending how-to-pay video');
                 return await this.sendVideoToChannel(videoPath, caption);
             }
 
@@ -625,7 +655,8 @@ class TelegramMarketingBot {
             stats: {
                 signals: this.signalsToday,
                 messages: this.messagesSentToday,
-                videoSent: this.videoSentToday
+                videoSent: this.videoSentToday,
+                howToPaySent: this.howToPaySentToday
             }
         };
     }
