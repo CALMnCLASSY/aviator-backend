@@ -152,4 +152,43 @@ router.get('/online-users', (req, res) => {
     });
 });
 
+// Admin activation codes management
+router.get('/activation-codes', (req, res) => {
+    res.json({
+        success: true,
+        codes: global.activationCodes || {}
+    });
+});
+
+router.post('/rotate-activation-codes', (req, res) => {
+    function generateActivationCode(length = 6) {
+        return Math.random().toString(36).substring(2, 2 + length).toUpperCase();
+    }
+
+    const { site } = req.body;
+
+    if (site && global.activationCodes[site]) {
+        // Rotate specific site
+        global.activationCodes[site] = {
+            daily: generateActivationCode(),
+            threeDay: generateActivationCode()
+        };
+    } else {
+        // Rotate all sites
+        const defaultSites = ['SportyBet', '1xBet', 'Betika', 'Betway', 'Parimatch', 'BangBet', 'Bet365', 'OdiBets', 'Helabet', 'MozzartBet', 'Aviator', 'Other'];
+        global.activationCodes = {};
+        defaultSites.forEach(s => {
+            global.activationCodes[s] = {
+                daily: generateActivationCode(),
+                threeDay: generateActivationCode()
+            };
+        });
+    }
+
+    res.json({
+        success: true,
+        codes: global.activationCodes
+    });
+});
+
 module.exports = router;

@@ -197,15 +197,7 @@ router.post('/usdt/verify/:reference', async (req, res) => {
     await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       chat_id: chatId,
       text: telegramMessage,
-      parse_mode: 'HTML',
-      reply_markup: {
-        inline_keyboard: [
-          [
-            { text: '✅ VERIFY & RELEASE TOKEN', callback_data: `verify_${reference}` },
-            { text: '❌ REJECT PAYMENT', callback_data: `reject_${reference}` }
-          ]
-        ]
-      }
+      parse_mode: 'HTML'
     });
 
     res.json({ success: true, status: 'pending_verification', reference });
@@ -340,15 +332,7 @@ router.post('/bot/create-payment/:orderId', async (req, res) => {
     await axios.post(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
       chat_id: process.env.TELEGRAM_CHAT_ID,
       text: telegramMessage,
-      parse_mode: 'HTML',
-      reply_markup: {
-        inline_keyboard: [
-          [
-            { text: '✅ VERIFY BOT ACTIVATION', callback_data: `bot_verify_${orderId}` },
-            { text: '❌ REJECT ACTIVATION', callback_data: `bot_reject_${orderId}` }
-          ]
-        ]
-      }
+      parse_mode: 'HTML'
     });
 
     res.json({
@@ -445,13 +429,15 @@ router.post('/bot/verify/:orderId', async (req, res) => {
   }
 });
 
-// Bot payment status endpoint
+// Bot payment status check endpoint
 router.get('/bot/status/:orderId', async (req, res) => {
   try {
     const { orderId } = req.params;
 
-    // Check bot payment status
-    const botPayment = global.botPayments?.[orderId];
+    // Initialize bot payments storage if it doesn't exist
+    global.botPayments = global.botPayments || {};
+
+    const botPayment = global.botPayments[orderId];
 
     if (!botPayment) {
       return res.json({
@@ -461,12 +447,26 @@ router.get('/bot/status/:orderId', async (req, res) => {
       });
     }
 
-    res.json({
+    let responseJson = {
       success: true,
       status: botPayment.status,
       orderId,
       processedAt: botPayment.activatedAt || botPayment.rejectedAt
-    });
+    };
+
+    if (botPayment.status === 'verified') {
+      const plan = botPayment.customerInfo?.packageName || '1 hour';
+      const site = botPayment.customerInfo?.bettingSite || 'Other';
+      const siteCodes = global.activationCodes[site] || global.activationCodes['Other'];
+
+      if (plan.includes('3') || plan.includes('72')) {
+        responseJson.code = siteCodes?.threeDay;
+      } else {
+        responseJson.code = siteCodes?.daily;
+      }
+    }
+
+    res.json(responseJson);
 
   } catch (error) {
     console.error('❌ Bot status check error:', error);
@@ -474,6 +474,68 @@ router.get('/bot/status/:orderId', async (req, res) => {
       success: false,
       error: 'Failed to check bot status'
     });
+  }
+});
+
+router.post('/bot/reveal-code', async (req, res) => {
+  try {
+    // endpoint to get the active code after a paystack payment success
+    const { reference, orderId, plan, site } = req.body;
+    const lookupSite = site || 'Other';
+    const siteCodes = global.activationCodes[lookupSite] || global.activationCodes['Other'];
+
+    let code = siteCodes?.daily;
+    if (plan && (plan.includes('3') || plan.includes('72'))) {
+      code = siteCodes?.threeDay;
+    }
+
+    console.log(`Revealing code for order/reference: ${reference || orderId}, Site: ${lookupSite}, Code: ${code}`);
+
+    res.json({
+      success: true,
+      code: code
+    });
+  } catch (e) {
+    res.status(500).json({ success: false });
+  }
+});
+
+router.post('/bot/activate-code', async (req, res) => {
+  try {
+    const { code, contact, site } = req.body;
+    const lookupSite = site || 'Other';
+    const siteCodes = global.activationCodes[lookupSite] || global.activationCodes['Other'];
+
+    function generateActivationCode(length = 6) {
+      return Math.random().toString(36).substring(2, 2 + length).toUpperCase();
+    }
+
+    if (!siteCodes) {
+      return res.status(400).json({ success: false, error: 'Site not found.' });
+    }
+
+    let activePlan = null;
+    if (code === siteCodes.daily) {
+      activePlan = '1 hour';
+      siteCodes.daily = generateActivationCode();
+      console.log(`🔃 Daily Activation Code Used for ${lookupSite}! New code generated: ${siteCodes.daily}`);
+    } else if (code === siteCodes.threeDay) {
+      activePlan = '72 hours';
+      siteCodes.threeDay = generateActivationCode();
+      console.log(`🔃 3-Day Activation Code Used for ${lookupSite}! New code generated: ${siteCodes.threeDay}`);
+    }
+
+    if (activePlan) {
+      // Notify admin via telegram
+      await sendToTelegram(`🔑 <b>ACTIVATION CODE USED</b>\n\n👤 User: <code>${contact || 'Unknown'}</code>\n🌍 Site: <b>${lookupSite}</b>\n⏳ Plan: <b>${activePlan}</b>\n\n<i>A new code for ${lookupSite} was generated automatically.</i>`);
+
+      return res.json({ success: true, plan: activePlan, message: 'Bot successfully activated!' });
+    } else {
+      return res.status(400).json({ success: false, error: 'Invalid or expired activation code.' });
+    }
+  } catch (e) {
+    console.error('Code activation error:', e);
+    res.status(500).json({ success: false, error: 'Failed to verify activation code.' });
   }
 });
 

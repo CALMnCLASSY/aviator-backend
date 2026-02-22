@@ -182,6 +182,21 @@ global.activeSessions = new Map();
 global.botPayments = global.botPayments || {};
 console.log('✅ Initialized global.botPayments storage');
 
+function generateActivationCode(length = 6) {
+  return Math.random().toString(36).substring(2, 2 + length).toUpperCase();
+}
+const defaultSites = ['SportyBet', '1xBet', 'Betika', 'Betway', 'Parimatch', 'BangBet', 'Bet365', 'OdiBets', 'Helabet', 'MozzartBet', 'Aviator', 'Other'];
+global.activationCodes = global.activationCodes || {};
+defaultSites.forEach(site => {
+  if (!global.activationCodes[site]) {
+    global.activationCodes[site] = {
+      daily: generateActivationCode(),
+      threeDay: generateActivationCode()
+    };
+  }
+});
+console.log('✅ Initialized site-specific global.activationCodes');
+
 // Middleware to track online users
 app.use((req, res, next) => {
   // Try to identify user from request

