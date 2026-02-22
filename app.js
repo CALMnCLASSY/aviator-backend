@@ -185,8 +185,30 @@ console.log('✅ Initialized global.botPayments storage');
 function generateActivationCode(length = 6) {
   return Math.random().toString(36).substring(2, 2 + length).toUpperCase();
 }
+
+const CODES_FILE = path.join(__dirname, 'activation_codes.json');
+
+function saveActivationCodes() {
+  try {
+    fs.writeFileSync(CODES_FILE, JSON.stringify(global.activationCodes, null, 2));
+  } catch (e) {
+    console.error('Failed to persist activation codes:', e.message);
+  }
+}
+
+// Load persisted codes from disk if available, otherwise generate fresh ones
+let persistedCodes = {};
+try {
+  if (fs.existsSync(CODES_FILE)) {
+    persistedCodes = JSON.parse(fs.readFileSync(CODES_FILE, 'utf8'));
+    console.log('✅ Loaded persisted activation codes from disk');
+  }
+} catch (e) {
+  console.warn('Could not load activation_codes.json, starting fresh:', e.message);
+}
+
 const defaultSites = ['SportyBet', '1xBet', 'Betika', 'Betway', 'Parimatch', 'BangBet', 'Bet365', 'OdiBets', 'Helabet', 'MozzartBet', 'Aviator', 'Other'];
-global.activationCodes = global.activationCodes || {};
+global.activationCodes = persistedCodes;
 defaultSites.forEach(site => {
   if (!global.activationCodes[site]) {
     global.activationCodes[site] = {
@@ -195,6 +217,9 @@ defaultSites.forEach(site => {
     };
   }
 });
+
+// Save the initial state
+saveActivationCodes();
 console.log('✅ Initialized site-specific global.activationCodes');
 
 // Middleware to track online users

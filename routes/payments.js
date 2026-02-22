@@ -514,24 +514,40 @@ router.post('/bot/activate-code', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Site not found.' });
     }
 
+    // Debug: log what was received vs what we hold
+    const receivedCode = (code || '').trim().toUpperCase();
+    const storedDaily = (siteCodes.daily || '').trim().toUpperCase();
+    const storedThreeDay = (siteCodes.threeDay || '').trim().toUpperCase();
+    console.log(`🔍 Code check for ${lookupSite}: received="${receivedCode}" | daily="${storedDaily}" | 3day="${storedThreeDay}"`);
+
     let activePlan = null;
-    if (code === siteCodes.daily) {
+    if (receivedCode === storedDaily) {
       activePlan = '1 hour';
       siteCodes.daily = generateActivationCode();
       console.log(`🔃 Daily Activation Code Used for ${lookupSite}! New code generated: ${siteCodes.daily}`);
-    } else if (code === siteCodes.threeDay) {
+    } else if (receivedCode === storedThreeDay) {
       activePlan = '72 hours';
       siteCodes.threeDay = generateActivationCode();
       console.log(`🔃 3-Day Activation Code Used for ${lookupSite}! New code generated: ${siteCodes.threeDay}`);
     }
 
     if (activePlan) {
+      // Persist the new code to disk so it survives server restarts
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const codesFile = path.join(__dirname, '..', 'activation_codes.json');
+        fs.writeFileSync(codesFile, JSON.stringify(global.activationCodes, null, 2));
+      } catch (saveErr) {
+        console.error('Failed to persist rotated code:', saveErr.message);
+      }
+
       // Notify admin via telegram
       await sendToTelegram(`🔑 <b>ACTIVATION CODE USED</b>\n\n👤 User: <code>${contact || 'Unknown'}</code>\n🌍 Site: <b>${lookupSite}</b>\n⏳ Plan: <b>${activePlan}</b>\n\n<i>A new code for ${lookupSite} was generated automatically.</i>`);
 
       return res.json({ success: true, plan: activePlan, message: 'Bot successfully activated!' });
     } else {
-      return res.status(400).json({ success: false, error: 'Invalid or expired activation code.' });
+      return res.status(400).json({ success: false, error: 'Invalid or expired activation code. Please get the latest code from the admin panel.' });
     }
   } catch (e) {
     console.error('Code activation error:', e);
