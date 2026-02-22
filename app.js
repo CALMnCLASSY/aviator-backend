@@ -186,6 +186,8 @@ function generateActivationCode(length = 6) {
   return Math.random().toString(36).substring(2, 2 + length).toUpperCase();
 }
 
+const fs = require('fs');
+const path = require('path');
 const CODES_FILE = path.join(__dirname, 'activation_codes.json');
 
 function saveActivationCodes() {
