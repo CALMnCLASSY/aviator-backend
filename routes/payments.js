@@ -503,7 +503,11 @@ router.post('/bot/reveal-code', async (req, res) => {
 router.post('/bot/activate-code', async (req, res) => {
   try {
     const { code, contact, site } = req.body;
-    const lookupSite = site || 'Other';
+
+    // Case-insensitive site lookup — bot may send 'Sportybet', backend has 'SportyBet' etc.
+    const siteInput = (site || '').trim().toLowerCase();
+    const matchedKey = Object.keys(global.activationCodes || {}).find(k => k.toLowerCase() === siteInput);
+    const lookupSite = matchedKey || 'Other';
     const siteCodes = global.activationCodes[lookupSite] || global.activationCodes['Other'];
 
     function generateActivationCode(length = 6) {
@@ -511,7 +515,7 @@ router.post('/bot/activate-code', async (req, res) => {
     }
 
     if (!siteCodes) {
-      return res.status(400).json({ success: false, error: 'Site not found.' });
+      return res.status(400).json({ success: false, error: 'No activation codes available. Contact admin.' });
     }
 
     // Debug: log what was received vs what we hold

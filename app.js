@@ -149,6 +149,14 @@ app.use((req, res, next) => {
   next();
 });
 
+// Serve static files from the public folder (admin.html etc.)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Explicit admin panel route — accessible at /control
+app.get('/control', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
 const userRoutes = require('./routes/users');
 app.use('/api/users', userRoutes);
 

@@ -185,6 +185,15 @@ router.post('/rotate-activation-codes', (req, res) => {
         });
     }
 
+    // Persist rotated codes to disk
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        fs.writeFileSync(path.join(__dirname, '..', 'activation_codes.json'), JSON.stringify(global.activationCodes, null, 2));
+    } catch (e) {
+        console.error('Failed to save rotated codes:', e.message);
+    }
+
     res.json({
         success: true,
         codes: global.activationCodes
