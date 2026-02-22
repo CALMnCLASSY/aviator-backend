@@ -263,8 +263,6 @@ app.use((req, res, next) => {
 });
 
 // Simple logging system instead of MongoDB
-const fs = require('fs');
-const path = require('path');
 
 // Create logs directory if it doesn't exist
 const logsDir = path.join(__dirname, 'logs');
