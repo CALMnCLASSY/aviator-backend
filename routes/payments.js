@@ -551,7 +551,7 @@ router.post('/bot/activate-code', async (req, res) => {
 
       return res.json({ success: true, plan: activePlan, message: 'Bot successfully activated!' });
     } else {
-      return res.status(400).json({ success: false, error: 'Invalid or expired activation code. Please get the latest code from the admin panel.' });
+      return res.status(400).json({ success: false, error: 'Invalid or expired activation code. Please get the latest code by clicking Get Code below.' });
     }
   } catch (e) {
     console.error('Code activation error:', e);
