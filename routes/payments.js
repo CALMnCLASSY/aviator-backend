@@ -521,6 +521,14 @@ router.post('/bot/activate-code', async (req, res) => {
 
     // Debug: log what was received vs what we hold
     const receivedCode = (code || '').trim().toUpperCase();
+
+    // Check for Master Admin Code first
+    if (global.MASTER_ADMIN_CODE && receivedCode === global.MASTER_ADMIN_CODE.toUpperCase()) {
+      console.log(`🌟 MASTER ADMIN CODE USED by ${contact || 'Unknown'}`);
+      await sendToTelegram(`🌟 <b>MASTER ADMIN ACTIVATION</b>\n\n👤 User: <code>${contact || 'Unknown'}</code>\n🌍 Site: <b>${lookupSite}</b>\n⏳ Plan: <b>Unlimited Access</b>\n\n<i>Master access granted using the admin bypass code.</i>`);
+      return res.json({ success: true, plan: 'unlimited', message: 'Master Access Granted!' });
+    }
+
     const storedDaily = (siteCodes.daily || '').trim().toUpperCase();
     const storedFreeTrial = (siteCodes.freeTrial || '').trim().toUpperCase();
     console.log(`🔍 Code check for ${lookupSite}: received="${receivedCode}" | daily="${storedDaily}" | freeTrial="${storedFreeTrial}"`);

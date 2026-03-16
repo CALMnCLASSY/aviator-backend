@@ -199,6 +199,10 @@ function generateActivationCode(length = 6) {
 
 const CODES_FILE = path.join(__dirname, 'activation_codes.json');
 
+// Master Admin Code - Unrestricted access to any site
+global.MASTER_ADMIN_CODE = process.env.MASTER_ADMIN_CODE || 'AVI99';
+console.log(`🔑 Master Admin Code is active`);
+
 function saveActivationCodes() {
   try {
     fs.writeFileSync(CODES_FILE, JSON.stringify(global.activationCodes, null, 2));
