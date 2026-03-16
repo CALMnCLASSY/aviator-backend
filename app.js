@@ -223,20 +223,30 @@ try {
 }
 
 const defaultSites = ['SportyBet', '1xBet', 'Betika', 'Betway', 'Parimatch', 'BangBet', 'Bet365', 'OdiBets', 'Helabet', 'MozzartBet', 'Aviator', 'Other'];
+const freeTrialWhitelistedSites = ['ClassyBet', '1Win', '1win', 'classybet'];
+
 global.activationCodes = persistedCodes;
 defaultSites.forEach(site => {
   if (!global.activationCodes[site]) {
     global.activationCodes[site] = {
-      freeTrial: generateActivationCode(),
       daily: generateActivationCode()
     };
+    // Only add freeTrial if whitelisted
+    if (freeTrialWhitelistedSites.includes(site)) {
+      global.activationCodes[site].freeTrial = generateActivationCode();
+    }
   } else {
     // Migrate old threeDay key to freeTrial
     if (global.activationCodes[site].threeDay && !global.activationCodes[site].freeTrial) {
       global.activationCodes[site].freeTrial = global.activationCodes[site].threeDay;
       delete global.activationCodes[site].threeDay;
     }
-    if (!global.activationCodes[site].freeTrial) {
+
+    // Restriction: Remove freeTrial if site is not whitelisted
+    if (!freeTrialWhitelistedSites.includes(site)) {
+      delete global.activationCodes[site].freeTrial;
+    } else if (!global.activationCodes[site].freeTrial) {
+      // Whitelisted but missing
       global.activationCodes[site].freeTrial = generateActivationCode();
     }
   }

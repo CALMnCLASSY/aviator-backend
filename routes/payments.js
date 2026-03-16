@@ -483,6 +483,13 @@ router.post('/bot/reveal-code', async (req, res) => {
 
     let code;
     if (isFree) {
+      const freeTrialWhitelistedSites = ['ClassyBet', '1Win', '1win', 'classybet'];
+      if (!freeTrialWhitelistedSites.includes(lookupSite)) {
+        return res.status(403).json({ 
+          success: false, 
+          error: 'Free trial is only available for ClassyBet and 1Win at this time.' 
+        });
+      }
       // Free trial — return freeTrial code
       code = siteCodes?.freeTrial;
     } else {

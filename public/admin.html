@@ -527,9 +527,13 @@
             sites.forEach(site => {
                 const row = document.createElement('tr');
                 const codes = codesObj[site];
+                const freeTrialDisplay = codes.freeTrial 
+                    ? `<div class="status-badge" style="background:rgba(46,204,113,0.2); color:#2ecc71; display:inline-block; font-family:monospace; font-size:1.1em; letter-spacing:1px;">${codes.freeTrial}</div>`
+                    : '<span style="color:#7f8c8d; font-size:0.9em; font-style:italic;">Paid Only</span>';
+
                 row.innerHTML = `
                     <td style="font-weight:600;">${site}</td>
-                    <td><div class="status-badge" style="background:rgba(46,204,113,0.2); color:#2ecc71; display:inline-block; font-family:monospace; font-size:1.1em; letter-spacing:1px;">${codes.freeTrial || '-'}</div></td>
+                    <td>${freeTrialDisplay}</td>
                     <td><div class="status-badge" style="background:rgba(241,196,15,0.2); color:#f1c40f; display:inline-block; font-family:monospace; font-size:1.1em; letter-spacing:1px;">${codes.daily || '-'}</div></td>
                     <td>
                         <button class="action-btn btn-refresh" onclick="rotateCodes('${site}')" title="Rotate codes for this site">

@@ -167,21 +167,30 @@ router.post('/rotate-activation-codes', (req, res) => {
 
     const { site } = req.body;
 
+    const freeTrialWhitelistedSites = ['ClassyBet', '1Win', '1win', 'classybet'];
+
     if (site && global.activationCodes[site]) {
         // Rotate specific site
-        global.activationCodes[site] = {
-            freeTrial: generateActivationCode(),
+        const newCodes = {
             daily: generateActivationCode()
         };
+        // Only generate freeTrial if whitelisted
+        if (freeTrialWhitelistedSites.includes(site)) {
+            newCodes.freeTrial = generateActivationCode();
+        }
+        global.activationCodes[site] = newCodes;
     } else {
         // Rotate all sites
         const defaultSites = ['SportyBet', '1xBet', 'Betika', 'Betway', 'Parimatch', 'BangBet', 'Bet365', 'OdiBets', 'Helabet', 'MozzartBet', 'Aviator', 'Other'];
         global.activationCodes = {};
         defaultSites.forEach(s => {
-            global.activationCodes[s] = {
-                freeTrial: generateActivationCode(),
+            const siteCodes = {
                 daily: generateActivationCode()
             };
+            if (freeTrialWhitelistedSites.includes(s)) {
+                siteCodes.freeTrial = generateActivationCode();
+            }
+            global.activationCodes[s] = siteCodes;
         });
     }
 
