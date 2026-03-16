@@ -319,8 +319,8 @@
                     <thead>
                         <tr>
                             <th>Site Name</th>
-                            <th>Daily Code (24h)</th>
-                            <th>3-Day Code (72h)</th>
+                            <th>Free Trial Code (30s)</th>
+                            <th>Daily Code (All Day)</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -529,8 +529,8 @@
                 const codes = codesObj[site];
                 row.innerHTML = `
                     <td style="font-weight:600;">${site}</td>
+                    <td><div class="status-badge" style="background:rgba(46,204,113,0.2); color:#2ecc71; display:inline-block; font-family:monospace; font-size:1.1em; letter-spacing:1px;">${codes.freeTrial || '-'}</div></td>
                     <td><div class="status-badge" style="background:rgba(241,196,15,0.2); color:#f1c40f; display:inline-block; font-family:monospace; font-size:1.1em; letter-spacing:1px;">${codes.daily || '-'}</div></td>
-                    <td><div class="status-badge" style="background:rgba(46,204,113,0.2); color:#2ecc71; display:inline-block; font-family:monospace; font-size:1.1em; letter-spacing:1px;">${codes.threeDay || '-'}</div></td>
                     <td>
                         <button class="action-btn btn-refresh" onclick="rotateCodes('${site}')" title="Rotate codes for this site">
                             <i class="fas fa-sync"></i>

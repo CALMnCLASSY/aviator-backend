@@ -170,8 +170,8 @@ router.post('/rotate-activation-codes', (req, res) => {
     if (site && global.activationCodes[site]) {
         // Rotate specific site
         global.activationCodes[site] = {
-            daily: generateActivationCode(),
-            threeDay: generateActivationCode()
+            freeTrial: generateActivationCode(),
+            daily: generateActivationCode()
         };
     } else {
         // Rotate all sites
@@ -179,8 +179,8 @@ router.post('/rotate-activation-codes', (req, res) => {
         global.activationCodes = {};
         defaultSites.forEach(s => {
             global.activationCodes[s] = {
-                daily: generateActivationCode(),
-                threeDay: generateActivationCode()
+                freeTrial: generateActivationCode(),
+                daily: generateActivationCode()
             };
         });
     }

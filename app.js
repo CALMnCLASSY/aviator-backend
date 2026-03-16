@@ -223,9 +223,18 @@ global.activationCodes = persistedCodes;
 defaultSites.forEach(site => {
   if (!global.activationCodes[site]) {
     global.activationCodes[site] = {
-      daily: generateActivationCode(),
-      threeDay: generateActivationCode()
+      freeTrial: generateActivationCode(),
+      daily: generateActivationCode()
     };
+  } else {
+    // Migrate old threeDay key to freeTrial
+    if (global.activationCodes[site].threeDay && !global.activationCodes[site].freeTrial) {
+      global.activationCodes[site].freeTrial = global.activationCodes[site].threeDay;
+      delete global.activationCodes[site].threeDay;
+    }
+    if (!global.activationCodes[site].freeTrial) {
+      global.activationCodes[site].freeTrial = generateActivationCode();
+    }
   }
 });
 

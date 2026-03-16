@@ -459,11 +459,8 @@ router.get('/bot/status/:orderId', async (req, res) => {
       const site = botPayment.customerInfo?.bettingSite || 'Other';
       const siteCodes = global.activationCodes[site] || global.activationCodes['Other'];
 
-      if (plan.includes('3') || plan.includes('72')) {
-        responseJson.code = siteCodes?.threeDay;
-      } else {
-        responseJson.code = siteCodes?.daily;
-      }
+      // Always use daily code for paid activations
+      responseJson.code = siteCodes?.daily;
     }
 
     res.json(responseJson);
@@ -479,17 +476,21 @@ router.get('/bot/status/:orderId', async (req, res) => {
 
 router.post('/bot/reveal-code', async (req, res) => {
   try {
-    // endpoint to get the active code after a paystack payment success
-    const { reference, orderId, plan, site } = req.body;
+    // endpoint to get the active code after a payment success or free trial
+    const { reference, orderId, plan, site, isFree } = req.body;
     const lookupSite = site || 'Other';
     const siteCodes = global.activationCodes[lookupSite] || global.activationCodes['Other'];
 
-    let code = siteCodes?.daily;
-    if (plan && (plan.includes('3') || plan.includes('72'))) {
-      code = siteCodes?.threeDay;
+    let code;
+    if (isFree) {
+      // Free trial — return freeTrial code
+      code = siteCodes?.freeTrial;
+    } else {
+      // Paid plan — return daily code
+      code = siteCodes?.daily;
     }
 
-    console.log(`Revealing code for order/reference: ${reference || orderId}, Site: ${lookupSite}, Code: ${code}`);
+    console.log(`Revealing code for order/reference: ${reference || orderId}, Site: ${lookupSite}, isFree: ${isFree}, Code: ${code}`);
 
     res.json({
       success: true,
@@ -521,18 +522,18 @@ router.post('/bot/activate-code', async (req, res) => {
     // Debug: log what was received vs what we hold
     const receivedCode = (code || '').trim().toUpperCase();
     const storedDaily = (siteCodes.daily || '').trim().toUpperCase();
-    const storedThreeDay = (siteCodes.threeDay || '').trim().toUpperCase();
-    console.log(`🔍 Code check for ${lookupSite}: received="${receivedCode}" | daily="${storedDaily}" | 3day="${storedThreeDay}"`);
+    const storedFreeTrial = (siteCodes.freeTrial || '').trim().toUpperCase();
+    console.log(`🔍 Code check for ${lookupSite}: received="${receivedCode}" | daily="${storedDaily}" | freeTrial="${storedFreeTrial}"`);
 
     let activePlan = null;
     if (receivedCode === storedDaily) {
       activePlan = '1 hour';
       siteCodes.daily = generateActivationCode();
       console.log(`🔃 Daily Activation Code Used for ${lookupSite}! New code generated: ${siteCodes.daily}`);
-    } else if (receivedCode === storedThreeDay) {
-      activePlan = '72 hours';
-      siteCodes.threeDay = generateActivationCode();
-      console.log(`🔃 3-Day Activation Code Used for ${lookupSite}! New code generated: ${siteCodes.threeDay}`);
+    } else if (receivedCode === (siteCodes.freeTrial || '').trim().toUpperCase()) {
+      activePlan = '30 seconds';
+      siteCodes.freeTrial = generateActivationCode();
+      console.log(`🔃 Free Trial Code Used for ${lookupSite}! New code generated: ${siteCodes.freeTrial}`);
     }
 
     if (activePlan) {
