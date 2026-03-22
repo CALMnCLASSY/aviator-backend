@@ -478,7 +478,11 @@ router.post('/bot/reveal-code', async (req, res) => {
   try {
     // endpoint to get the active code after a payment success or free trial
     const { reference, orderId, plan, site, isFree } = req.body;
-    const lookupSite = site || 'Other';
+    
+    // Case-insensitive site lookup — bot may send 'classybet', backend has 'ClassyBet' etc.
+    const siteInput = (site || '').trim().toLowerCase();
+    const matchedKey = Object.keys(global.activationCodes || {}).find(k => k.toLowerCase() === siteInput);
+    const lookupSite = matchedKey || 'Other';
     const siteCodes = global.activationCodes[lookupSite] || global.activationCodes['Other'];
 
     let code;
