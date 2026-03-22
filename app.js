@@ -200,7 +200,7 @@ function generateActivationCode(length = 6) {
 const CODES_FILE = path.join(__dirname, 'activation_codes.json');
 
 // Master Admin Code - Unrestricted access to any site
-global.MASTER_ADMIN_CODE = process.env.MASTER_ADMIN_CODE || 'AVI99';
+global.MASTER_ADMIN_CODE = process.env.MASTER_ADMIN_CODE || 'OJ204';
 console.log(`🔑 Master Admin Code is active`);
 
 function saveActivationCodes() {
@@ -223,7 +223,7 @@ try {
 }
 
 const defaultSites = ['SportyBet', '1xBet', 'Betika', 'Betway', 'Parimatch', 'BangBet', 'Bet365', 'OdiBets', 'Helabet', 'MozzartBet', 'Aviator', 'Other'];
-const freeTrialWhitelistedSites = ['ClassyBet', '1Win', '1win', 'classybet'];
+const freeTrialWhitelistedSites = ['ClassyBet', 'classybet'];
 
 global.activationCodes = persistedCodes;
 defaultSites.forEach(site => {

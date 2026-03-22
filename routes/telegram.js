@@ -404,7 +404,7 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
             });
 
             // Determine the correct verification endpoint based on payment type
-            const baseUrl = process.env.BASE_URL?.replace(/\/$/, '') || 'https://aviator-backend-komp.onrender.com';
+            const baseUrl = process.env.BASE_URL?.replace(/\/$/, '') || 'https://back.avisignals.com';
             let verifyUrl;
 
             if (payment.paymentType === 'selar' || global.selarPayments?.[orderId]) {
@@ -472,7 +472,7 @@ async function handlePaymentVerification(orderId, chatId, messageId, action) {
             });
 
             // Determine the correct rejection endpoint based on payment type
-            const baseUrl = process.env.BASE_URL?.replace(/\/$/, '') || 'https://aviator-backend-komp.onrender.com';
+            const baseUrl = process.env.BASE_URL?.replace(/\/$/, '') || 'https://back.avisignals.com';
             let rejectUrl;
 
             if (payment.paymentType === 'selar' || global.selarPayments?.[orderId]) {

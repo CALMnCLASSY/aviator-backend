@@ -483,7 +483,7 @@ router.post('/bot/reveal-code', async (req, res) => {
 
     let code;
     if (isFree) {
-      const freeTrialWhitelistedSites = ['ClassyBet', '1Win', '1win', 'classybet'];
+      const freeTrialWhitelistedSites = ['ClassyBet', 'classybet'];
       if (!freeTrialWhitelistedSites.includes(lookupSite)) {
         return res.status(403).json({ 
           success: false, 
@@ -546,7 +546,7 @@ router.post('/bot/activate-code', async (req, res) => {
       siteCodes.daily = generateActivationCode();
       console.log(`🔃 Daily Activation Code Used for ${lookupSite}! New code generated: ${siteCodes.daily}`);
     } else if (receivedCode === (siteCodes.freeTrial || '').trim().toUpperCase()) {
-      activePlan = '30 seconds';
+      activePlan = '1 hour';
       siteCodes.freeTrial = generateActivationCode();
       console.log(`🔃 Free Trial Code Used for ${lookupSite}! New code generated: ${siteCodes.freeTrial}`);
     }
