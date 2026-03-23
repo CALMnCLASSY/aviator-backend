@@ -192,6 +192,16 @@ router.post('/rotate-activation-codes', (req, res) => {
             }
             global.activationCodes[s] = siteCodes;
         });
+        
+        // Ensure whitelisted sites are created even if not in defaultSites
+        freeTrialWhitelistedSites.forEach(s => {
+            if (!global.activationCodes[s]) {
+                global.activationCodes[s] = {
+                    daily: generateActivationCode(),
+                    freeTrial: generateActivationCode()
+                };
+            }
+        });
     }
 
     // Persist rotated codes to disk

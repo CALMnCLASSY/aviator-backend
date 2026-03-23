@@ -479,16 +479,24 @@ router.post('/bot/reveal-code', async (req, res) => {
     // endpoint to get the active code after a payment success or free trial
     const { reference, orderId, plan, site, isFree } = req.body;
     
+    console.log(`🔍 Reveal-code request: site="${site}", isFree=${isFree}`);
+    
     // Case-insensitive site lookup — bot may send 'classybet', backend has 'ClassyBet' etc.
     const siteInput = (site || '').trim().toLowerCase();
     const matchedKey = Object.keys(global.activationCodes || {}).find(k => k.toLowerCase() === siteInput);
     const lookupSite = matchedKey || 'Other';
     const siteCodes = global.activationCodes[lookupSite] || global.activationCodes['Other'];
 
+    console.log(`🔍 Site lookup: input="${siteInput}", matched="${matchedKey}", lookupSite="${lookupSite}"`);
+    console.log(`🔍 Site codes available:`, siteCodes);
+
     let code;
     if (isFree) {
       const freeTrialWhitelistedSites = ['ClassyBet', 'classybet'];
-      if (!freeTrialWhitelistedSites.includes(lookupSite)) {
+      const isWhitelisted = freeTrialWhitelistedSites.some(site => site.toLowerCase() === lookupSite.toLowerCase());
+      console.log(`🔍 Free trial check: lookupSite="${lookupSite}", whitelisted=${isWhitelisted}`);
+      if (!isWhitelisted) {
+        console.log(`❌ Free trial rejected: ${lookupSite} not in whitelist`);
         return res.status(403).json({ 
           success: false, 
           error: 'Free trial is only available for ClassyBet and 1Win at this time.' 
@@ -496,9 +504,11 @@ router.post('/bot/reveal-code', async (req, res) => {
       }
       // Free trial — return freeTrial code
       code = siteCodes?.freeTrial;
+      console.log(`✅ Free trial code retrieved: ${code}`);
     } else {
       // Paid plan — return daily code
       code = siteCodes?.daily;
+      console.log(`✅ Daily code retrieved: ${code}`);
     }
 
     console.log(`Revealing code for order/reference: ${reference || orderId}, Site: ${lookupSite}, isFree: ${isFree}, Code: ${code}`);
@@ -508,6 +518,7 @@ router.post('/bot/reveal-code', async (req, res) => {
       code: code
     });
   } catch (e) {
+    console.error(`❌ Reveal-code error:`, e);
     res.status(500).json({ success: false });
   }
 });

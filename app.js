@@ -252,6 +252,17 @@ defaultSites.forEach(site => {
   }
 });
 
+// Ensure whitelisted sites exist even if not in defaultSites
+freeTrialWhitelistedSites.forEach(site => {
+  if (!global.activationCodes[site]) {
+    global.activationCodes[site] = {
+      daily: generateActivationCode(),
+      freeTrial: generateActivationCode()
+    };
+    console.log(`✅ Created whitelisted site: ${site}`);
+  }
+});
+
 // Save the initial state
 saveActivationCodes();
 console.log('✅ Initialized site-specific global.activationCodes');
