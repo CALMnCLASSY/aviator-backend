@@ -556,13 +556,20 @@ router.post('/bot/activate-code', async (req, res) => {
     console.log(`🔍 Code check for ${lookupSite}: received="${receivedCode}" | daily="${storedDaily}" | freeTrial="${storedFreeTrial}"`);
 
     let activePlan = null;
+    let newCode = null;
+    let codeType = null;
+    
     if (receivedCode === storedDaily) {
       activePlan = '1 hour';
-      siteCodes.daily = generateActivationCode();
+      newCode = generateActivationCode();
+      siteCodes.daily = newCode;
+      codeType = 'daily';
       console.log(`🔃 Daily Activation Code Used for ${lookupSite}! New code generated: ${siteCodes.daily}`);
     } else if (receivedCode === (siteCodes.freeTrial || '').trim().toUpperCase()) {
       activePlan = '1 hour';
-      siteCodes.freeTrial = generateActivationCode();
+      newCode = generateActivationCode();
+      siteCodes.freeTrial = newCode;
+      codeType = 'freeTrial';
       console.log(`🔃 Free Trial Code Used for ${lookupSite}! New code generated: ${siteCodes.freeTrial}`);
     }
 
@@ -580,7 +587,7 @@ router.post('/bot/activate-code', async (req, res) => {
       // Notify admin via telegram
       await sendToTelegram(`🔑 <b>ACTIVATION CODE USED</b>\n\n👤 User: <code>${contact || 'Unknown'}</code>\n🌍 Site: <b>${lookupSite}</b>\n⏳ Plan: <b>${activePlan}</b>\n\n<i>A new code for ${lookupSite} was generated automatically.</i>`);
 
-      return res.json({ success: true, plan: activePlan, message: 'Bot successfully activated!' });
+      return res.json({ success: true, plan: activePlan, message: 'Bot successfully activated!', newCode: newCode, codeType: codeType });
     } else {
       return res.status(400).json({ success: false, error: 'Invalid or expired activation code. Please get the latest code by clicking Get Code below.' });
     }
