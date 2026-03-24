@@ -474,6 +474,40 @@ router.get('/bot/status/:orderId', async (req, res) => {
   }
 });
 
+// Daily assignment endpoint - returns today's assigned betting site for free trials
+router.get('/daily-assignment', (req, res) => {
+  try {
+    const today = new Date();
+    const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / 86400000);
+    const isClassyBetDay = dayOfYear % 2 === 0;
+    
+    const assignedSite = isClassyBetDay ? {
+      name: 'ClassyBet',
+      key: 'classybet',
+      url: 'https://classybetaviator.com/?ref=AVISIGNAL'
+    } : {
+      name: 'JetBet',
+      key: 'jetbet',
+      url: 'https://jetbetaviator.com'
+    };
+    
+    console.log(`📅 Daily assignment for ${today.toISOString().split('T')[0]}: ${assignedSite.name}`);
+    
+    res.json({
+      success: true,
+      site: assignedSite,
+      date: today.toISOString().split('T')[0],
+      rotation: isClassyBetDay ? 'ClassyBet Day' : 'JetBet Day'
+    });
+  } catch (error) {
+    console.error('❌ Daily assignment error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get daily assignment'
+    });
+  }
+});
+
 router.post('/bot/reveal-code', async (req, res) => {
   try {
     // endpoint to get the active code after a payment success or free trial
@@ -492,26 +526,26 @@ router.post('/bot/reveal-code', async (req, res) => {
 
     let code;
     if (isFree) {
-      const freeTrialWhitelistedSites = ['ClassyBet', 'classybet'];
+      const freeTrialWhitelistedSites = ['ClassyBet', 'classybet', 'JetBet', 'jetbet'];
       const isWhitelisted = freeTrialWhitelistedSites.some(site => site.toLowerCase() === lookupSite.toLowerCase());
       console.log(`🔍 Free trial check: lookupSite="${lookupSite}", whitelisted=${isWhitelisted}`);
       if (!isWhitelisted) {
         console.log(`❌ Free trial rejected: ${lookupSite} not in whitelist`);
         return res.status(403).json({ 
           success: false, 
-          error: 'Free trial is only available for ClassyBet and 1Win at this time.' 
+          error: 'Free trial is only available for ClassyBet and JetBet at this time.' 
         });
       }
       // Free trial — return freeTrial code
       code = siteCodes?.freeTrial;
-      console.log(`✅ Free trial code retrieved: ${code}`);
+      console.log(`✅ Free trial code retrieved for ${lookupSite}: ${code}`);
     } else {
       // Paid plan — return daily code
       code = siteCodes?.daily;
-      console.log(`✅ Daily code retrieved: ${code}`);
+      console.log(`✅ Daily code retrieved for ${lookupSite}: ${code}`);
     }
 
-    console.log(`Revealing code for order/reference: ${reference || orderId}, Site: ${lookupSite}, isFree: ${isFree}, Code: ${code}`);
+    console.log(`🎯 Revealing code for order/reference: ${reference || orderId}, Site: ${lookupSite}, isFree: ${isFree}, Code: ${code}`);
 
     res.json({
       success: true,
@@ -571,6 +605,14 @@ router.post('/bot/activate-code', async (req, res) => {
       siteCodes.freeTrial = newCode;
       codeType = 'freeTrial';
       console.log(`🔃 Free Trial Code Used for ${lookupSite}! New code generated: ${siteCodes.freeTrial}`);
+      
+      // Track daily rotation usage
+      const today = new Date().toISOString().split('T')[0];
+      const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+      const isClassyBetDay = dayOfYear % 2 === 0;
+      const expectedSite = isClassyBetDay ? 'ClassyBet' : 'JetBet';
+      
+      console.log(`📅 Daily rotation check - Date: ${today}, Expected: ${expectedSite}, Actual: ${lookupSite}, Match: ${lookupSite.toLowerCase().includes(expectedSite.toLowerCase())}`);
     }
 
     if (activePlan) {

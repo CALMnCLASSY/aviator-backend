@@ -50,5 +50,9 @@
   "ClassyBet": {
     "daily": "CLASSY24",
     "freeTrial": "OJBOT30"
+  },
+  "JetBet": {
+    "daily": "JETBET24",
+    "freeTrial": "JETBOT30"
   }
 }
