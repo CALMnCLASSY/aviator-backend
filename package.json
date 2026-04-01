@@ -12,6 +12,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@supabase/supabase-js": "^2.101.1",
     "axios": "^1.6.0",
     "bcrypt": "^6.0.0",
     "body-parser": "^1.20.0",
@@ -20,10 +21,12 @@
     "express": "^4.19.2",
     "express-rate-limit": "^7.5.1",
     "form-data": "^4.0.4",
+    "groq-sdk": "^1.1.2",
     "helmet": "^7.2.0",
     "mongoose": "^8.16.4",
+    "node-cron": "^4.2.1",
     "node-fetch": "^2.7.0",
-    "nodemailer": "^6.9.0",
+    "nodemailer": "^6.10.1",
     "querystring": "^0.2.1",
     "uuid": "^9.0.1"
   }

@@ -1,222 +1,152 @@
 const express = require('express');
 const router = express.Router();
 
-// Admin credentials (from user request)
+// Admin credentials (maintained for simple backend access)
 const ADMIN_EMAIL = 'admin@cncavisignals.com';
 const ADMIN_PASSWORD = 'thecnccompanybot';
 
 // CORS middleware for admin routes
 router.use((req, res, next) => {
-    // Allow file:// access (origin: null) and all other origins
     const origin = req.headers.origin || 'null';
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     res.header('Access-Control-Allow-Credentials', 'true');
-
-    console.log(`Admin route accessed from origin: ${origin}`);
-
-    if (req.method === 'OPTIONS') {
-        return res.sendStatus(200);
-    }
+    if (req.method === 'OPTIONS') return res.sendStatus(200);
     next();
 });
 
 // Admin Login
 router.post('/login', (req, res) => {
     const { email, password } = req.body;
-
-    if (!email || !password) {
-        return res.status(400).json({ success: false, message: 'Email and password required' });
-    }
-
     if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
         return res.json({
             success: true,
-            message: 'Login successful',
-            token: 'admin-session-' + Date.now(), // Simple session token
+            token: 'admin-session-' + Date.now(),
             admin: { email: ADMIN_EMAIL }
         });
     }
-
     return res.status(401).json({ success: false, message: 'Invalid credentials' });
 });
 
-// Get Dashboard Stats
-router.get('/stats', (req, res) => {
-    // Calculate stats from globals
-    const onlineUsers = global.activeSessions ? global.activeSessions.size : 0;
-
-    let pendingCount = 0;
-
-    // Count pending from all sources
-    if (global.botPayments) {
-        Object.values(global.botPayments).forEach(p => {
-            if (p.status === 'pending_verification') pendingCount++;
-        });
-    }
-
-    if (global.usdtPayments) {
-        Object.values(global.usdtPayments).forEach(p => {
-            if (p.status === 'pending_verification') pendingCount++;
-        });
-    }
-
-    if (global.selarPayments) {
-        Object.values(global.selarPayments).forEach(p => {
-            if (p.status === 'pending_verification') pendingCount++;
-        });
-    }
-
-    // Revenue mock (in real app, this would query DB)
-    const todayRevenue = 0; // consistent with current in-memory structure
-
-    res.json({
-        success: true,
-        stats: {
-            onlineUsers,
-            pendingVerifications: pendingCount,
-            todayRevenue,
-            todayActivations: 0 // Mock for now
-        }
-    });
-});
-
-// Get Pending Verifications (SIMPLIFIED - Only Bot Activations)
-router.get('/pending-verifications', (req, res) => {
-    console.log('📊 Admin panel requesting pending verifications');
-    const pendingList = [];
-
-    // Only Bot Payments (1-hour activations)
+/**
+ * GET DASHBOARD STATS
+ * Queries Supabase for live metrics
+ */
+router.get('/stats', async (req, res) => {
     try {
-        if (global.botPayments) {
-            console.log(`📦 Checking ${Object.keys(global.botPayments).length} bot payments`);
-            Object.entries(global.botPayments).forEach(([orderId, payment]) => {
-                console.log(`  - ${orderId}: status=${payment.status}`);
-                if (payment.status === 'pending_verification') {
-                    pendingList.push({
-                        id: orderId,
-                        type: 'bot_activation',
-                        user: payment.customerInfo?.email || payment.customerInfo?.contact || 'Unknown',
-                        amount: 'Free Trial / Bot Activation',
-                        site: payment.customerInfo?.bettingSite || 'Aviator Bot',
-                        timestamp: payment.createdAt || new Date(),
-                        packageName: payment.customerInfo?.packageName || '1 Hour Trial',
-                        duration: '1 hour',
-                        raw: payment
-                    });
-                }
-            });
-        } else {
-            console.log('⚠️ global.botPayments is not initialized');
-        }
-    } catch (e) {
-        console.error('❌ Error fetching bot payments:', e);
-    }
+        // 1. Total Users
+        const { count: totalUsers } = await req.supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true });
 
-    // Sort by timestamp desc
-    pendingList.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        // 2. Pending Payments
+        const { count: pendingPayments } = await req.supabase
+            .from('payments')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'pending');
 
-    console.log(`✅ Returning ${pendingList.length} pending verifications to admin panel`);
-    res.json({
-        success: true,
-        count: pendingList.length,
-        verifications: pendingList
-    });
-});
+        // 3. Activations Today
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const { count: activationsToday } = await req.supabase
+            .from('activations')
+            .select('*', { count: 'exact', head: true })
+            .gte('activated_at', today.toISOString());
 
-// Get Online Users
-router.get('/online-users', (req, res) => {
-    const users = [];
+        // 4. Revenue Today (Verified Payments)
+        const { data: paymentsToday } = await req.supabase
+            .from('payments')
+            .select('amount')
+            .eq('status', 'verified')
+            .gte('created_at', today.toISOString());
+        
+        const revenueToday = paymentsToday.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
 
-    if (global.activeSessions) {
-        const now = Date.now();
-        // Clean up expired sessions (older than 5 mins)
-        for (const [key, session] of global.activeSessions.entries()) {
-            if (now - session.lastSeen > 5 * 60 * 1000) {
-                global.activeSessions.delete(key);
-            } else {
-                users.push({
-                    id: key,
-                    ...session,
-                    status: 'online'
-                });
+        res.json({
+            success: true,
+            stats: {
+                totalUsers: totalUsers || 0,
+                pendingVerifications: pendingPayments || 0,
+                todayRevenue: revenueToday,
+                todayActivations: activationsToday || 0
             }
-        }
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
     }
-
-    res.json({
-        success: true,
-        count: users.length,
-        users: users
-    });
 });
 
-// Admin activation codes management
+/**
+ * GET PENDING VERIFICATIONS
+ */
+router.get('/pending-verifications', async (req, res) => {
+    try {
+        const { data, error } = await req.supabase
+            .from('payments')
+            .select('*, profiles(email, phone)')
+            .eq('status', 'pending')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        res.json({
+            success: true,
+            count: data.length,
+            verifications: data.map(p => ({
+                id: p.reference,
+                user: p.profiles?.email || 'Unknown',
+                phone: p.profiles?.phone || 'N/A',
+                amount: `${p.amount} ${p.currency}`,
+                timestamp: p.created_at,
+                status: p.status,
+                raw: p
+            }))
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+/**
+ * GET ALL USERS
+ */
+router.get('/users', async (req, res) => {
+    try {
+        const { data, error } = await req.supabase
+            .from('profiles')
+            .select('*, activations(count), payments(count)')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        res.json({ success: true, count: data.length, users: data });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Keep activation code rotation logic (as requested to maintain platform flow)
 router.get('/activation-codes', (req, res) => {
-    res.json({
-        success: true,
-        codes: global.activationCodes || {}
-    });
+    res.json({ success: true, codes: global.activationCodes || {} });
 });
 
 router.post('/rotate-activation-codes', (req, res) => {
-    function generateActivationCode(length = 6) {
-        return Math.random().toString(36).substring(2, 2 + length).toUpperCase();
-    }
-
-    const { site } = req.body;
-
-    const freeTrialWhitelistedSites = ['ClassyBet', '1Win', '1win', 'classybet'];
-
-    if (site && global.activationCodes[site]) {
-        // Rotate specific site
-        const newCodes = {
-            daily: generateActivationCode()
-        };
-        // Only generate freeTrial if whitelisted
-        if (freeTrialWhitelistedSites.includes(site)) {
-            newCodes.freeTrial = generateActivationCode();
-        }
-        global.activationCodes[site] = newCodes;
-    } else {
-        // Rotate all sites
-        const defaultSites = ['SportyBet', '1xBet', 'Betika', 'Betway', 'Parimatch', 'BangBet', 'Bet365', 'OdiBets', 'Helabet', 'MozzartBet', 'Aviator', 'Other'];
-        global.activationCodes = {};
-        defaultSites.forEach(s => {
-            const siteCodes = {
-                daily: generateActivationCode()
-            };
-            if (freeTrialWhitelistedSites.includes(s)) {
-                siteCodes.freeTrial = generateActivationCode();
-            }
-            global.activationCodes[s] = siteCodes;
-        });
-        
-        // Ensure whitelisted sites are created even if not in defaultSites
-        freeTrialWhitelistedSites.forEach(s => {
-            if (!global.activationCodes[s]) {
-                global.activationCodes[s] = {
-                    daily: generateActivationCode(),
-                    freeTrial: generateActivationCode()
-                };
-            }
-        });
-    }
-
-    // Persist rotated codes to disk
-    try {
-        const fs = require('fs');
-        const path = require('path');
-        fs.writeFileSync(path.join(__dirname, '..', 'activation_codes.json'), JSON.stringify(global.activationCodes, null, 2));
-    } catch (e) {
-        console.error('Failed to save rotated codes:', e.message);
-    }
-
-    res.json({
-        success: true,
-        codes: global.activationCodes
+    const fs = require('fs');
+    const path = require('path');
+    
+    function generateCode() { return Math.random().toString(36).substring(2, 8).toUpperCase(); }
+    const sites = ['SportyBet', '1xBet', 'Betika', 'Betway', 'Parimatch', 'BangBet', 'Bet365', 'OdiBets', 'Helabet', 'MozzartBet', 'Aviator', 'Other', 'ClassyBet', '1Win'];
+    
+    const newCodes = {};
+    sites.forEach(s => {
+        newCodes[s] = { daily: generateCode() };
+        if (s === 'ClassyBet' || s === '1Win') newCodes[s].freeTrial = generateCode();
     });
+
+    global.activationCodes = newCodes;
+    fs.writeFileSync(path.join(__dirname, '..', 'activation_codes.json'), JSON.stringify(newCodes, null, 2));
+
+    res.json({ success: true, codes: newCodes });
 });
 
 module.exports = router;

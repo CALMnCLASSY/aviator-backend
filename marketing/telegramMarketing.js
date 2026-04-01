@@ -224,7 +224,7 @@ class TelegramMarketingBot {
         let processedMessage = message
             .replace(/{{site}}/g, randomSite)
             .replace(/{{link}}/g, 'classybetaviator.com')
-            .replace(/{{accuracy}}/g, '98.72%');
+            .replace(/{{accuracy}}/g, '100%');
 
         // Handle signal confirmation placeholders
         if (category === 'signal_confirmations') {
@@ -256,7 +256,7 @@ class TelegramMarketingBot {
             }
 
             const wins = 3200 + Math.floor(Math.random() * 100);
-            const accuracy = (97 + Math.random() * 2).toFixed(2);
+            const accuracy = "100";
 
             let bonusType = '';
             if (parseFloat(result) >= 10) bonusType = '10X+';

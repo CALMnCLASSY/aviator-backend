@@ -4,609 +4,416 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aviator Admin Dashboard</title>
+    <title>Aviator Admin | Professional Monitoring</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --admin-bg: #0f1218;
-            --admin-card-bg: #1a1f28;
-            --admin-accent: #f1c40f;
-            --admin-success: #2ecc71;
-            --admin-danger: #e74c3c;
+            --bg: #0b0d17;
+            --card-bg: #161b2c;
+            --accent: #f1c40f;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --text: #ecf0f1;
+            --text-dim: #94a3b8;
+            --border: rgba(241, 196, 15, 0.1);
         }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--admin-bg);
-            color: #ecf0f1;
+            background-color: var(--bg);
+            color: var(--text);
             font-family: 'Inter', sans-serif;
-            margin: 0;
-            padding: 0;
+            line-height: 1.6;
         }
 
-        .login-container {
+        /* Login UI */
+        .login-overlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at center, #1a253a 0%, #0b0d17 100%);
             display: flex;
-            justify-content: center;
             align-items: center;
-            height: 100vh;
-            background: radial-gradient(circle at center, #1a253a 0%, #0f1218 100%);
+            justify-content: center;
+            z-index: 2000;
         }
 
         .login-card {
-            background: var(--admin-card-bg);
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 24px;
             width: 100%;
             max-width: 400px;
+            border: 1px solid var(--border);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        .login-card h2 {
-            margin-bottom: 1.5rem;
-            color: var(--admin-accent);
-        }
-
-        .form-group {
-            margin-bottom: 1.25rem;
-            text-align: left;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-size: 0.9rem;
-            color: #bdc3c7;
-        }
-
-        .form-control {
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group label { display: block; margin-bottom: 8px; color: var(--text-dim); font-size: 0.9em; }
+        .form-input {
             width: 100%;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
-            color: #fff;
-            font-size: 1rem;
-        }
-
-        .form-control:focus {
+            padding: 12px 16px;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: white;
             outline: none;
-            border-color: var(--admin-accent);
         }
+        .form-input:focus { border-color: var(--accent); }
 
-        .btn-login {
+        .btn-primary {
             width: 100%;
-            padding: 12px;
-            background: var(--admin-accent);
-            color: #000;
+            padding: 14px;
+            background: var(--accent);
+            color: black;
             border: none;
-            border-radius: 6px;
-            font-weight: 600;
+            border-radius: 12px;
+            font-weight: 700;
             cursor: pointer;
             transition: 0.2s;
         }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(241, 196, 15, 0.2); }
 
-        .btn-login:hover {
-            filter: brightness(1.1);
-        }
+        /* Dashboard UI */
+        .dashboard { max-width: 1400px; margin: 0 auto; padding: 40px 20px; display: none; }
 
-        /* Dashboard Styles */
-        .dashboard-container {
-            display: none;
-            /* Hidden by default */
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
-        .dashboard-header {
+        .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 40px;
         }
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
         }
 
         .stat-card {
-            background: var(--admin-card-bg);
-            padding: 1.5rem;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+        }
+        .stat-label { color: var(--text-dim); font-size: 0.9em; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-value { font-size: 2.5em; font-weight: 800; color: var(--accent); margin-top: 10px; }
+
+        .section {
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 30px;
+            margin-bottom: 40px;
+            border: 1px solid var(--border);
         }
 
-        .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--admin-accent);
-            margin: 0.5rem 0;
-        }
-
-        .stat-label {
-            color: #95a5a6;
-            font-size: 0.9rem;
-        }
-
-        .section-card {
-            background: var(--admin-card-bg);
-            border-radius: 10px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .section-title {
-            font-size: 1.25rem;
-            margin-bottom: 1rem;
-            color: #fff;
+        .section-header {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 10px;
+            margin-bottom: 24px;
         }
 
-        .table-responsive {
-            overflow-x: auto;
-        }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 16px; color: var(--text-dim); font-size: 0.85em; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+        td { padding: 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th,
-        td {
-            text-align: left;
-            padding: 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        th {
-            color: #95a5a6;
-            font-weight: 600;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-        }
-
-        tr:hover {
-            background: rgba(255, 255, 255, 0.02);
-        }
-
-        .status-badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .status-online {
-            background: rgba(46, 204, 113, 0.2);
-            color: #2ecc71;
-        }
-
-        .status-pending {
-            background: rgba(241, 196, 15, 0.2);
-            color: #f1c40f;
-        }
+        .badge { padding: 4px 10px; border-radius: 6px; font-size: 0.8em; font-weight: 700; }
+        .badge-pending { background: rgba(241, 196, 15, 0.1); color: var(--accent); }
+        .badge-success { background: rgba(46, 204, 113, 0.1); color: var(--success); }
+        .badge-danger { background: rgba(231, 76, 60, 0.1); color: var(--danger); }
 
         .action-btn {
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 12px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 0.85rem;
-            margin-right: 5px;
-            color: white;
+            transition: 0.2s;
         }
+        .action-btn:hover { background: var(--border); }
+        .action-btn.approve { color: var(--success); border-color: var(--success); }
+        .action-btn.reject { color: var(--danger); border-color: var(--danger); }
 
-        .btn-approve {
-            background: #27ae60;
+        .loading-spinner {
+            width: 40px; height: 40px;
+            border: 4px solid rgba(241, 196, 15, 0.1);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        .btn-reject {
-            background: #c0392b;
-        }
-
-        .btn-refresh {
-            background: transparent;
-            border: 1px solid #7f8c8d;
-            color: #bdc3c7;
-        }
-
-        .btn-logout {
-            background: rgba(231, 76, 60, 0.2);
-            color: #e74c3c;
-            border: 1px solid rgba(231, 76, 60, 0.4);
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-        }
+        .hidden { display: none; }
     </style>
 </head>
 
 <body>
-
-    <!-- Login Section -->
-    <div id="loginSection" class="login-container">
+    <!-- Login Area -->
+    <div id="loginArea" class="login-overlay">
         <div class="login-card">
-            <h2><i class="fas fa-shield-alt"></i> Admin Panel</h2>
+            <h1 style="color: var(--accent); margin-bottom: 10px;">Admin Access</h1>
+            <p style="color: var(--text-dim); margin-bottom: 30px;">Professional Predictor Monitoring</p>
             <form id="loginForm">
-                <div class="form-group">
-                    <label>Email Address</label>
-                    <input type="email" id="email" class="form-control" placeholder="admin@example.com" required>
+                <div class="input-group">
+                    <label>Admin Email</label>
+                    <input type="email" id="adminEmail" class="form-input" required>
                 </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" id="password" class="form-control" placeholder="Enter password" required>
+                <div class="input-group">
+                    <label>Secure Password</label>
+                    <input type="password" id="adminPass" class="form-input" required>
                 </div>
-                <button type="submit" class="btn-login">Secure Login</button>
+                <button type="submit" class="btn-primary">Sign In</button>
             </form>
         </div>
     </div>
 
-    <!-- Dashboard Section -->
-    <div id="dashboardSection" class="dashboard-container">
-        <div class="dashboard-header">
-            <h2 style="margin:0;"><span style="color:var(--admin-accent)">Aviator</span> Signals Admin</h2>
-            <div style="display:flex; gap:10px;">
-                <button class="action-btn btn-refresh" onclick="fetchData()">
-                    <i class="fas fa-sync"></i> Refresh
+    <!-- Main Dashboard -->
+    <div id="adminDash" class="dashboard">
+        <div class="header">
+            <div>
+                <h1 style="font-weight: 800;">ADMIN <span style="color: var(--accent);">DASHBOARD</span></h1>
+                <p style="color: var(--text-dim);">Real-time Supabase Integration</p>
+            </div>
+            <div style="display: flex; gap: 15px;">
+                <button class="btn-primary" style="width: auto; padding: 10px 20px;" onclick="refreshAll()">
+                    <i class="fas fa-sync-alt"></i> Refresh
                 </button>
-                <button class="btn-logout" onclick="logout()">
+                <button class="action-btn" onclick="logout()" style="color: var(--danger); border-color: var(--danger);">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
             </div>
         </div>
 
+        <!-- Metrics -->
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-label">Pending Verifications</div>
-                <div class="stat-value" id="statPending">0</div>
+                <div class="stat-label">Total Clients</div>
+                <div class="stat-value" id="countUsers">0</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Online Users</div>
-                <div class="stat-value" id="statOnline">0</div>
+                <div class="stat-label">Pending Payments</div>
+                <div class="stat-value" id="countPending">0</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Est. Revenue (Today)</div>
-                <div class="stat-value" id="statRevenue">$0.00</div>
+                <div class="stat-label">Revenue (Today)</div>
+                <div class="stat-value" id="valRevenue">$0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Activations (Today)</div>
+                <div class="stat-value" id="countActivations">0</div>
             </div>
         </div>
 
-        <!-- Pending Verifications -->
-        <div class="section-card">
-            <div class="section-title">
-                <i class="fas fa-hourglass-half" style="color: #f1c40f;"></i> Pending Verifications
+        <!-- Pending Section -->
+        <div class="section">
+            <div class="section-header">
+                <h2><i class="fas fa-clock" style="color: var(--accent);"></i> Pending Verifications</h2>
             </div>
-            <div class="table-responsive">
-                <table id="verificationsTable">
+            <div class="table-wrap">
+                <table id="tablePending">
                     <thead>
                         <tr>
                             <th>Time</th>
-                            <th>User / Contact</th>
-                            <th>Package</th>
-                            <th>Type</th>
+                            <th>User (Email/Phone)</th>
+                            <th>Reference</th>
                             <th>Amount</th>
-                            <th>Site</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td colspan="7" style="text-align:center; color:#7f8c8d;">Loading...</td>
-                        </tr>
-                    </tbody>
+                    <tbody></tbody>
                 </table>
             </div>
         </div>
 
-        <!-- Site-Specific Activation Codes -->
-        <div class="section-card">
-            <div class="section-title" style="justify-content: space-between;">
-                <div><i class="fas fa-key" style="color: #9b59b6;"></i> Site-Specific Activation Codes</div>
-                <button class="action-btn btn-approve" onclick="rotateCodes()">
-                    <i class="fas fa-sync"></i> Rotate All Codes
-                </button>
+        <!-- All Users Section -->
+        <div class="section">
+            <div class="section-header">
+                <h2><i class="fas fa-users"></i> Recent Client Registrations</h2>
             </div>
-            <div class="table-responsive">
-                <table id="codesTable">
+            <div class="table-wrap">
+                <table id="tableUsers">
                     <thead>
                         <tr>
-                            <th>Site Name</th>
-                            <th>Free Trial Code (30s)</th>
-                            <th>Daily Code (All Day)</th>
-                            <th>Actions</th>
+                            <th>Created At</th>
+                            <th>Email Address</th>
+                            <th>Phone Number</th>
+                            <th>ID</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td colspan="4" style="text-align:center; color:#7f8c8d;">Loading codes...</td>
-                        </tr>
-                    </tbody>
+                    <tbody></tbody>
                 </table>
             </div>
         </div>
 
-        <!-- Online Users -->
-        <div class="section-card">
-            <div class="section-title">
-                <i class="fas fa-users" style="color: #2ecc71;"></i> Online Users
+        <!-- Codes Section -->
+        <div class="section">
+            <div class="section-header">
+                <h2><i class="fas fa-key"></i> Current Activation Codes</h2>
+                <button class="btn-primary" style="width: auto; padding: 8px 15px;" onclick="rotateCodes()">Rotate All</button>
             </div>
-            <div class="table-responsive">
-                <table id="usersTable">
+            <div class="table-wrap">
+                <table id="tableCodes">
                     <thead>
                         <tr>
-                            <th>User ID</th>
-                            <th>Session Active</th>
-                            <th>Package</th>
                             <th>Site</th>
-                            <th>Status</th>
+                            <th>Daily Code</th>
+                            <th>Free Trial</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td colspan="5" style="text-align:center; color:#7f8c8d;">Loading...</td>
-                        </tr>
-                    </tbody>
+                    <tbody></tbody>
                 </table>
             </div>
         </div>
     </div>
 
     <script>
-        // When served from the Express backend, use a relative path
-        const API_BASE = '/api';
+        const API_BASE = '/api/admin';
+        const PAY_API = '/api/payments';
 
         // Auth Logic
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const btn = e.target.querySelector('button');
-
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
-            btn.disabled = true;
-
-            try {
-                const res = await fetch(`${API_BASE}/admin/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-
-                const data = await res.json();
-
-                if (data.success) {
-                    localStorage.setItem('admin_token', data.token);
-                    showDashboard();
-                } else {
-                    alert('Login Failed: ' + data.message);
-                }
-            } catch (err) {
-                alert('Connection Error: ' + err.message);
-            } finally {
-                btn.innerHTML = 'Secure Login';
-                btn.disabled = false;
+            const email = document.getElementById('adminEmail').value;
+            const password = document.getElementById('adminPass').value;
+            
+            const res = await fetch(`${API_BASE}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                localStorage.setItem('admin_session', data.token);
+                initDash();
+            } else {
+                alert('Invalid Credentials');
             }
         });
 
         function logout() {
-            localStorage.removeItem('admin_token');
+            localStorage.removeItem('admin_session');
             location.reload();
         }
 
-        function checkAuth() {
-            const token = localStorage.getItem('admin_token');
-            if (token) {
-                showDashboard();
-            }
+        async function initDash() {
+            document.getElementById('loginArea').classList.add('hidden');
+            document.getElementById('adminDash').style.display = 'block';
+            refreshAll();
+            setInterval(refreshAll, 30000); // 30s auto-refresh
         }
 
-        function showDashboard() {
-            document.getElementById('loginSection').style.display = 'none';
-            document.getElementById('dashboardSection').style.display = 'block';
-            fetchData();
-            // Poll every 60s — avoid hammering the backend with 429 rate limit errors
-            setInterval(fetchData, 60000);
-        }
-
-        let _fetchErrorCount = 0;
-        async function fetchData() {
-            // Exponential backoff — skip this fetch if too many consecutive errors
-            if (_fetchErrorCount >= 3) {
-                console.warn(`⏸ Admin fetch paused after ${_fetchErrorCount} errors. Will retry next cycle.`);
-                _fetchErrorCount = Math.max(0, _fetchErrorCount - 1); // cool-down
-                return;
-            }
-
+        async function refreshAll() {
             try {
                 // Fetch Stats
-                const statsReq = await fetch(`${API_BASE}/admin/stats`);
-                const stats = await statsReq.json();
-                if (stats.success) {
-                    document.getElementById('statPending').innerText = stats.stats.pendingVerifications;
-                    document.getElementById('statOnline').innerText = stats.stats.onlineUsers;
-                    document.getElementById('statRevenue').innerText = '$' + stats.stats.todayRevenue;
+                const statsRes = await fetch(`${API_BASE}/stats`);
+                const statsData = await statsRes.json();
+                if (statsData.success) {
+                    document.getElementById('countUsers').innerText = statsData.stats.totalUsers;
+                    document.getElementById('countPending').innerText = statsData.stats.pendingVerifications;
+                    document.getElementById('valRevenue').innerText = '$' + statsData.stats.todayRevenue;
+                    document.getElementById('countActivations').innerText = statsData.stats.todayActivations;
                 }
 
                 // Fetch Pending
-                const verifReq = await fetch(`${API_BASE}/admin/pending-verifications`);
-                const verifData = await verifReq.json();
-                renderVerifications(verifData.verifications || []);
+                const pendingRes = await fetch(`${API_BASE}/pending-verifications`);
+                const pendingData = await pendingRes.json();
+                renderPending(pendingData.verifications || []);
 
-                // Fetch Online Users
-                const usersReq = await fetch(`${API_BASE}/admin/online-users`);
-                const usersData = await usersReq.json();
+                // Fetch Users
+                const usersRes = await fetch(`${API_BASE}/users`);
+                const usersData = await usersRes.json();
                 renderUsers(usersData.users || []);
 
-                // Fetch Activation Codes
-                const codesReq = await fetch(`${API_BASE}/admin/activation-codes`);
-                const codesData = await codesReq.json();
+                // Fetch Codes
+                const codesRes = await fetch(`${API_BASE}/activation-codes`);
+                const codesData = await codesRes.json();
                 renderCodes(codesData.codes || {});
 
-                _fetchErrorCount = 0; // reset on success
-
             } catch (err) {
-                _fetchErrorCount++;
-                console.error(`Fetch error (${_fetchErrorCount}):`, err);
+                console.error('Dash refresh failed:', err);
             }
         }
 
-        function renderVerifications(list) {
-            const tbody = document.querySelector('#verificationsTable tbody');
-            tbody.innerHTML = '';
-
-            if (list.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#95a5a6;">No pending verifications</td></tr>';
-                return;
-            }
-
-            list.forEach(item => {
-                const row = document.createElement('tr');
-                const packageName = item.raw?.packageName || item.packageName || 'N/A';
-                row.innerHTML = `
-                    <td>${new Date(item.timestamp).toLocaleTimeString()}</td>
-                    <td style="font-weight:600;">${item.user}</td>
-                    <td><span class="status-badge" style="background:#16a085; color:#fff;">${packageName}</span></td>
-                    <td><span class="status-badge" style="background:#34495e;">${item.type}</span></td>
-                    <td style="color:#f1c40f; font-weight:600;">${item.amount}</td>
-                    <td>${item.site || '-'}</td>
+        function renderPending(list) {
+            const tbody = document.querySelector('#tablePending tbody');
+            tbody.innerHTML = list.length === 0 ? '<tr><td colspan="5" style="text-align:center; color: var(--text-dim);">No pending items</td></tr>' : '';
+            list.forEach(p => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${new Date(p.timestamp).toLocaleTimeString()}</td>
+                    <td><b>${p.user}</b><br><small>${p.phone}</small></td>
+                    <td><code>${p.id}</code></td>
+                    <td style="color: var(--accent); font-weight: 700;">${p.amount}</td>
                     <td>
-                        <button class="action-btn btn-approve" onclick="verifyOrder('${item.id}', true)">
-                            <i class="fas fa-check"></i>
-                        </button>
-                        <button class="action-btn btn-reject" onclick="verifyOrder('${item.id}', false)">
-                            <i class="fas fa-times"></i>
-                        </button>
+                        <button class="action-btn approve" onclick="verify('${p.id}', true)">Approve</button>
+                        <button class="action-btn reject" onclick="verify('${p.id}', false)">Reject</button>
                     </td>
                 `;
-                tbody.appendChild(row);
+                tbody.appendChild(tr);
             });
         }
 
         function renderUsers(list) {
-            const tbody = document.querySelector('#usersTable tbody');
+            const tbody = document.querySelector('#tableUsers tbody');
             tbody.innerHTML = '';
-
-            if (list.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#95a5a6;">No users online</td></tr>';
-                return;
-            }
-
-            list.forEach(user => {
-                const row = document.createElement('tr');
-                const lastSeenDetails = Math.floor((Date.now() - user.lastSeen) / 60000) + 'm ago';
-                row.innerHTML = `
-                    <td><div style="font-family:monospace; color:#bdc3c7;">${user.id}</div></td>
-                    <td>${lastSeenDetails}</td>
-                    <td>${user.package || 'Browsing'}</td>
-                    <td>${user.site || '-'}</td>
-                    <td><span class="status-badge status-online">Online</span></td>
+            list.slice(0, 10).forEach(u => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${new Date(u.created_at).toLocaleDateString()}</td>
+                    <td>${u.email}</td>
+                    <td>${u.phone || 'N/A'}</td>
+                    <td><code>${u.id.substring(0,8)}...</code></td>
                 `;
-                tbody.appendChild(row);
+                tbody.appendChild(tr);
             });
         }
 
-        function renderCodes(codesObj) {
-            const tbody = document.querySelector('#codesTable tbody');
+        function renderCodes(codes) {
+            const tbody = document.querySelector('#tableCodes tbody');
             tbody.innerHTML = '';
-
-            const sites = Object.keys(codesObj);
-
-            if (sites.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#95a5a6;">No activation codes found</td></tr>';
-                return;
-            }
-
-            sites.forEach(site => {
-                const row = document.createElement('tr');
-                const codes = codesObj[site];
-                const freeTrialDisplay = codes.freeTrial 
-                    ? `<div class="status-badge" style="background:rgba(46,204,113,0.2); color:#2ecc71; display:inline-block; font-family:monospace; font-size:1.1em; letter-spacing:1px;">${codes.freeTrial}</div>`
-                    : '<span style="color:#7f8c8d; font-size:0.9em; font-style:italic;">Paid Only</span>';
-
-                row.innerHTML = `
-                    <td style="font-weight:600;">${site}</td>
-                    <td>${freeTrialDisplay}</td>
-                    <td><div class="status-badge" style="background:rgba(241,196,15,0.2); color:#f1c40f; display:inline-block; font-family:monospace; font-size:1.1em; letter-spacing:1px;">${codes.daily || '-'}</div></td>
-                    <td>
-                        <button class="action-btn btn-refresh" onclick="rotateCodes('${site}')" title="Rotate codes for this site">
-                            <i class="fas fa-sync"></i>
-                        </button>
-                    </td>
+            Object.entries(codes).forEach(([site, c]) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><b>${site}</b></td>
+                    <td><code>${c.daily}</code></td>
+                    <td><code>${c.freeTrial || '-'}</code></td>
                 `;
-                tbody.appendChild(row);
+                tbody.appendChild(tr);
             });
         }
 
-        window.rotateCodes = async function (site = null) {
-            const msg = site
-                ? `Are you sure you want to rotate activation codes for ${site}?`
-                : "Are you sure you want to rotate ALL activation codes globally?";
-
-            if (!confirm(msg)) return;
-
-            console.log(`🔃 Rotating activation codes ${site ? 'for ' + site : 'globally'}`);
-
-            try {
-                const res = await fetch(`${API_BASE}/admin/rotate-activation-codes`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(site ? { site } : {})
-                });
-                const data = await res.json();
-
-                if (data.success) {
-                    alert(`Codes rotated successfully!`);
-                    fetchData(); // Refresh list
-                } else {
-                    alert('Error: ' + (data.error || data.message || 'Unknown error'));
-                }
-            } catch (err) {
-                console.error('Request failed:', err);
-                alert('Request failed: ' + err.message);
+        async function verify(ref, ok) {
+            if (!confirm(`Are you sure you want to ${ok?'APPROVE':'REJECT'}?`)) return;
+            const res = await fetch(`${PAY_API}/admin-verify/${ref}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ verified: ok, reason: 'Admin dashboard manual action' })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Action success');
+                refreshAll();
+            } else {
+                alert('Error: ' + data.error);
             }
-        };
+        }
 
-        window.verifyOrder = async function (id, approve) {
-            if (!confirm(`Are you sure you want to ${approve ? 'APPROVE' : 'REJECT'} this bot activation?`)) return;
+        async function rotateCodes() {
+            if (!confirm('Rotate all codes?')) return;
+            await fetch(`${API_BASE}/rotate-activation-codes`, { method: 'POST' });
+            refreshAll();
+        }
 
-            // All payments are bot activations - use single endpoint
-            const url = `${API_BASE}/payments/bot/verify/${id}`;
-            const body = {
-                adminId: 'admin_dashboard',
-                action: approve ? 'approve' : 'reject'
-            };
-
-            console.log(`${approve ? '✅ Approving' : '❌ Rejecting'} bot activation: ${id}`);
-
-            try {
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert(`Bot activation ${approve ? 'approved' : 'rejected'} successfully!`);
-                    fetchData(); // Refresh list
-                } else {
-                    alert('Error: ' + (data.error || data.message || 'Unknown error'));
-                }
-            } catch (err) {
-                console.error('Request failed:', err);
-                alert('Request failed: ' + err.message);
-            }
-        };
-
-        // Init
-        checkAuth();
+        // Session check on load
+        if (localStorage.getItem('admin_session')) initDash();
     </script>
 </body>
 

@@ -7,8 +7,21 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const fs = require('fs');
 const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
+
 // Initialize Express
 const app = express();
+
+// Supabase Initialization
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
+const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
+
+// Attach supabase to req for use in routes
+app.use((req, res, next) => {
+  req.supabase = supabase;
+  next();
+});
 
 // Security middleware - Helmet
 app.use(helmet({
@@ -173,9 +186,9 @@ app.use('/api/payments', paymentLimiter, paymentRoutes);
 const telegramRoutes = require('./routes/telegram');
 app.use('/api/telegram', telegramRoutes);
 
-// Chat routes disabled - Using Tawk.to for chat functionality
-// const chatRoutes = require('./routes/chat');
-// app.use('/api/chat', chatRoutes);
+// AI Chat Agent integration
+const { handleChat } = require('./Agent/chatAgent');
+app.post('/api/ai/chat', handleChat);
 
 const marketingRoutes = require('./routes/marketing');
 app.use('/api/marketing', marketingRoutes);
@@ -236,10 +249,9 @@ defaultSites.forEach(site => {
       global.activationCodes[site].freeTrial = generateActivationCode();
     }
   } else {
-    // Migrate old threeDay key to freeTrial
-    if (global.activationCodes[site].threeDay && !global.activationCodes[site].freeTrial) {
-      global.activationCodes[site].freeTrial = global.activationCodes[site].threeDay;
-      delete global.activationCodes[site].threeDay;
+    // Ensure freeTrial exists for whitelisted sites
+    if (freeTrialWhitelistedSites.includes(site) && !global.activationCodes[site].freeTrial) {
+      global.activationCodes[site].freeTrial = generateActivationCode();
     }
 
     // Restriction: Remove freeTrial if site is not whitelisted
@@ -402,6 +414,18 @@ const server = app.listen(PORT, () => {
 
   // Store marketing bot instance globally for admin controls
   app.locals.marketingBot = marketingBot;
+
+  // Initialize AI Agents
+  console.log(`🚀 Initializing Groq AI Agents...`);
+  const { startMarketingAgent } = require('./Agent/marketingAgent');
+  const { startAnalyticsAgent } = require('./Agent/analyticsAgent');
+  const { startSocialMediaAgent } = require('./Agent/socialMediaAgent');
+  const { startTelegramAgent } = require('./Agent/telegramAgent');
+  
+  startMarketingAgent();
+  startAnalyticsAgent();
+  startSocialMediaAgent();
+  startTelegramAgent();
 });
 
 // Handle unhandled promise rejections
