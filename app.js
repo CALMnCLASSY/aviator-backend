@@ -23,6 +23,55 @@ app.use((req, res, next) => {
   next();
 });
 
+// CORS Configuration
+const allowedOrigins = [
+  'https://avisignals.com',
+  'https://www.avisignals.com',
+  'https://back.avisignals.com',
+  'https://aviator-backend-komp.onrender.com', // Backup domain
+  'https://aviatorhub.xyz',
+  'https://avisignal.netlify.app',
+  'https://avisignalss.netlify.app'
+];
+
+if (process.env.NODE_ENV !== 'production') {
+  allowedOrigins.push(
+    'http://localhost:3000',
+    'http://localhost:5000',
+    'http://127.0.0.1:4040',
+    'http://127.0.0.1:5000'
+  );
+}
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, script tag, etc.)
+    if (!origin) return callback(null, true);
+
+    const isWhitelisted = allowedOrigins.indexOf(origin) !== -1 || 
+                          origin.includes('localhost') || 
+                          origin.includes('127.0.0.1');
+
+    if (isWhitelisted) {
+      callback(null, true);
+    } else {
+      console.log('⚠️ CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: [
+    'Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization',
+    'Cache-Control', 'Pragma', 'ngrok-skip-browser-warning'
+  ],
+  optionsSuccessStatus: 200
+};
+
+// Apply CORS globally AT THE TOP
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
 // Security middleware - Helmet
 app.use(helmet({
   contentSecurityPolicy: {
@@ -33,6 +82,7 @@ app.use(helmet({
       scriptSrcAttr: ["'unsafe-inline'"],
       fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
       imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https://back.avisignals.com", "https://*.onrender.com"]
     },
   },
   hsts: {
@@ -45,7 +95,7 @@ app.use(helmet({
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200, // limit each IP to 200 requests per windowMs (increased from 100)
+  max: 200, // limit each IP to 200 requests per windowMs
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again later.'
@@ -60,77 +110,12 @@ app.use(limiter);
 // More reasonable rate limiting for payment endpoints
 const paymentLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 50, // limit each IP to 50 payment requests per windowMs (increased from 10)
+  max: 50, // limit each IP to 50 payment requests per windowMs
   message: {
     success: false,
     message: 'Too many payment requests, please try again later.'
   }
 });
-
-// CORS Configuration - More restrictive for production
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, etc.)
-    if (!origin) return callback(null, true);
-
-    const allowedOrigins = [
-      'https://avisignals.com',
-      'https://aviatorhub.xyz',
-      'https://www.avisignals.com',
-      'https://avisignal.netlify.app',
-      'https://avisignalss.netlify.app'
-    ];
-
-    // Allow localhost in development
-    if (process.env.NODE_ENV !== 'production') {
-      allowedOrigins.push(
-        'http://localhost:3000',
-        'http://127.0.0.1:4040',
-        /^http:\/\/localhost:\d+$/,
-        /^http:\/\/127\.0\.0\.1:\d+$/
-      );
-    }
-
-    const isAllowed = allowedOrigins.some(allowed => {
-      if (typeof allowed === 'string') {
-        return origin === allowed;
-      } else if (allowed instanceof RegExp) {
-        return allowed.test(origin);
-      }
-      return false;
-    });
-
-    if (isAllowed) {
-      console.log('CORS allowed origin:', origin);
-      callback(null, true);
-    } else {
-      console.log('CORS blocked origin:', origin);
-      // Still allow the request but log it
-      callback(null, true);
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: [
-    'Origin',
-    'X-Requested-With',
-    'Content-Type',
-    'Accept',
-    'Authorization',
-    'Cache-Control',
-    'Pragma',
-    'ngrok-skip-browser-warning'
-  ],
-  exposedHeaders: ['Content-Range', 'X-Content-Range'],
-  preflightContinue: false,
-  optionsSuccessStatus: 200
-};
-
-// Apply CORS middleware
-app.use(cors(corsOptions));
-
-// Handle preflight requests for all routes
-app.options('*', cors(corsOptions));
 
 // Parse JSON bodies with increased limits and timeout
 app.use(bodyParser.json({
