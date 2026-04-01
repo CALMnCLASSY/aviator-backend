@@ -113,4 +113,42 @@ router.post('/admin-verify/:reference', async (req, res) => {
   }
 });
 
+/**
+ * REVEAL CODE (Site-specific helper for the bot)
+ */
+router.post('/bot/reveal-code', (req, res) => {
+  try {
+    const { site, user, isFree } = req.body;
+    if (!site) return res.status(400).json({ success: false, error: 'Site is required' });
+
+    // Access the global activation codes initialized in app.js
+    // We do a case-insensitive search to be safe
+    const siteKey = Object.keys(global.activationCodes || {}).find(
+      k => k.toLowerCase() === site.toLowerCase()
+    ) || 'Other';
+    
+    const siteData = (global.activationCodes && global.activationCodes[siteKey]) || {};
+
+    // Get the requested code type
+    const code = isFree ? siteData.freeTrial : siteData.daily;
+
+    if (!code) {
+      // Fallback to 'Other' if specific site code is missing
+      const otherCode = isFree ? (global.activationCodes['Other']?.freeTrial) : (global.activationCodes['Other']?.daily);
+      if (otherCode) {
+        return res.json({ success: true, code: otherCode, note: 'Fallback to default' });
+      }
+      return res.status(404).json({ success: false, error: 'No code found for this site/type' });
+    }
+
+    // Log for admin tracking (visible in server logs)
+    console.log(`[REVEAL] User: ${user || 'anon'}, Site: ${siteKey}, Free: ${isFree}, Code: ${code}`);
+
+    res.json({ success: true, code });
+  } catch (err) {
+    console.error('❌ Reveal Code Error:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 module.exports = router;
