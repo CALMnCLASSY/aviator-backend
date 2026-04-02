@@ -89,6 +89,45 @@ router.get('/status/:reference', async (req, res) => {
 });
 
 /**
+ * BOT PAYMENT STATUS CHECK
+ * Check status of bot payment verification
+ */
+router.get('/bot/status/:reference', async (req, res) => {
+  try {
+    const { reference } = req.params;
+    
+    if (!req.supabase) {
+      return res.json({ success: true, status: 'pending', message: 'Payment verification in progress' });
+    }
+
+    const { data, error } = await req.supabase
+      .from('payments')
+      .select('status, amount, reference, created_at')
+      .eq('reference', reference)
+      .single();
+
+    if (error) {
+      // Payment record not found yet - still pending
+      return res.json({ success: true, status: 'pending', message: 'Waiting for payment verification' });
+    }
+
+    res.json({ 
+      success: true, 
+      status: data.status,
+      payment: {
+        reference: data.reference,
+        amount: data.amount,
+        status: data.status,
+        created_at: data.created_at
+      }
+    });
+  } catch (err) {
+    console.error('❌ Bot Status Check Error:', err.message);
+    res.json({ success: true, status: 'pending', message: 'Checking payment status' });
+  }
+});
+
+/**
  * ADMIN VERIFY
  * Updates Supabase status and sends alerts
  */
