@@ -1,4 +1,9 @@
+const express = require('express');
+const router = express.Router();
+const fs = require('fs');
+const path = require('path');
 const discordAgent = require('../Agent/discordAgent');
+
 
 // Telegram configuration (Fallback or analytics)
 const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
