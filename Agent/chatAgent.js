@@ -1,5 +1,6 @@
 const groq = require('./groqClient');
 const discordAgent = require('./discordAgent');
+const supabase = require('./supabaseClient');
 
 // In-memory session tracking for Discord summaries
 const chatSessions = new Map();
@@ -31,12 +32,31 @@ async function triggerSessionSummary(userKey) {
 
         const summary = chatCompletion.choices[0]?.message?.content || "No summary available.";
 
-        // Send to Discord
+        // 1. Send to Discord
         await discordAgent.sendChatSummary({
             text: summary,
             user: session.userContext || 'Guest / Unlogged',
             page: session.pageLocation || 'Bot Page'
         });
+
+        // 2. Persist to Supabase (for Admin Dashboard)
+        if (supabase) {
+            try {
+                await supabase
+                    .from('logs')
+                    .insert([{
+                        event_type: 'chat_summary',
+                        details: {
+                            user: session.userContext,
+                            summary: summary,
+                            page: session.pageLocation
+                        },
+                        created_at: new Date().toISOString()
+                    }]);
+            } catch (dbErr) {
+                console.error('⚠️ Chat log persistence failed:', dbErr.message);
+            }
+        }
 
         // Clean up
         chatSessions.delete(userKey);

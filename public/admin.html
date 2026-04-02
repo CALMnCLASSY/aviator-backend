@@ -194,7 +194,11 @@
         <!-- Metrics -->
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-label">Total Clients</div>
+                <div class="stat-label">Online Now</div>
+                <div class="stat-value" id="countOnline" style="color: var(--success);">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Registered</div>
                 <div class="stat-value" id="countUsers">0</div>
             </div>
             <div class="stat-card">
@@ -232,23 +236,55 @@
             </div>
         </div>
 
+        <!-- Activations Section -->
+        <div class="section">
+            <div class="section-header">
+                <h2><i class="fas fa-bolt" style="color: var(--success);"></i> Live Bot Activations</h2>
+            </div>
+            <div class="table-wrap">
+                <table id="tableActivations">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>User (Email/Phone)</th>
+                            <th>Site</th>
+                            <th>Code</th>
+                            <th>Type</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- All Users Section -->
         <div class="section">
             <div class="section-header">
-                <h2><i class="fas fa-users"></i> Recent Client Registrations</h2>
+                <h2><i class="fas fa-users"></i> Active Client Directory (Last Activity)</h2>
             </div>
             <div class="table-wrap">
                 <table id="tableUsers">
                     <thead>
                         <tr>
-                            <th>Created At</th>
+                            <th>Last Activity</th>
                             <th>Email Address</th>
                             <th>Phone Number</th>
+                            <th>Assigned Site</th>
                             <th>ID</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- AI Chat Logs Section -->
+        <div class="section">
+            <div class="section-header">
+                <h2><i class="fas fa-robot" style="color: var(--accent);"></i> AI Support Logs (Summaries)</h2>
+            </div>
+            <div id="aiSummaries" style="display: grid; gap: 15px;">
+                <!-- Summaries will load here -->
             </div>
         </div>
 
@@ -317,6 +353,7 @@
                 const statsData = await statsRes.json();
                 if (statsData.success) {
                     document.getElementById('countUsers').innerText = statsData.stats.totalUsers;
+                    document.getElementById('countOnline').innerText = statsData.stats.onlineCount;
                     document.getElementById('countPending').innerText = statsData.stats.pendingVerifications;
                     document.getElementById('valRevenue').innerText = '$' + statsData.stats.todayRevenue;
                     document.getElementById('countActivations').innerText = statsData.stats.todayActivations;
@@ -327,10 +364,20 @@
                 const pendingData = await pendingRes.json();
                 renderPending(pendingData.verifications || []);
 
+                // Fetch Activations
+                const actRes = await fetch(`${API_BASE}/activations`);
+                const actData = await actRes.json();
+                renderActivations(actData.activations || []);
+
                 // Fetch Users
                 const usersRes = await fetch(`${API_BASE}/users`);
                 const usersData = await usersRes.json();
                 renderUsers(usersData.users || []);
+
+                // Fetch Chat Summaries
+                const chatRes = await fetch(`${API_BASE}/chat-summaries`);
+                const chatData = await chatRes.json();
+                renderSummaries(chatData.summaries || []);
 
                 // Fetch Codes
                 const codesRes = await fetch(`${API_BASE}/activation-codes`);
@@ -340,6 +387,22 @@
             } catch (err) {
                 console.error('Dash refresh failed:', err);
             }
+        }
+
+        function renderActivations(list) {
+            const tbody = document.querySelector('#tableActivations tbody');
+            tbody.innerHTML = list.length === 0 ? '<tr><td colspan="5" style="text-align:center; color: var(--text-dim);">No recent activations</td></tr>' : '';
+            list.forEach(a => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${new Date(a.activated_at).toLocaleTimeString()}</td>
+                    <td><b>${a.profiles?.email || 'Guest'}</b><br><small>${a.profiles?.phone || ''}</small></td>
+                    <td><span class="badge badge-success">${a.site}</span></td>
+                    <td><code>${a.code}</code></td>
+                    <td><small>${a.code_type}</small></td>
+                `;
+                tbody.appendChild(tr);
+            });
         }
 
         function renderPending(list) {
@@ -364,15 +427,42 @@
         function renderUsers(list) {
             const tbody = document.querySelector('#tableUsers tbody');
             tbody.innerHTML = '';
-            list.slice(0, 10).forEach(u => {
+            list.slice(0, 15).forEach(u => {
                 const tr = document.createElement('tr');
+                const lastSeen = u.last_seen ? new Date(u.last_seen) : null;
+                const isOnline = lastSeen && (new Date() - lastSeen < 5 * 60 * 1000);
+                
                 tr.innerHTML = `
-                    <td>${new Date(u.created_at).toLocaleDateString()}</td>
+                    <td>
+                        <span class="badge ${isOnline ? 'badge-success' : 'badge-pending'}">
+                            ${isOnline ? 'ONLINE' : (lastSeen ? lastSeen.toLocaleTimeString() : 'Never')}
+                        </span>
+                    </td>
                     <td>${u.email}</td>
                     <td>${u.phone || 'N/A'}</td>
+                    <td><span class="badge badge-pending">${u.assigned_site || 'Not Selected'}</span></td>
                     <td><code>${u.id.substring(0,8)}...</code></td>
                 `;
                 tbody.appendChild(tr);
+            });
+        }
+
+        function renderSummaries(list) {
+            const container = document.getElementById('aiSummaries');
+            container.innerHTML = list.length === 0 ? '<p style="color: var(--text-dim); text-align:center;">No chat logs available</p>' : '';
+            list.forEach(s => {
+                const card = document.createElement('div');
+                card.className = 'stat-card';
+                card.style.textAlign = 'left';
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <span style="color:var(--accent); font-weight:700;">${s.details.user || 'Guest'}</span>
+                        <small style="color:var(--text-dim);">${new Date(s.created_at).toLocaleString()}</small>
+                    </div>
+                    <p style="font-size:0.95em;">${s.details.summary}</p>
+                    <div style="margin-top:10px; font-size:0.8em; color:var(--text-dim);">Page: ${s.details.page}</div>
+                `;
+                container.appendChild(card);
             });
         }
 

@@ -1,38 +1,32 @@
-# Walkthrough: Discord Notification Migration & AI Chat Summaries
+# Walkthrough: Admin Panel & Bot System Sync
 
-We have successfully overhauled your notification system to move operational user events to Discord while enhancing your Telegram marketing frequency.
+We have successfully synchronized your Admin Panel with the new bot logic, providing you with real-time monitoring of user behavior and AI interactions.
 
-## Changes Made
+## New Features
 
-### 1. Discord Notification Engine
-I've implemented a new centralized **[discordAgent.js](file:///home/cncjosh/Desktop/Avsite%20n/aviator-backend/Agent/discordAgent.js)** that handles rich embeds for all user activities.
+### 1. Live Bot Activations
+You now have a dedicated **"Live Bot Activations"** table on your dashboard. 
+- **What it shows**: Historically, you only saw registration. Now you see every time a user actually enters a code to start the bot.
+- **Details**: It logs the User, the specific Betting Site (e.g., SportyBet), the Code used, and the Type (Free Trial or 24H).
 
-**Events now sent to Discord:**
-- **User Activity**: Logins, Registrations, Profile Syncs, and **Betting Site Selections**.
-- **Transactions**: New USDT Orders and official Payment Verifications/Rejections.
-- **Bot Operations**: Bot Activations and Free Code usage.
+### 2. AI Support Logs (summaries)
+I have added an **"AI Support Logs"** section.
+- **Automation**: When the AI finishes a chat session (after 5 minutes of inactivity), it generates a professional summary and saves it to your database.
+- **Dashboard Visibility**: You can now read these summaries directly in your Admin Panel to see what users are asking for without opening Discord.
 
-### 2. AI Chat Session Summaries
-The AI Chat (`chatAgent.js`) now tracks whole conversations.
-- **Session Tracking**: I've implemented a **5-minute inactivity timeout**. 
-- **Automated Summary**: If a user stops chatting for 5 minutes, the AI generates a professional summary (User details + what they needed) and sends it directly to your Discord channel.
+### 3. Site Selection Monitoring
+The **"Recent Client Registrations"** table has been upgraded with an **"Assigned Site"** column.
+- **Tracking**: The moment a user clicks a bookmaker on the Bot page, it is saved to their profile and visible to you.
 
-### 3. Increased Telegram Frequency
-I've updated the automated broadcast schedule in **[telegramAgent.js](file:///home/cncjosh/Desktop/Avsite%20n/aviator-backend/Agent/telegramAgent.js)**.
-- **Old Schedule**: Twice daily (12 PM, 6 PM).
-- **New Schedule**: **Every 3 hours** (`0 */3 * * *`). This ensures your channel stays active and prominent for subscribers.
+## Infrastructure Updates
+- **[NEW] [supabaseClient.js](file:///home/cncjosh/Desktop/Avsite%20n/aviator-backend/Agent/supabaseClient.js)**: A shared helper that allows our backend agents to securely save logs and updates to Supabase.
+- **Persistence**: Both the chat agent and the auth routes now save data to Supabase specifically for the Admin dashboard to consume.
 
-### 4. Infrastructure Maintenance
-- **Environment**: Added `DISCORD_WEBHOOK_URL` to your `.env` file.
-- **Routes**: Updated `auth.js`, `payments.js`, and `users.js` to redirect their respective alerts to the new Discord agent.
-
-## Verification Tips
-
-### Manual Verification
-1.  **Check Discord**: Trigger a login or site selection on the bot and verify the notification appears in your channel within seconds.
-2.  **Test AI Chat**: Chat with the AI and then wait for 5 minutes. Check Discord for the session summary report.
-3.  **Monitor Telegram**: Verify the AI-generated marketing posts are now appearing more frequently in your channel.
+## How to Verify
+1.  **Open Admin Panel**: Visit `your-site.com/admin.html` and log in.
+2.  **Check Feed**: You should see the new tables.
+3.  **Perform Test**: Select a site as a user, then refresh the Admin Panel. You will see that user's "Assigned Site" update immediately.
 
 ---
-> [!IMPORTANT]
-> **Next Step**: As you requested, I am ready to begin fixing the **Admin Panel** to work with this new bot system. Please let me know when you'd like to start on that!
+> [!TIP]
+> **Admin Panel Auto-Refresh**: The dashboard is set to automatically refresh every 30 seconds, so you can leave it open on a monitor to watch live activity as it happens.

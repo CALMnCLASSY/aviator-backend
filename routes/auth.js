@@ -170,7 +170,8 @@ router.post('/index-login', async (req, res) => {
     discordAgent.sendUserEvent('INDEX_ACCESS', { 
         contact, 
         type: authData.contactType, 
-        ip: req.ip || 'Unknown' 
+        ip: req.ip || 'Unknown',
+        userAgent: authData.userAgent
     });
 
     // Return success with session info
@@ -337,11 +338,39 @@ router.post('/verify-payment', async (req, res) => {
         txid: transactionId || 'N/A' 
     });
 
+    // Supabase Persistence (so it shows in Admin Dash)
+    if (req.supabase) {
+        try {
+            // Find profile ID first
+            const { data: profile } = await req.supabase
+                .from('profiles')
+                .select('id')
+                .or(`email.eq.${contact},phone.eq.${contact}`)
+                .single();
+
+            const { error: dbError } = await req.supabase
+                .from('payments')
+                .insert([{
+                    profile_id: profile?.id,
+                    amount: amount || 0,
+                    currency: 'USD',
+                    status: 'pending',
+                    reference: transactionId || `REQ-${Date.now()}`,
+                    method: paymentMethod || 'Manual/Request',
+                    created_at: new Date().toISOString()
+                }]);
+                
+            if (dbError) console.error('⚠️ Supabase payment insert error:', dbError.message);
+        } catch (dbErr) {
+            console.error('⚠️ Verification persistence failed:', dbErr.message);
+        }
+    }
+
     // Return success with verification ID
     res.json({ 
       success: true,
       message: 'Payment verification request submitted successfully',
-      verificationId: Date.now().toString(),
+      verificationId: transactionId || Date.now().toString(),
       status: 'pending_verification',
       estimatedTime: '5-10 minutes'
     });
@@ -531,13 +560,61 @@ router.get('/get-chat-id', async (req, res) => {
 
 /**
  * UPDATE SITE SELECTION
- * Logs when a user selects a betting site in the bot
+ * Logs when a user selects a betting site in the bot and persists to Supabase
  */
-router.post('/update-site', (req, res) => {
+router.post('/update-site', async (req, res) => {
     const { contact, site } = req.body;
     if (contact && site) {
+        // Discord Alert
         discordAgent.sendUserEvent('SITE_SELECTION', { user: contact, site });
+
+        // Supabase Persistence
+        try {
+            const { error } = await req.supabase
+                .from('profiles')
+                .update({ assigned_site: site, updated_at: new Date().toISOString() })
+                .or(`email.eq.${contact},phone.eq.${contact}`);
+
+            if (error) console.error('⚠️ Supabase Site Update Error:', error.message);
+        } catch (dbErr) {
+            console.error('❌ Site Persistence Failed:', dbErr.message);
+        }
     }
+    res.json({ success: true });
+});
+
+/**
+ * HEARTBEAT / USER ONLINE STATUS
+ */
+router.post('/heartbeat', async (req, res) => {
+    const { contact } = req.body;
+    if (contact && req.supabase) {
+        try {
+            await req.supabase
+                .from('profiles')
+                .update({ last_seen: new Date().toISOString() })
+                .or(`email.eq.${contact},phone.eq.${contact}`);
+        } catch (err) {
+            // Silently fail
+        }
+    }
+    res.json({ success: true });
+});
+
+/**
+ * LOG VISITOR
+ */
+router.post('/log-visitor', async (req, res) => {
+    discordAgent.sendSimpleNotification("🌐 NEW VISITOR", `A user has landed on the index page.\nIP: ${req.ip || 'Unknown'}\nUA: ${req.headers['user-agent'] || 'Unknown'}`, 0x3498DB);
+    res.json({ success: true });
+});
+
+/**
+ * LOG PAYMENT MODAL
+ */
+router.post('/log-payment-modal', async (req, res) => {
+    const { contact } = req.body;
+    discordAgent.sendSimpleNotification("🛒 MODAL ACCESSED", `User **${contact || 'Guest'}** is viewing the payment/activation plans.`, 0xE67E22);
     res.json({ success: true });
 });
 

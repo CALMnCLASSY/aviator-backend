@@ -110,9 +110,23 @@ async function sendChatSummary(summary) {
     await sendEmbed(embed);
 }
 
+/**
+ * SIMPLE ALERT (Visitors, Modals)
+ */
+async function sendSimpleNotification(title, description, color = 0xBDC3C7) {
+    const embed = {
+        title,
+        description,
+        color,
+        timestamp: new Date().toISOString()
+    };
+    await sendEmbed(embed);
+}
+
 module.exports = {
     sendUserEvent,
     sendPaymentEvent,
     sendBotEvent,
-    sendChatSummary
+    sendChatSummary,
+    sendSimpleNotification
 };

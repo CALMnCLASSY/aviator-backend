@@ -69,13 +69,24 @@ router.get('/stats', async (req, res) => {
                 totalUsers: totalUsers || 0,
                 pendingVerifications: pendingPayments || 0,
                 todayRevenue: revenueToday,
-                todayActivations: activationsToday || 0
+                todayActivations: activationsToday || 0,
+                onlineCount: await getOnlineCount(req.supabase)
             }
         });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
 });
+
+async function getOnlineCount(supabase) {
+    if (!supabase) return 0;
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const { count } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .gte('last_seen', fiveMinutesAgo.toISOString());
+    return count || 0;
+}
 
 /**
  * GET PENDING VERIFICATIONS
@@ -116,7 +127,7 @@ router.get('/users', async (req, res) => {
         const { data, error } = await req.supabase
             .from('profiles')
             .select('*, activations(count), payments(count)')
-            .order('created_at', { ascending: false });
+            .order('last_seen', { ascending: false, nullsFirst: false });
 
         if (error) throw error;
         res.json({ success: true, count: data.length, users: data });
@@ -147,6 +158,43 @@ router.post('/rotate-activation-codes', (req, res) => {
     fs.writeFileSync(path.join(__dirname, '..', 'activation_codes.json'), JSON.stringify(newCodes, null, 2));
 
     res.json({ success: true, codes: newCodes });
+});
+
+/**
+ * GET ALL ACTIVATIONS
+ */
+router.get('/activations', async (req, res) => {
+    try {
+        const { data, error } = await req.supabase
+            .from('activations')
+            .select('*, profiles(email, phone)')
+            .order('activated_at', { ascending: false })
+            .limit(50);
+
+        if (error) throw error;
+        res.json({ success: true, count: data.length, activations: data });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+/**
+ * GET CHAT SUMMARIES
+ */
+router.get('/chat-summaries', async (req, res) => {
+    try {
+        const { data, error } = await req.supabase
+            .from('logs')
+            .select('*')
+            .eq('event_type', 'chat_summary')
+            .order('created_at', { ascending: false })
+            .limit(50);
+
+        if (error) throw error;
+        res.json({ success: true, count: data.length, summaries: data });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
 });
 
 module.exports = router;
