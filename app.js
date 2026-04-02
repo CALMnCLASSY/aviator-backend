@@ -224,7 +224,7 @@ try {
 }
 
 const defaultSites = ['SportyBet', '1xBet', 'Betika', 'Betway', 'Parimatch', 'BangBet', 'Bet365', 'OdiBets', 'Helabet', 'MozzartBet', 'Aviator', 'Other'];
-const freeTrialWhitelistedSites = ['ClassyBet', 'classybet', 'JetBet', 'jetbet'];
+const freeTrialWhitelistedSites = ['classybet', 'jetbet'];
 
 global.activationCodes = persistedCodes;
 defaultSites.forEach(site => {

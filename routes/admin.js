@@ -145,12 +145,20 @@ router.post('/rotate-activation-codes', (req, res) => {
     const path = require('path');
     
     function generateCode() { return Math.random().toString(36).substring(2, 8).toUpperCase(); }
-    const sites = ['SportyBet', '1xBet', 'Betika', 'Betway', 'Parimatch', 'BangBet', 'Bet365', 'OdiBets', 'Helabet', 'MozzartBet', 'Aviator', 'Other', 'ClassyBet', '1Win'];
+    const sites = ['SportyBet', '1xBet', 'Betika', 'Betway', 'Parimatch', 'BangBet', 'Bet365', 'OdiBets', 'Helabet', 'MozzartBet', 'Aviator', 'Other'];
+    const freeTrialSites = ['classybet', 'jetbet'];
     
     const newCodes = {};
     sites.forEach(s => {
         newCodes[s] = { daily: generateCode() };
-        if (s === 'ClassyBet' || s === '1Win') newCodes[s].freeTrial = generateCode();
+    });
+    
+    // Add free trial codes for whitelisted sites
+    freeTrialSites.forEach(s => {
+        newCodes[s] = { 
+            daily: generateCode(),
+            freeTrial: generateCode()
+        };
     });
 
     global.activationCodes = newCodes;
