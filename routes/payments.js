@@ -166,25 +166,72 @@ router.post('/bot/create-payment/:reference', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Customer contact is required' });
     }
 
-    // Insert pending record into Supabase
-    const { error: dbError } = await req.supabase
-      .from('payments')
-      .insert([{
-        user_id: customerInfo.contact,
-        amount: 75,
-        currency: 'USD',
-        method: 'Paystack',
-        status: 'pending',
-        reference: reference,
-        created_at: new Date().toISOString()
-      }]);
+    const contact = customerInfo.contact;
+    let profileId = null;
 
-    if (dbError) {
-      console.warn('⚠️ Supabase Insert (Non-fatal):', dbError.message);
+    // Find or create profile to get proper UUID for user_id
+    if (req.supabase) {
+      try {
+        // Try to find existing profile by email or phone
+        const { data: existingProfile } = await req.supabase
+          .from('profiles')
+          .select('id')
+          .or(`email.eq.${contact},phone.eq.${contact}`)
+          .single();
+
+        if (existingProfile) {
+          profileId = existingProfile.id;
+        } else {
+          // Create new profile if doesn't exist
+          const { data: newProfile, error: createErr } = await req.supabase
+            .from('profiles')
+            .insert([{
+              email: contact.includes('@') ? contact : null,
+              phone: !contact.includes('@') ? contact : null,
+              created_at: new Date().toISOString()
+            }])
+            .select('id')
+            .single();
+
+          if (newProfile) {
+            profileId = newProfile.id;
+          } else {
+            console.warn('⚠️ Profile creation failed:', createErr?.message);
+          }
+        }
+
+        // Insert pending payment record with proper UUID
+        if (profileId) {
+          const { error: dbError } = await req.supabase
+            .from('payments')
+            .insert([{
+              user_id: profileId,
+              amount: 75,
+              currency: 'USD',
+              method: 'Paystack',
+              status: 'pending',
+              reference: reference,
+              created_at: new Date().toISOString()
+            }]);
+
+          if (dbError) {
+            console.warn('⚠️ Supabase Payment Insert (Non-fatal):', dbError.message);
+          } else {
+            console.log(`✅ Payment record created: ${reference} for user ${contact}`);
+          }
+        }
+      } catch (dbErr) {
+        console.error('⚠️ Database operation error (non-fatal):', dbErr.message);
+      }
     }
 
     // Discord Alert
-    discordAgent.sendPaymentEvent('BOT_PAYMENT_INITIATED', { user: customerInfo.contact, site: customerInfo.bettingSite, ref: reference });
+    discordAgent.sendPaymentEvent('PAYSTACK_INITIATED', {
+      user: customerInfo.contact,
+      package: customerInfo.packageName || 'Daily Activation',
+      site: customerInfo.bettingSite || 'Unknown',
+      ref: reference
+    });
 
     res.json({ success: true });
   } catch (err) {
