@@ -18,12 +18,18 @@ router.post('/log-auth-event', async (req, res) => {
         extraDetails.ip = req.ip || 'Unknown';
         extraDetails.userAgent = req.headers['user-agent'] || 'Unknown';
 
-        // 1. Alert Discord
-        let color = 0x3498DB; // Blue generic
-        if (event === 'REGISTER') color = 0x2ECC71; // Green
-        else if (event === 'LOGIN') color = 0xF1C40F; // Yellow
-        else if (event === 'FREE_CODE_GRANTED') color = 0x9B59B6; // Purple
+        // 1. Alert Discord with proper event mapping
+        const eventMap = {
+            'REGISTER': { color: 0x2ECC71, title: 'USER REGISTERED' },
+            'LOGIN': { color: 0xF1C40F, title: 'USER LOGIN' },
+            'FREE_CODE_GRANTED': { color: 0x9B59B6, title: 'FREE CODE GRANTED' },
+            'INDEX_ACCESS': { color: 0x3498DB, title: 'INDEX PAGE ACCESS' }
+        };
 
+        const eventConfig = eventMap[event] || { color: 0x3498DB, title: event };
+
+        console.log(`📢 Discord Event: ${event} for ${email}`);
+        
         discordAgent.sendUserEvent(event, { 
             contact: email, 
             type: 'Email', 
@@ -34,7 +40,11 @@ router.post('/log-auth-event', async (req, res) => {
 
         // 2. Trigger Welcome Email if Registration
         if (event === 'REGISTER') {
-            await emailService.sendWelcomeEmail(email);
+            try {
+                await emailService.sendWelcomeEmail(email);
+            } catch (emailErr) {
+                console.warn('⚠️ Welcome email failed (non-fatal):', emailErr.message);
+            }
         }
 
         res.json({ success: true });

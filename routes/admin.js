@@ -80,12 +80,11 @@ router.get('/stats', async (req, res) => {
 
 async function getOnlineCount(supabase) {
     if (!supabase) return 0;
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    const { count } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .gte('last_seen', fiveMinutesAgo.toISOString());
-    return count || 0;
+    // Count users with active sessions (from global.activeSessions in app.js)
+    // This reflects real-time online status from heartbeat pings
+    const onlineCount = global.activeSessions ? global.activeSessions.size : 0;
+    console.log(`👥 Online Users Count: ${onlineCount}`);
+    return onlineCount;
 }
 
 /**
