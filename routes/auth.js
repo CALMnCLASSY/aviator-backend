@@ -3,6 +3,46 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 const discordAgent = require('../Agent/discordAgent');
+const emailService = require('../Agent/emailService');
+
+/**
+ * LOG SUPERBASE AUTH EVENT (Login/Register/FreeCode)
+ */
+router.post('/log-auth-event', async (req, res) => {
+    try {
+        const { event, email, details } = req.body;
+        if (!event || !email) return res.status(400).json({ success: false });
+
+        // Add user agent and IP stats
+        const extraDetails = details || {};
+        extraDetails.ip = req.ip || 'Unknown';
+        extraDetails.userAgent = req.headers['user-agent'] || 'Unknown';
+
+        // 1. Alert Discord
+        let color = 0x3498DB; // Blue generic
+        if (event === 'REGISTER') color = 0x2ECC71; // Green
+        else if (event === 'LOGIN') color = 0xF1C40F; // Yellow
+        else if (event === 'FREE_CODE_GRANTED') color = 0x9B59B6; // Purple
+
+        discordAgent.sendUserEvent(event, { 
+            contact: email, 
+            type: 'Email', 
+            ip: extraDetails.ip,
+            userAgent: extraDetails.userAgent,
+            ...extraDetails
+        });
+
+        // 2. Trigger Welcome Email if Registration
+        if (event === 'REGISTER') {
+            await emailService.sendWelcomeEmail(email);
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error("❌ Auth Log Error:", error.message);
+        res.status(500).json({ success: false });
+    }
+});
 
 
 // Telegram configuration (Fallback or analytics)
