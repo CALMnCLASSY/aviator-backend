@@ -114,6 +114,46 @@ router.post('/admin-verify/:reference', async (req, res) => {
 });
 
 /**
+ * CREATE BOT PAYMENT RECORD
+ * Insert a pending record to track the start of a Paystack transaction
+ */
+router.post('/bot/create-payment/:reference', async (req, res) => {
+  try {
+    const { reference } = req.params;
+    const { customerInfo } = req.body;
+    
+    if (!customerInfo || !customerInfo.contact) {
+      return res.status(400).json({ success: false, error: 'Customer contact is required' });
+    }
+
+    // Insert pending record into Supabase
+    const { error: dbError } = await req.supabase
+      .from('payments')
+      .insert([{
+        user_id: customerInfo.contact,
+        amount: 75,
+        currency: 'USD',
+        method: 'Paystack',
+        status: 'pending',
+        reference: reference,
+        created_at: new Date().toISOString()
+      }]);
+
+    if (dbError) {
+      console.warn('⚠️ Supabase Insert (Non-fatal):', dbError.message);
+    }
+
+    // Alert Admin
+    sendToTelegram(`💳 <b>BOT PAYMENT INITIATED</b>\nUser: <code>${customerInfo.contact}</code>\nSite: ${customerInfo.bettingSite}\nRef: <code>${reference}</code>`);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ Create Bot Payment Error:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
  * REVEAL CODE (Site-specific helper for the bot)
  */
 router.post('/bot/reveal-code', (req, res) => {
