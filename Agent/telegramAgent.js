@@ -56,10 +56,10 @@ async function runChannelPost() {
 }
 
 function startTelegramAgent() {
-    console.log("🚀 Telegram Bot AI Initialized - Running daily at 12:00 PM and 6:00 PM");
+    console.log("🚀 Telegram Bot AI Initialized - Running every 3 hours");
 
-    // Broadcast twice a day
-    cron.schedule('0 12,18 * * *', runChannelPost);
+    // Broadcast every 3 hours
+    cron.schedule('0 */3 * * *', runChannelPost);
 }
 
 module.exports = { startTelegramAgent, runChannelPost };

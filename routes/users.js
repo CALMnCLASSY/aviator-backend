@@ -2,8 +2,9 @@
 const express = require('express');
 const router = express.Router();
 const fetch = require('node-fetch');
+const discordAgent = require('../Agent/discordAgent');
 
-// Telegram configuration
+// Telegram configuration (Fallback or analytics)
 const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
 const telegramChatId = process.env.TELEGRAM_CHAT_ID;
 
@@ -50,8 +51,8 @@ router.post('/sync-profile', async (req, res) => {
 
     if (error) throw error;
 
-    // Async alert
-    sendToTelegram(`👤 <b>PROFILE SYNC</b>\nEmail: <code>${email}</code>\nPhone: <code>${phone || 'N/A'}</code>`);
+    // Async alert (Discord)
+    discordAgent.sendUserEvent('PROFILE_SYNC', { email, phone: phone || 'N/A' });
 
     res.json({ success: true, data });
   } catch (err) {
@@ -74,8 +75,8 @@ router.post('/log-activation', async (req, res) => {
 
     if (error) throw error;
 
-    // Professional Alert
-    sendToTelegram(`⚡ <b>BOT ACTIVATED</b>\nUser: <code>${email}</code>\nCode: <code>${code}</code>\nSite: ${site}\nType: ${code_type}`);
+    // Discord Alert
+    discordAgent.sendBotEvent({ user: email, code, code_type, site });
 
     res.json({ success: true, data });
   } catch (err) {

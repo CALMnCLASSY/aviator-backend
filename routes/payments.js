@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const fetch = require('node-fetch');
+const discordAgent = require('../Agent/discordAgent');
 
 const USDT_WALLET_ADDRESS = process.env.USDT_WALLET_ADDRESS || 'TCRwpXHYvcXY3y4FJThLHCc9hHbs9H4ExH';
 
@@ -60,8 +61,8 @@ router.post('/usdt/create-order', async (req, res) => {
 
     if (error) throw error;
 
-    // Async Alert
-    sendToTelegram(`💳 <b>NEW USDT ORDER</b>\nUser: <code>${contact || 'UID:' + user_id}</code>\nPkg: ${packageName}\nAmt: ${priceUsd} USDT\nRef: <code>${reference}</code>`);
+    // Discord Alert
+    discordAgent.sendPaymentEvent('NEW_USDT_ORDER', { user: contact || 'UID:' + user_id, package: packageName, amount: priceUsd + ' USDT', ref: reference });
 
     res.json({ success: true, reference, walletAddress: USDT_WALLET_ADDRESS });
   } catch (err) {
@@ -104,8 +105,8 @@ router.post('/admin-verify/:reference', async (req, res) => {
 
     if (error) throw error;
 
-    const statusMsg = verified ? '✅ VERIFIED' : '❌ REJECTED';
-    sendToTelegram(`⚖️ <b>PAYMENT ${statusMsg}</b>\nRef: <code>${reference}</code>\nReason: ${reason || 'N/A'}`);
+    // Discord Alert
+    discordAgent.sendPaymentEvent(verified ? 'PAYMENT_VERIFIED' : 'PAYMENT_REJECTED', { ref: reference, reason: reason || 'N/A' });
 
     res.json({ success: true, data });
   } catch (err) {
@@ -143,8 +144,8 @@ router.post('/bot/create-payment/:reference', async (req, res) => {
       console.warn('⚠️ Supabase Insert (Non-fatal):', dbError.message);
     }
 
-    // Alert Admin
-    sendToTelegram(`💳 <b>BOT PAYMENT INITIATED</b>\nUser: <code>${customerInfo.contact}</code>\nSite: ${customerInfo.bettingSite}\nRef: <code>${reference}</code>`);
+    // Discord Alert
+    discordAgent.sendPaymentEvent('BOT_PAYMENT_INITIATED', { user: customerInfo.contact, site: customerInfo.bettingSite, ref: reference });
 
     res.json({ success: true });
   } catch (err) {

@@ -1,4 +1,49 @@
 const groq = require('./groqClient');
+const discordAgent = require('./discordAgent');
+
+// In-memory session tracking for Discord summaries
+const chatSessions = new Map();
+const SESSION_TIMEOUT = 5 * 60 * 1000; // 5 minutes of inactivity
+
+/**
+ * GENERATE AND SEND CHAT SUMMARY
+ */
+async function triggerSessionSummary(userKey) {
+    const session = chatSessions.get(userKey);
+    if (!session || session.history.length === 0) return;
+
+    try {
+        const chatHistoryText = session.history
+            .map(m => `${m.role.toUpperCase()}: ${m.content}`)
+            .join('\n');
+
+        const prompt = `Summarize this customer support chat.
+        Identify: 1. User details (${session.userContext}). 2. Core inquiry/problem. 3. Final outcome.
+        Conversation:
+        ${chatHistoryText}
+        Output a professional 2-3 sentence report for the admin.`;
+
+        const chatCompletion = await groq.chat.completions.create({
+            messages: [{ role: "user", content: prompt }],
+            model: "llama-3.3-70b-versatile",
+            temperature: 0.5,
+        });
+
+        const summary = chatCompletion.choices[0]?.message?.content || "No summary available.";
+
+        // Send to Discord
+        await discordAgent.sendChatSummary({
+            text: summary,
+            user: session.userContext || 'Guest / Unlogged',
+            page: session.pageLocation || 'Bot Page'
+        });
+
+        // Clean up
+        chatSessions.delete(userKey);
+    } catch (err) {
+        console.error('❌ Chat Summarization Error:', err.message);
+    }
+}
 
 // Central Knowledge Base & Persona
 const SYSTEM_PROMPT = `
@@ -92,6 +137,31 @@ async function handleChat(req, res) {
         });
 
         const reply = chatCompletion.choices[0]?.message?.content || "I'm sorry, I encountered an internal error processing that.";
+
+        // Session Tracking for Discord Summary
+        const userKey = userContext || 'anonymous';
+        let session = chatSessions.get(userKey);
+        
+        if (!session) {
+            session = { 
+                history: [], 
+                timer: null, 
+                userContext: userContext || 'Guest', 
+                pageLocation: pageLocation || 'Bot Page' 
+            };
+        }
+
+        // Reset inactivity timer
+        if (session.timer) clearTimeout(session.timer);
+        
+        session.history.push({ role: 'user', content: message });
+        session.history.push({ role: 'assistant', content: reply });
+        
+        session.timer = setTimeout(() => {
+            triggerSessionSummary(userKey);
+        }, SESSION_TIMEOUT);
+
+        chatSessions.set(userKey, session);
 
         return res.json({ reply });
 
