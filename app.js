@@ -82,7 +82,8 @@ app.use(helmet({
       scriptSrcAttr: ["'unsafe-inline'"],
       fontSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:", "https://api.qrserver.com", "https://chart.googleapis.com"],
-      connectSrc: ["'self'", "https://back.avisignals.com", "https://*.onrender.com", "https://api.safaricom.co.ke", "https://api.exchangerate-api.com", "https://uhwhhxywilhlgppzjpcg.supabase.co", "https://cdn.jsdelivr.net", "https://wa.me", "https://cdn.socket.io", "wss://back.avisignals.com", "wss://*.onrender.com", "wss://*.socket.io"]
+      frameSrc: ["'self'", "https://js.paystack.co", "https://checkout.paystack.com"],
+      connectSrc: ["'self'", "https://back.avisignals.com", "https://*.onrender.com", "https://api.safaricom.co.ke", "https://api.exchangerate-api.com", "https://uhwhhxywilhlgppzjpcg.supabase.co", "https://cdn.jsdelivr.net", "https://wa.me", "https://cdn.socket.io", "https://api.paystack.co", "https://checkout.paystack.com", "wss://back.avisignals.com", "wss://*.onrender.com", "wss://*.socket.io"]
     },
   },
   hsts: {

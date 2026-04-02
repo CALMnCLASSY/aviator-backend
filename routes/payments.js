@@ -203,6 +203,89 @@ router.post('/bot/reveal-code', async (req, res) => {
 });
 
 /**
+ * ACTIVATE CODE (Legacy endpoint for backward compatibility)
+ * Alias for mark-code-used
+ */
+router.post('/bot/activate-code', async (req, res) => {
+  try {
+    const { user, code, site, isFree } = req.body;
+    if (!user || !code) {
+      return res.status(400).json({ success: false, error: 'User and code are required' });
+    }
+
+    // Find or create profile for this user
+    let profileId = null;
+    if (req.supabase) {
+      try {
+        // Try to find existing profile
+        const { data: existingProfile } = await req.supabase
+          .from('profiles')
+          .select('id')
+          .or(`email.eq.${user},phone.eq.${user}`)
+          .single();
+
+        if (existingProfile) {
+          profileId = existingProfile.id;
+        } else {
+          // Create new profile
+          const { data: newProfile, error: createErr } = await req.supabase
+            .from('profiles')
+            .insert([{
+              email: user.includes('@') ? user : null,
+              phone: !user.includes('@') ? user : null,
+              created_at: new Date().toISOString()
+            }])
+            .select('id')
+            .single();
+
+          if (newProfile) {
+            profileId = newProfile.id;
+          }
+        }
+
+        // Create activation record
+        if (profileId) {
+          const { error: activationErr } = await req.supabase
+            .from('activations')
+            .insert([{
+              profile_id: profileId,
+              code: code,
+              site: site || 'Unknown',
+              status: 'used',
+              is_free: isFree || false,
+              activated_at: new Date().toISOString()
+            }]);
+
+          if (activationErr) {
+            console.warn('⚠️ Activation record insert error:', activationErr.message);
+          } else {
+            console.log(`✅ Activation recorded: ${user} used code ${code} on ${site}`);
+          }
+        }
+      } catch (dbErr) {
+        console.error('⚠️ Activation tracking error:', dbErr.message);
+        // Non-fatal - continue anyway
+      }
+    }
+
+    // Send Discord notification
+    discordAgent.sendBotEvent({
+      user: user,
+      code: code,
+      site: site || 'Unknown',
+      type: isFree ? 'FREE_TRIAL' : 'PAID',
+      status: 'ACTIVATED',
+      timestamp: new Date().toISOString()
+    });
+
+    res.json({ success: true, message: 'Code activation recorded' });
+  } catch (err) {
+    console.error('❌ Activate Code Error:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
  * MARK CODE AS USED (Activation tracking)
  * Called when user activates a code - creates activation record in Supabase
  */
