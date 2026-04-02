@@ -1,15 +1,14 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-// Create reusable transporter object using the default SMTP transport
+// Create reusable transporter object using Resend
 const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
+    host: 'smtp.resend.com',
     port: 465,
-    secure: true, // true for 465, false for other ports
+    secure: true, 
     auth: {
-        user: process.env.EMAIL_USER,
-        // The user must place their 16-character App Password here, NOT their normal password
-        pass: process.env.EMAIL_PASS 
+        user: 'resend',
+        pass: process.env.RESEND_API_KEY 
     }
 });
 
@@ -22,7 +21,8 @@ const transporter = nodemailer.createTransport({
 async function sendEmail(to, subject, htmlBody) {
     try {
         const info = await transporter.sendMail({
-            from: '"AviSignals Predictor" <' + process.env.EMAIL_USER + '>',
+            from: '"AviSignals Predictor" <no-reply@avisignals.com>',
+            replyTo: 'avisignalscnc@gmail.com', // Replies will go to your Gmail
             to: to,
             subject: subject,
             html: htmlBody,

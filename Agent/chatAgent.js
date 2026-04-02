@@ -77,12 +77,14 @@ You are the official AviSignals AI Assistant. Your goal is to provide world-clas
 
 # System Knowledge
 1. **Accuracy**: The bot guarantees **100% accuracy**. Countless clients have turned $100 into over $1,500 rapidly.
-2. **Free Code Structure**: The Predictor Bot is free to use daily! Users MUST click **FREE CODE** on the Bot page to get their code.
-3. **Extra Paid Token**: The ONLY payment plan we offer is a **24-Hour continuous activation code** for exactly **$75**. NO OTHER PLANS.
+2. **Free Code Structure**: The Predictor Bot is free to use once daily! Users MUST click **FREE CODE** on the Bot page to get their code and unlock a free 30minute session.
+3. **Extra Code**: For a new code on any betting site asked tell user to come back tomorrow for another chance. They can get an extra code by buying. The ONLY payment plan we offer is a **24-Hour continuous activation code** for exactly **$75**. NO OTHER PLANS. This activates the bot for 24hours.
 4. **Using the Bot**: Once a user has a code, they click **Use Bot**, select their site, enter the code, and click **Activate**.
 5. **Support**: For complex issues, contact Admin on **Telegram (@Aadmin4cnc)https://t.me/Aadmin4cnc** or **WhatsApp (+44 7400 756162)https://wa.me/447400756162**.
 6. **Telegram Channel**: Subscribe to our [Telegram Channel](https://t.me/AviSignalsAviatorPredictorBot) for daily free signals and tips on aviator.
 7. **How to Play**: Open the bot app and your aviator game in your betting site at the same time, check the bot on when the plane will fly away then wait for that round and place your bet then cashout before the shown multiplier
+8. **Registration**: Click on Register and enter your details then check your email to confirm your account and login to start getting predictions. You get a free code and can buy an extra code after using the free one or after it expires.
+9. **Betting Site**: The bot works and is 100% accurate with all major betting platforms. To get a code for any site you click Buy Code and make the 75$ payment to activate it.
 `;
 
 async function handleChat(req, res) {
@@ -161,22 +163,22 @@ async function handleChat(req, res) {
         // Session Tracking for Discord Summary
         const userKey = userContext || 'anonymous';
         let session = chatSessions.get(userKey);
-        
+
         if (!session) {
-            session = { 
-                history: [], 
-                timer: null, 
-                userContext: userContext || 'Guest', 
-                pageLocation: pageLocation || 'Bot Page' 
+            session = {
+                history: [],
+                timer: null,
+                userContext: userContext || 'Guest',
+                pageLocation: pageLocation || 'Bot Page'
             };
         }
 
         // Reset inactivity timer
         if (session.timer) clearTimeout(session.timer);
-        
+
         session.history.push({ role: 'user', content: message });
         session.history.push({ role: 'assistant', content: reply });
-        
+
         session.timer = setTimeout(() => {
             triggerSessionSummary(userKey);
         }, SESSION_TIMEOUT);
