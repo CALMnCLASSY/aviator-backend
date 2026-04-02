@@ -77,7 +77,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com"],
       scriptSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net", "https://js.paystack.co", "https://cdn.socket.io", "https://embed.tawk.to"],
       scriptSrcAttr: ["'unsafe-inline'"],
       fontSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com"],
@@ -164,6 +164,8 @@ app.use('/api/users', userRoutes);
 // Auth routes moved to respective modules:
 // - Bot login: /api/telegram/bot-login
 // - Index login: /api/users/index-login
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
 
 const paymentRoutes = require('./routes/payments');
 app.use('/api/payments', paymentLimiter, paymentRoutes);
