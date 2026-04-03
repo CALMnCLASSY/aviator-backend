@@ -4,6 +4,8 @@ const router = express.Router();
 const axios = require('axios');
 const fetch = require('node-fetch');
 const discordAgent = require('../Agent/discordAgent');
+const fs = require('fs');
+const path = require('path');
 
 const USDT_WALLET_ADDRESS = process.env.USDT_WALLET_ADDRESS || 'TCRwpXHYvcXY3y4FJThLHCc9hHbs9H4ExH';
 
@@ -16,15 +18,7 @@ const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
 const telegramChatId = process.env.TELEGRAM_CHAT_ID;
 
 const sendToTelegram = async (message) => {
-  try {
-    await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: telegramChatId, text: message, parse_mode: 'HTML' })
-    });
-  } catch (error) {
-    console.error('❌ Telegram Alert Failed:', error.message);
-  }
+  // Empty stub to prevent Telegram API calls (Discord is used instead)
 };
 
 router.use((req, res, next) => {
@@ -363,6 +357,23 @@ router.post('/bot/activate-code', async (req, res) => {
       status: 'ACTIVATED',
       timestamp: new Date().toISOString()
     });
+
+    // Auto-Regenerate Code Functionality
+    try {
+      const siteKey = Object.keys(global.activationCodes || {}).find(k => k.toLowerCase() === (site || '').toLowerCase()) || 'Other';
+      if (global.activationCodes && global.activationCodes[siteKey]) {
+        if (isFree && global.activationCodes[siteKey].freeTrial === code) {
+          global.activationCodes[siteKey].freeTrial = Math.random().toString(36).substring(2, 8).toUpperCase();
+        } else if (!isFree && global.activationCodes[siteKey].daily === code) {
+          global.activationCodes[siteKey].daily = Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+        // Save to disk
+        fs.writeFileSync(path.join(__dirname, '..', 'activation_codes.json'), JSON.stringify(global.activationCodes, null, 2));
+        console.log(`♻️ Auto-regenerated ${isFree ? 'freeTrial' : 'daily'} code for site ${siteKey}`);
+      }
+    } catch (e) {
+      console.error('⚠️ Failed to auto-regenerate code:', e.message);
+    }
 
     res.json({ success: true, message: 'Code activation recorded' });
   } catch (err) {
