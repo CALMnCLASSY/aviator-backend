@@ -288,8 +288,10 @@ router.post('/bot/reveal-code', async (req, res) => {
  */
 router.post('/bot/activate-code', async (req, res) => {
   try {
-    const { user, code, site, isFree } = req.body;
-    if (!user || !code) {
+    const { user, contact, code, site, isFree } = req.body;
+    const trackingUser = user || contact;
+    
+    if (!trackingUser || !code) {
       return res.status(400).json({ success: false, error: 'User and code are required' });
     }
 
@@ -301,7 +303,7 @@ router.post('/bot/activate-code', async (req, res) => {
         const { data: existingProfile } = await req.supabase
           .from('profiles')
           .select('id')
-          .or(`email.eq.${user},phone.eq.${user}`)
+          .or(`email.eq.${trackingUser},phone.eq.${trackingUser}`)
           .single();
 
         if (existingProfile) {
@@ -311,8 +313,8 @@ router.post('/bot/activate-code', async (req, res) => {
           const { data: newProfile, error: createErr } = await req.supabase
             .from('profiles')
             .insert([{
-              email: user.includes('@') ? user : null,
-              phone: !user.includes('@') ? user : null,
+              email: trackingUser.includes('@') ? trackingUser : null,
+              phone: !trackingUser.includes('@') ? trackingUser : null,
               created_at: new Date().toISOString()
             }])
             .select('id')
@@ -339,7 +341,7 @@ router.post('/bot/activate-code', async (req, res) => {
           if (activationErr) {
             console.warn('⚠️ Activation record insert error:', activationErr.message);
           } else {
-            console.log(`✅ Activation recorded: ${user} used code ${code} on ${site}`);
+            console.log(`✅ Activation recorded: ${trackingUser} used code ${code} on ${site}`);
           }
         }
       } catch (dbErr) {
@@ -350,7 +352,7 @@ router.post('/bot/activate-code', async (req, res) => {
 
     // Send Discord notification
     discordAgent.sendBotEvent({
-      user: user,
+      user: trackingUser,
       code: code,
       site: site || 'Unknown',
       type: isFree ? 'FREE_TRIAL' : 'PAID',
