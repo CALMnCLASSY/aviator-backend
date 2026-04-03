@@ -180,28 +180,6 @@
             vertical-align: middle;
         }
 
-        .badge {
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 0.8em;
-            font-weight: 700;
-        }
-
-        .badge-pending {
-            background: rgba(241, 196, 15, 0.1);
-            color: var(--accent);
-        }
-
-        .badge-success {
-            background: rgba(46, 204, 113, 0.1);
-            color: var(--success);
-        }
-
-        .badge-danger {
-            background: rgba(231, 76, 60, 0.1);
-            color: var(--danger);
-        }
-
         .action-btn {
             background: none;
             border: 1px solid var(--border);
@@ -224,16 +202,6 @@
         .action-btn.reject {
             color: var(--danger);
             border-color: var(--danger);
-        }
-
-        .loading-spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(241, 196, 15, 0.1);
-            border-top-color: var(--accent);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
         }
 
         @keyframes spin {
@@ -299,11 +267,6 @@
             <div class="stat-card">
                 <div class="stat-label">Pending Payments</div>
                 <div class="stat-value" id="countPending">0</div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-label">Activations (Today)</div>
-                <div class="stat-value" id="countActivations">0</div>
             </div>
         </div>
 
@@ -392,33 +355,16 @@
                 // Fetch Stats
                 const statsRes = await fetch(`${API_BASE}/stats`);
                 const statsData = await statsRes.json();
-                if (statsData.success) {
-                    document.getElementById('countUsers').innerText = statsData.stats.totalUsers;
-                    document.getElementById('countOnline').innerText = statsData.stats.onlineCount;
-                    document.getElementById('countPending').innerText = statsData.stats.pendingVerifications;
-                    document.getElementById('valRevenue').innerText = '$' + statsData.stats.todayRevenue;
-                    document.getElementById('countActivations').innerText = statsData.stats.todayActivations;
+                if (statsData.success && statsData.stats) {
+                    if (document.getElementById('countUsers')) document.getElementById('countUsers').innerText = statsData.stats.totalUsers || 0;
+                    if (document.getElementById('countOnline')) document.getElementById('countOnline').innerText = statsData.stats.onlineCount || 0;
+                    if (document.getElementById('countPending')) document.getElementById('countPending').innerText = statsData.stats.pendingVerifications || 0;
                 }
 
                 // Fetch Pending
                 const pendingRes = await fetch(`${API_BASE}/pending-verifications`);
                 const pendingData = await pendingRes.json();
                 renderPending(pendingData.verifications || []);
-
-                // Fetch Activations
-                const actRes = await fetch(`${API_BASE}/activations`);
-                const actData = await actRes.json();
-                renderActivations(actData.activations || []);
-
-                // Fetch Users
-                const usersRes = await fetch(`${API_BASE}/users`);
-                const usersData = await usersRes.json();
-                renderUsers(usersData.users || []);
-
-                // Fetch Chat Summaries
-                const chatRes = await fetch(`${API_BASE}/chat-summaries`);
-                const chatData = await chatRes.json();
-                renderSummaries(chatData.summaries || []);
 
                 // Fetch Codes
                 const codesRes = await fetch(`${API_BASE}/activation-codes`);
@@ -430,24 +376,9 @@
             }
         }
 
-        function renderActivations(list) {
-            const tbody = document.querySelector('#tableActivations tbody');
-            tbody.innerHTML = list.length === 0 ? '<tr><td colspan="5" style="text-align:center; color: var(--text-dim);">No recent activations</td></tr>' : '';
-            list.forEach(a => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${new Date(a.activated_at).toLocaleTimeString()}</td>
-                    <td><b>${a.profiles?.email || 'Guest'}</b><br><small>${a.profiles?.phone || ''}</small></td>
-                    <td><span class="badge badge-success">${a.site}</span></td>
-                    <td><code>${a.code}</code></td>
-                    <td><small>${a.code_type}</small></td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
         function renderPending(list) {
             const tbody = document.querySelector('#tablePending tbody');
+            if (!tbody) return;
             tbody.innerHTML = list.length === 0 ? '<tr><td colspan="5" style="text-align:center; color: var(--text-dim);">No pending items</td></tr>' : '';
             list.forEach(p => {
                 const tr = document.createElement('tr');
@@ -465,50 +396,9 @@
             });
         }
 
-        function renderUsers(list) {
-            const tbody = document.querySelector('#tableUsers tbody');
-            tbody.innerHTML = '';
-            list.slice(0, 15).forEach(u => {
-                const tr = document.createElement('tr');
-                const lastSeen = u.last_seen ? new Date(u.last_seen) : null;
-                const isOnline = lastSeen && (new Date() - lastSeen < 5 * 60 * 1000);
-
-                tr.innerHTML = `
-                    <td>
-                        <span class="badge ${isOnline ? 'badge-success' : 'badge-pending'}">
-                            ${isOnline ? 'ONLINE' : (lastSeen ? lastSeen.toLocaleTimeString() : 'Never')}
-                        </span>
-                    </td>
-                    <td>${u.email}</td>
-                    <td>${u.phone || 'N/A'}</td>
-                    <td><span class="badge badge-pending">${u.assigned_site || 'Not Selected'}</span></td>
-                    <td><code>${u.id.substring(0, 8)}...</code></td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function renderSummaries(list) {
-            const container = document.getElementById('aiSummaries');
-            container.innerHTML = list.length === 0 ? '<p style="color: var(--text-dim); text-align:center;">No chat logs available</p>' : '';
-            list.forEach(s => {
-                const card = document.createElement('div');
-                card.className = 'stat-card';
-                card.style.textAlign = 'left';
-                card.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                        <span style="color:var(--accent); font-weight:700;">${s.details.user || 'Guest'}</span>
-                        <small style="color:var(--text-dim);">${new Date(s.created_at).toLocaleString()}</small>
-                    </div>
-                    <p style="font-size:0.95em;">${s.details.summary}</p>
-                    <div style="margin-top:10px; font-size:0.8em; color:var(--text-dim);">Page: ${s.details.page}</div>
-                `;
-                container.appendChild(card);
-            });
-        }
-
         function renderCodes(codes) {
             const tbody = document.querySelector('#tableCodes tbody');
+            if (!tbody) return;
             tbody.innerHTML = '';
             Object.entries(codes).forEach(([site, c]) => {
                 const tr = document.createElement('tr');
