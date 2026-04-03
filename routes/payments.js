@@ -295,6 +295,27 @@ router.post('/bot/activate-code', async (req, res) => {
       return res.status(400).json({ success: false, error: 'User and code are required' });
     }
 
+    // Strict Code Validation
+    const siteKey = Object.keys(global.activationCodes || {}).find(k => k.toLowerCase() === (site || '').toLowerCase()) || 'Other';
+    const siteData = (global.activationCodes && global.activationCodes[siteKey]) || {};
+    
+    // Check if the code is valid for this site or default fallback
+    const isFreeCode = siteData.freeTrial === code;
+    const isPaidCode = siteData.daily === code;
+    const fallbackFree = global.activationCodes['Other']?.freeTrial === code;
+    const fallbackPaid = global.activationCodes['Other']?.daily === code;
+
+    if (!isFreeCode && !isPaidCode && !fallbackFree && !fallbackPaid) {
+      if (code !== global.MASTER_ADMIN_CODE) {
+        return res.status(400).json({ success: false, error: 'Invalid or expired activation code' });
+      }
+    }
+
+    // Determine actual plan based on what matched
+    const actualIsFree = isFreeCode || fallbackFree;
+    const planName = actualIsFree ? '30 minutes' : '24 hours';
+    const planType = actualIsFree ? 'FREE_TRIAL' : 'PAID';
+
     // Find or create profile for this user
     let profileId = null;
     if (req.supabase) {
@@ -334,7 +355,7 @@ router.post('/bot/activate-code', async (req, res) => {
               code: code,
               site: site || 'Unknown',
               status: 'used',
-              is_free: isFree || false,
+              is_free: actualIsFree,
               activated_at: new Date().toISOString()
             }]);
 
@@ -355,29 +376,12 @@ router.post('/bot/activate-code', async (req, res) => {
       user: trackingUser,
       code: code,
       site: site || 'Unknown',
-      type: isFree ? 'FREE_TRIAL' : 'PAID',
+      type: planType,
       status: 'ACTIVATED',
       timestamp: new Date().toISOString()
     });
 
-    // Auto-Regenerate Code Functionality
-    try {
-      const siteKey = Object.keys(global.activationCodes || {}).find(k => k.toLowerCase() === (site || '').toLowerCase()) || 'Other';
-      if (global.activationCodes && global.activationCodes[siteKey]) {
-        if (isFree && global.activationCodes[siteKey].freeTrial === code) {
-          global.activationCodes[siteKey].freeTrial = Math.random().toString(36).substring(2, 8).toUpperCase();
-        } else if (!isFree && global.activationCodes[siteKey].daily === code) {
-          global.activationCodes[siteKey].daily = Math.random().toString(36).substring(2, 8).toUpperCase();
-        }
-        // Save to disk
-        fs.writeFileSync(path.join(__dirname, '..', 'activation_codes.json'), JSON.stringify(global.activationCodes, null, 2));
-        console.log(`♻️ Auto-regenerated ${isFree ? 'freeTrial' : 'daily'} code for site ${siteKey}`);
-      }
-    } catch (e) {
-      console.error('⚠️ Failed to auto-regenerate code:', e.message);
-    }
-
-    res.json({ success: true, message: 'Code activation recorded' });
+    res.json({ success: true, message: 'Code activation recorded', plan: planName });
   } catch (err) {
     console.error('❌ Activate Code Error:', err.message);
     res.status(500).json({ success: false, error: err.message });
@@ -394,6 +398,24 @@ router.post('/bot/mark-code-used', async (req, res) => {
     if (!user || !code) {
       return res.status(400).json({ success: false, error: 'User and code are required' });
     }
+
+    // Strict Code Validation
+    const siteKey = Object.keys(global.activationCodes || {}).find(k => k.toLowerCase() === (site || '').toLowerCase()) || 'Other';
+    const siteData = (global.activationCodes && global.activationCodes[siteKey]) || {};
+    
+    // Check if the code is valid for this site or default fallback
+    const isFreeCode = siteData.freeTrial === code;
+    const isPaidCode = siteData.daily === code;
+    const fallbackFree = global.activationCodes['Other']?.freeTrial === code;
+    const fallbackPaid = global.activationCodes['Other']?.daily === code;
+
+    if (!isFreeCode && !isPaidCode && !fallbackFree && !fallbackPaid) {
+      if (code !== global.MASTER_ADMIN_CODE) {
+        return res.status(400).json({ success: false, error: 'Invalid or expired activation code' });
+      }
+    }
+
+    const actualIsFree = isFreeCode || fallbackFree;
 
     // Find or create profile for this user
     let profileId = null;
@@ -434,14 +456,14 @@ router.post('/bot/mark-code-used', async (req, res) => {
               code: code,
               site: site || 'Unknown',
               status: 'used',
-              is_free: isFree || false,
+              is_free: actualIsFree,
               activated_at: new Date().toISOString()
             }]);
 
           if (activationErr) {
             console.warn('⚠️ Activation record insert error:', activationErr.message);
           } else {
-            console.log(`✅ Activation recorded: ${user} used code ${code} on ${site}`);
+            console.log(`✅ ${user} logged use of code ${code} for site ${site}`);
           }
         }
       } catch (dbErr) {
