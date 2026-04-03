@@ -19,7 +19,11 @@
             --border: rgba(241, 196, 15, 0.1);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
             background-color: var(--bg);
@@ -50,18 +54,31 @@
             text-align: center;
         }
 
-        .input-group { margin-bottom: 20px; text-align: left; }
-        .input-group label { display: block; margin-bottom: 8px; color: var(--text-dim); font-size: 0.9em; }
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-dim);
+            font-size: 0.9em;
+        }
+
         .form-input {
             width: 100%;
             padding: 12px 16px;
-            background: rgba(0,0,0,0.2);
+            background: rgba(0, 0, 0, 0.2);
             border: 1px solid var(--border);
             border-radius: 12px;
             color: white;
             outline: none;
         }
-        .form-input:focus { border-color: var(--accent); }
+
+        .form-input:focus {
+            border-color: var(--accent);
+        }
 
         .btn-primary {
             width: 100%;
@@ -74,10 +91,19 @@
             cursor: pointer;
             transition: 0.2s;
         }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(241, 196, 15, 0.2); }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(241, 196, 15, 0.2);
+        }
 
         /* Dashboard UI */
-        .dashboard { max-width: 1400px; margin: 0 auto; padding: 40px 20px; display: none; }
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            display: none;
+        }
 
         .header {
             display: flex;
@@ -99,8 +125,21 @@
             border-radius: 20px;
             border: 1px solid var(--border);
         }
-        .stat-label { color: var(--text-dim); font-size: 0.9em; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
-        .stat-value { font-size: 2.5em; font-weight: 800; color: var(--accent); margin-top: 10px; }
+
+        .stat-label {
+            color: var(--text-dim);
+            font-size: 0.9em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: 800;
+            color: var(--accent);
+            margin-top: 10px;
+        }
 
         .section {
             background: var(--card-bg);
@@ -117,15 +156,51 @@
             margin-bottom: 24px;
         }
 
-        .table-wrap { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; padding: 16px; color: var(--text-dim); font-size: 0.85em; text-transform: uppercase; border-bottom: 1px solid var(--border); }
-        td { padding: 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        .table-wrap {
+            overflow-x: auto;
+        }
 
-        .badge { padding: 4px 10px; border-radius: 6px; font-size: 0.8em; font-weight: 700; }
-        .badge-pending { background: rgba(241, 196, 15, 0.1); color: var(--accent); }
-        .badge-success { background: rgba(46, 204, 113, 0.1); color: var(--success); }
-        .badge-danger { background: rgba(231, 76, 60, 0.1); color: var(--danger); }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 16px;
+            color: var(--text-dim);
+            font-size: 0.85em;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            font-weight: 700;
+        }
+
+        .badge-pending {
+            background: rgba(241, 196, 15, 0.1);
+            color: var(--accent);
+        }
+
+        .badge-success {
+            background: rgba(46, 204, 113, 0.1);
+            color: var(--success);
+        }
+
+        .badge-danger {
+            background: rgba(231, 76, 60, 0.1);
+            color: var(--danger);
+        }
 
         .action-btn {
             background: none;
@@ -136,21 +211,40 @@
             cursor: pointer;
             transition: 0.2s;
         }
-        .action-btn:hover { background: var(--border); }
-        .action-btn.approve { color: var(--success); border-color: var(--success); }
-        .action-btn.reject { color: var(--danger); border-color: var(--danger); }
+
+        .action-btn:hover {
+            background: var(--border);
+        }
+
+        .action-btn.approve {
+            color: var(--success);
+            border-color: var(--success);
+        }
+
+        .action-btn.reject {
+            color: var(--danger);
+            border-color: var(--danger);
+        }
 
         .loading-spinner {
-            width: 40px; height: 40px;
+            width: 40px;
+            height: 40px;
             border: 4px solid rgba(241, 196, 15, 0.1);
             border-top-color: var(--accent);
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin: 20px auto;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
 
-        .hidden { display: none; }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 
@@ -185,7 +279,8 @@
                 <button class="btn-primary" style="width: auto; padding: 10px 20px;" onclick="refreshAll()">
                     <i class="fas fa-sync-alt"></i> Refresh
                 </button>
-                <button class="action-btn" onclick="logout()" style="color: var(--danger); border-color: var(--danger);">
+                <button class="action-btn" onclick="logout()"
+                    style="color: var(--danger); border-color: var(--danger);">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
             </div>
@@ -205,10 +300,7 @@
                 <div class="stat-label">Pending Payments</div>
                 <div class="stat-value" id="countPending">0</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">Revenue (Today)</div>
-                <div class="stat-value" id="valRevenue">$0</div>
-            </div>
+
             <div class="stat-card">
                 <div class="stat-label">Activations (Today)</div>
                 <div class="stat-value" id="countActivations">0</div>
@@ -236,63 +328,12 @@
             </div>
         </div>
 
-        <!-- Activations Section -->
-        <div class="section">
-            <div class="section-header">
-                <h2><i class="fas fa-bolt" style="color: var(--success);"></i> Live Bot Activations</h2>
-            </div>
-            <div class="table-wrap">
-                <table id="tableActivations">
-                    <thead>
-                        <tr>
-                            <th>Time</th>
-                            <th>User (Email/Phone)</th>
-                            <th>Site</th>
-                            <th>Code</th>
-                            <th>Type</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- All Users Section -->
-        <div class="section">
-            <div class="section-header">
-                <h2><i class="fas fa-users"></i> Active Client Directory (Last Activity)</h2>
-            </div>
-            <div class="table-wrap">
-                <table id="tableUsers">
-                    <thead>
-                        <tr>
-                            <th>Last Activity</th>
-                            <th>Email Address</th>
-                            <th>Phone Number</th>
-                            <th>Assigned Site</th>
-                            <th>ID</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- AI Chat Logs Section -->
-        <div class="section">
-            <div class="section-header">
-                <h2><i class="fas fa-robot" style="color: var(--accent);"></i> AI Support Logs (Summaries)</h2>
-            </div>
-            <div id="aiSummaries" style="display: grid; gap: 15px;">
-                <!-- Summaries will load here -->
-            </div>
-        </div>
-
         <!-- Codes Section -->
         <div class="section">
             <div class="section-header">
                 <h2><i class="fas fa-key"></i> Current Activation Codes</h2>
-                <button class="btn-primary" style="width: auto; padding: 8px 15px;" onclick="rotateCodes()">Rotate All</button>
+                <button class="btn-primary" style="width: auto; padding: 8px 15px;" onclick="rotateCodes()">Rotate
+                    All</button>
             </div>
             <div class="table-wrap">
                 <table id="tableCodes">
@@ -318,14 +359,14 @@
             e.preventDefault();
             const email = document.getElementById('adminEmail').value;
             const password = document.getElementById('adminPass').value;
-            
+
             const res = await fetch(`${API_BASE}/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
             });
             const data = await res.json();
-            
+
             if (data.success) {
                 localStorage.setItem('admin_session', data.token);
                 initDash();
@@ -431,7 +472,7 @@
                 const tr = document.createElement('tr');
                 const lastSeen = u.last_seen ? new Date(u.last_seen) : null;
                 const isOnline = lastSeen && (new Date() - lastSeen < 5 * 60 * 1000);
-                
+
                 tr.innerHTML = `
                     <td>
                         <span class="badge ${isOnline ? 'badge-success' : 'badge-pending'}">
@@ -441,7 +482,7 @@
                     <td>${u.email}</td>
                     <td>${u.phone || 'N/A'}</td>
                     <td><span class="badge badge-pending">${u.assigned_site || 'Not Selected'}</span></td>
-                    <td><code>${u.id.substring(0,8)}...</code></td>
+                    <td><code>${u.id.substring(0, 8)}...</code></td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -481,7 +522,7 @@
         }
 
         async function verify(ref, ok) {
-            if (!confirm(`Are you sure you want to ${ok?'APPROVE':'REJECT'}?`)) return;
+            if (!confirm(`Are you sure you want to ${ok ? 'APPROVE' : 'REJECT'}?`)) return;
             const res = await fetch(`${PAY_API}/admin-verify/${ref}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
