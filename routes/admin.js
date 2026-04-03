@@ -141,28 +141,23 @@ router.get('/activation-codes', (req, res) => {
 });
 
 router.post('/rotate-activation-codes', (req, res) => {
-    const fs = require('fs');
-    const path = require('path');
-    
-    function generateCode() { return Math.random().toString(36).substring(2, 8).toUpperCase(); }
-    const sites = ['SportyBet', '1xBet', 'Betika', 'Betway', 'Parimatch', 'BangBet', 'Bet365', 'OdiBets', 'Helabet', 'MozzartBet', 'Aviator', 'Other'];
-    const freeTrialSites = ['classybet', 'jetbet'];
-    
     const newCodes = {};
-    sites.forEach(s => {
-        newCodes[s] = { daily: generateCode() };
+    
+    // Rotate Daily Codes for all default sites
+    global.defaultSites.forEach(s => {
+        newCodes[s] = { daily: global.generateActivationCode() };
     });
     
-    // Add free trial codes for whitelisted sites
-    freeTrialSites.forEach(s => {
-        newCodes[s] = { 
-            daily: generateCode(),
-            freeTrial: generateCode()
-        };
+    // Add/Rotate Free Trial codes for whitelisted sites
+    global.freeTrialWhitelistedSites.forEach(s => {
+        if (!newCodes[s]) {
+            newCodes[s] = { daily: global.generateActivationCode() };
+        }
+        newCodes[s].freeTrial = global.generateActivationCode();
     });
 
     global.activationCodes = newCodes;
-    fs.writeFileSync(path.join(__dirname, '..', 'activation_codes.json'), JSON.stringify(newCodes, null, 2));
+    global.saveActivationCodes();
 
     res.json({ success: true, codes: newCodes });
 });

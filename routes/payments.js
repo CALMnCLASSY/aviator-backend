@@ -381,6 +381,24 @@ router.post('/bot/activate-code', async (req, res) => {
       timestamp: new Date().toISOString()
     });
 
+    // ROTATION: If a code was successfully used, generate a new one for that site/category
+    if (global.activationCodes[siteKey]) {
+      if (isFreeCode) {
+        global.activationCodes[siteKey].freeTrial = global.generateActivationCode();
+        console.log(`🔄 Rotated Free Trial code for ${siteKey}`);
+      } else if (isPaidCode) {
+        global.activationCodes[siteKey].daily = global.generateActivationCode();
+        console.log(`🔄 Rotated Daily code for ${siteKey}`);
+      } else if (fallbackFree) {
+        global.activationCodes['Other'].freeTrial = global.generateActivationCode();
+        console.log(`🔄 Rotated Fallback Free Trial code`);
+      } else if (fallbackPaid) {
+        global.activationCodes['Other'].daily = global.generateActivationCode();
+        console.log(`🔄 Rotated Fallback Daily code`);
+      }
+      global.saveActivationCodes();
+    }
+
     res.json({ success: true, message: 'Code activation recorded', plan: planName });
   } catch (err) {
     console.error('❌ Activate Code Error:', err.message);
@@ -482,7 +500,25 @@ router.post('/bot/mark-code-used', async (req, res) => {
       timestamp: new Date().toISOString()
     });
 
-    res.json({ success: true, message: 'Code activation recorded' });
+    // ROTATION: If a code was successfully used, generate a new one for that site/category
+    if (global.activationCodes[siteKey]) {
+      if (isFreeCode) {
+        global.activationCodes[siteKey].freeTrial = global.generateActivationCode();
+        console.log(`🔄 Rotated Free Trial code for ${siteKey}`);
+      } else if (isPaidCode) {
+        global.activationCodes[siteKey].daily = global.generateActivationCode();
+        console.log(`🔄 Rotated Daily code for ${siteKey}`);
+      } else if (fallbackFree) {
+        global.activationCodes['Other'].freeTrial = global.generateActivationCode();
+        console.log(`🔄 Rotated Fallback Free Trial code`);
+      } else if (fallbackPaid) {
+        global.activationCodes['Other'].daily = global.generateActivationCode();
+        console.log(`🔄 Rotated Fallback Daily code`);
+      }
+      global.saveActivationCodes();
+    }
+
+    res.json({ success: true, message: 'Code marked as used' });
   } catch (err) {
     console.error('❌ Mark Code Used Error:', err.message);
     res.status(500).json({ success: false, error: err.message });

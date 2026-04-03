@@ -194,9 +194,9 @@ global.activeSessions = new Map();
 global.botPayments = global.botPayments || {};
 console.log('✅ Initialized global.botPayments storage');
 
-function generateActivationCode(length = 6) {
+global.generateActivationCode = function(length = 6) {
   return Math.random().toString(36).substring(2, 2 + length).toUpperCase();
-}
+};
 
 const CODES_FILE = path.join(__dirname, 'activation_codes.json');
 
@@ -204,13 +204,13 @@ const CODES_FILE = path.join(__dirname, 'activation_codes.json');
 global.MASTER_ADMIN_CODE = process.env.MASTER_ADMIN_CODE || 'OJ204';
 console.log(`🔑 Master Admin Code is active`);
 
-function saveActivationCodes() {
+global.saveActivationCodes = function() {
   try {
     fs.writeFileSync(CODES_FILE, JSON.stringify(global.activationCodes, null, 2));
   } catch (e) {
     console.error('Failed to persist activation codes:', e.message);
   }
-}
+};
 
 // Load persisted codes from disk if available, otherwise generate fresh ones
 let persistedCodes = {};
@@ -223,8 +223,8 @@ try {
   console.warn('Could not load activation_codes.json, starting fresh:', e.message);
 }
 
-const defaultSites = ['SportyBet', '1xBet', 'Betika', 'Betway', 'Parimatch', 'BangBet', 'Bet365', 'OdiBets', 'Helabet', 'MozzartBet', 'Aviator', 'Other'];
-const freeTrialWhitelistedSites = ['classybet', 'jetbet'];
+global.defaultSites = ['SportyBet', '1xBet', 'Betika', 'Betway', 'Parimatch', 'BangBet', 'Bet365', 'OdiBets', 'Helabet', 'MozzartBet', 'Aviator', 'Other'];
+global.freeTrialWhitelistedSites = ['classybet', 'jetbet'];
 
 global.activationCodes = persistedCodes;
 defaultSites.forEach(site => {
@@ -264,7 +264,7 @@ freeTrialWhitelistedSites.forEach(site => {
 });
 
 // Save the initial state
-saveActivationCodes();
+global.saveActivationCodes();
 console.log('✅ Initialized site-specific global.activationCodes');
 
 // Middleware to track online users
