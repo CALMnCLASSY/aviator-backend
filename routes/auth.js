@@ -218,6 +218,110 @@ router.post('/index-login', async (req, res) => {
   }
 });
 
+// PASSWORD RESET - FORGOT PASSWORD (OTP)
+global.passwordResets = global.passwordResets || {};
+
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ success: false, error: 'Email is required' });
+
+    // 1. Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    global.passwordResets[email] = {
+      otp,
+      expires: Date.now() + 15 * 60 * 1000 // 15 minutes
+    };
+
+    // 3. Send Email
+    const emailSent = await emailService.sendEmail(email, "Your Password Reset OTP 🔐", `
+      <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 500px; margin: auto; border: 1px solid #eee; border-radius: 10px;">
+        <h2 style="color: #f1c40f; text-align: center;">AviSignals Predictor</h2>
+        <h3 style="color: #333; text-align: center;">Password Reset Request</h3>
+        <p>You requested a password reset for your account. Please use the following One-Time Password (OTP) to complete the process:</p>
+        <div style="background: #f9f9f9; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px; margin: 25px 0; border: 2px dashed #f1c40f; color: #f1c40f;">
+          ${otp}
+        </div>
+        <p>This code is valid for <strong>15 minutes</strong>. If you didn't request this, please ignore this email and your password will remain unchanged.</p>
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+        <p style="font-size: 12px; color: #777; text-align: center;">Best regards,<br/><strong>The AviSignals Team</strong></p>
+      </div>
+    `);
+
+    if (!emailSent) throw new Error('Failed to send OTP email');
+
+    res.json({ success: true, message: 'OTP sent to your email' });
+  } catch (error) {
+    console.error('❌ Forgot password error:', error);
+    res.status(500).json({ success: false, error: 'Failed to process request. Please try again later.' });
+  }
+});
+
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ success: false, error: 'All fields are required' });
+    }
+
+    const resetData = global.passwordResets[email];
+    if (!resetData || resetData.otp !== otp || resetData.expires < Date.now()) {
+      return res.status(400).json({ success: false, error: 'Invalid or expired OTP. Please request a new one.' });
+    }
+
+    // Update password in Supabase
+    if (req.supabase) {
+      // Find the user ID by email
+      const { data: profile, error: findError } = await req.supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .single();
+      
+      if (findError || !profile) {
+        throw new Error('User account not found');
+      }
+
+      const { error: resetError } = await req.supabase.auth.admin.updateUserById(
+        profile.id,
+        { password: newPassword }
+      );
+      
+      if (resetError) throw resetError;
+    }
+
+    // Clear reset data
+    delete global.passwordResets[email];
+
+    // Notify Discord
+    discordAgent.sendUserEvent('PASSWORD_RESET', { email, status: 'SUCCESS' });
+
+    res.json({ success: true, message: 'Password updated successfully. You can now login with your new password.' });
+  } catch (error) {
+    console.error('❌ Reset password error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// LOG AUTH EVENT (Updated to handle phone)
+router.post('/log-auth-event', async (req, res) => {
+  try {
+    const { event, email, details } = req.body;
+    console.log(`📡 Logging auth event: ${event} for ${email}`);
+    
+    let eventDetails = { email, ...details };
+    
+    // Explicitly check for phone in details or root
+    if (details && details.phone) eventDetails.phone = details.phone;
+
+    await discordAgent.sendUserEvent(event, eventDetails);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('❌ Log auth event error:', error);
+    res.status(500).json({ success: false });
+  }
+});
+
 // Session validation endpoint
 router.post('/validate-session', async (req, res) => {
   try {
