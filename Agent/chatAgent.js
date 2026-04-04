@@ -1,195 +1,437 @@
-const groq = require('./groqClient');
+// ============================================================
+// chatAgent.js — AviSignals AI Chat Agent v2
+//
+// Key improvements over v1:
+//  - Deep sales persona with objection handling & upsell triggers
+//  - Intent detection (ready_to_buy, frustrated, confused, browsing)
+//  - Lead capture: logs buy-intent users to Supabase for follow-up
+//  - Per-user rate limiting (prevents API abuse)
+//  - History kept at 10 messages (was 5) with smarter trimming
+//  - Session summary sent to Discord with intent + lead flag
+//  - Saves to correct support_chats table (not missing 'logs' table)
+//  - Graceful Groq fallback responses on API errors
+// ============================================================
+
+'use strict';
+
+const groq         = require('./groqClient');
 const discordAgent = require('./discordAgent');
-const supabase = require('./supabaseClient');
+const { createClient } = require('@supabase/supabase-js');
 
-// In-memory session tracking for Discord summaries
-const chatSessions = new Map();
-const SESSION_TIMEOUT = 5 * 60 * 1000; // 5 minutes of inactivity
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_KEY
+);
 
-/**
- * GENERATE AND SEND CHAT SUMMARY
- */
+// ─── Session store (in-memory) ───────────────────────────────
+const chatSessions   = new Map();
+const SESSION_TIMEOUT = 6 * 60 * 1000; // 6 min inactivity → trigger summary
+
+// ─── Per-user rate limiting ───────────────────────────────────
+const rateLimitMap   = new Map();
+const RATE_LIMIT     = 30;       // max messages per window
+const RATE_WINDOW_MS = 60 * 1000; // per 1 minute
+
+function isRateLimited(userKey) {
+    const now    = Date.now();
+    const record = rateLimitMap.get(userKey) || { count: 0, windowStart: now };
+
+    if (now - record.windowStart > RATE_WINDOW_MS) {
+        // Reset window
+        rateLimitMap.set(userKey, { count: 1, windowStart: now });
+        return false;
+    }
+
+    record.count++;
+    rateLimitMap.set(userKey, record);
+    return record.count > RATE_LIMIT;
+}
+
+// ============================================================
+// INTENT DETECTION
+// Classifies what kind of user we're talking to so the AI
+// can adjust its approach dynamically.
+// ============================================================
+
+function detectIntent(message, history) {
+    const text    = message.toLowerCase();
+    const allText = history.map(m => m.content).join(' ').toLowerCase() + ' ' + text;
+
+    if (/buy|purchase|pay|payment|mpesa|card|activate|75|dollar|\$75|get code|want (to|the) code/i.test(text))
+        return 'ready_to_buy';
+
+    if (/doesn't work|not working|broken|scam|fake|cheat|refund|waste|useless|failed|wrong/i.test(text))
+        return 'frustrated';
+
+    if (/how|what|explain|tell me|confused|don't understand|help me|where|when|which/i.test(text))
+        return 'needs_guidance';
+
+    if (/win rate|accuracy|proof|evidence|screenshot|real|legit|trust|guarantee/i.test(allText))
+        return 'skeptical';
+
+    if (/tomorrow|later|maybe|soon|not now|think about it/i.test(text))
+        return 'hesitant';
+
+    return 'browsing';
+}
+
+// ============================================================
+// SYSTEM PROMPT — The core AI persona
+// This is the biggest upgrade. v1 had 9 bullet facts.
+// v2 has a full sales persona with intent-aware instructions.
+// ============================================================
+
+const BASE_SYSTEM_PROMPT = `
+You are ARIA — the AviSignals AI Sales & Support Agent. You are sharp, warm, and results-driven. 
+You work for AviSignals, Kenya's most trusted Aviator game prediction platform.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PERSONA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Name: ARIA (AviSignals Real-time Intelligence Assistant)  
+- Tone: Confident, friendly, persuasive — like a knowledgeable friend who knows the product inside out
+- Never robotic. Never generic. Always specific to where the user is and what they need.
+- You care about the user winning. You genuinely want them to succeed with Aviator.
+- You are brief. 2-4 sentences per response unless explaining steps.
+- You use formatting: **bold** for buttons/actions, bullet points for steps.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PRODUCT KNOWLEDGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WHAT WE OFFER:
+- An AI-powered Aviator game predictor bot on our website (avisignals.com/bot.html)
+- The bot predicts the exact round multiplier so users know when to cash out
+- We claim 100% accuracy — our AI analyses real-time round patterns
+
+FREE TIER:
+- Every registered user gets 1 free daily code
+- Unlocks a 30-minute predictor session
+- User clicks **FREE CODE** on the bot page → gets assigned a betting site → gets their code → clicks **Use Bot** → gets their code → clicks **Use Bot** → enters code → clicks **Activate**
+
+PAID TIER:
+- **$75 USD** = 24 hours of continuous uninterrupted predictor access  
+- ONE plan only. No weekly, monthly, or other plans. Just the 24H code.
+- Payment via **Mobile Money** or **Card** through Paystack (safe & instant)
+- After payment, code is activated immediately — no waiting
+
+HOW TO USE THE BOT:
+1. Open avisignals.com/bot.html AND your Aviator game on your betting site simultaneously
+2. Watch the bot — it shows the predicted multiplier for the NEXT round
+3. Wait for that round → place your bet → cash out just BEFORE the shown multiplier
+4. Repeat every round for the entire session
+
+SUPPORTED SITES: All major betting platforms — 1win, SportyBet, 1xBet, Betika, Betway, Parimatch, BangBet, Bet365, OdiBets, Helabet, MozzartBet, and more.
+
+REGISTRATION:
+- Go to avisignals.com → click **Register** → enter email & password → confirm email → log in → go to Bot page → click **FREE CODE** to start
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SUPPORT CONTACTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Telegram admin (direct): [@Aadmin4cnc](https://t.me/Aadmin4cnc)
+- WhatsApp admin: [+44 7400 756162](https://wa.me/447400756162)  
+- Free signals Telegram channel: [AviSignals Channel](https://t.me/AviSignalsAviatorPredictorBot)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SALES RULES — READ CAREFULLY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. NEVER push registration to a logged-in user. Context tells you their login state.
+2. IF the user has an unused daily code → focus ONLY on helping them use it right now.
+3. IF the user's daily code is used up → empathise, then pivot to the $75 24H upgrade.
+4. IF the user expresses buy intent → immediately confirm the price ($75), explain Mobile-money/card payment, and tell them exactly where to click (Buy Code button on the bot page after selecting their betting site).
+5. NEVER invent prices, plans, or features that don't exist.
+6. IF the user doubts accuracy → don't get defensive. Acknowledge the question and point to the free trial as proof: "Try the free session first — see for yourself."
+7. IF the user is frustrated → apologise first, then solve. Never argue.
+8. IF the user seems hesitant → create gentle urgency: "Slots fill up fast — the free code is already reserved for you."
+9. UPSELL TRIGGER: After helping a user with their free code, ALWAYS end with one soft upsell sentence about the 24H plan.
+10. NEVER tell a user they can't use the bot on their site. The bot works on ALL sites so they just come back daily to get a new code on a new site.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OBJECTION HANDLING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"Is this a scam?" → "Completely understand the caution — try the free daily session first, no payment required. If it works for you, then consider the upgrade."
+"$75 is too expensive" → "That's fair. Consider this: one good Aviator session can return that in minutes. And you have a full 24 hours — unlimited rounds. over $1500 profit"
+"It didn't work for me" → "Sorry to hear that. Let's fix it — which betting site were you on and what happened exactly? I'll get you sorted."
+"I want a refund" → "I hear you. Please contact our admin directly on WhatsApp for account help: [+44 7400 756162](https://wa.me/447400756162) — they'll assist you right away."
+"Can I get a discount?" → "Our pricing is fixed at $75 for the 24H code — it's already very competitive given the returns. But you can always start with the free daily trial first."
+`;
+
+// ============================================================
+// INTENT-SPECIFIC PROMPT ADDONS
+// Injected dynamically based on detected user intent
+// ============================================================
+
+const INTENT_ADDONS = {
+    ready_to_buy: `
+The user is showing BUY INTENT. This is a HOT lead.
+→ Confirm price immediately: $75 for 24 hours.
+→ Tell them to click **Buy Code** on the bot page (avisignals.com/bot.html).
+→ Mention both Mobile-money and card are accepted, even crypto.
+→ Emphasise instant activation — they start right after payment.
+→ Keep it SHORT and action-focused. Remove all friction.
+`,
+    frustrated: `
+The user is frustrated or unhappy. Your job is to de-escalate first.
+→ Start with a genuine apology. Don't be defensive.
+→ Ask one specific question to understand the problem.
+→ Offer the admin WhatsApp as the fastest human resolution path.
+→ Do NOT try to upsell a frustrated user.
+`,
+    needs_guidance: `
+The user needs step-by-step help. Be their guide.
+→ Use a numbered list for any process.
+→ Confirm which page they're on if relevant.
+→ Be patient and thorough — they're learning.
+→ End with a soft confirmation: "Does that make sense? Let me know if you get stuck."
+`,
+    skeptical: `
+The user is questioning accuracy or legitimacy. Don't get defensive.
+→ Validate their concern — skepticism is smart.
+→ Direct them to the FREE daily trial as proof: no risk, no payment.
+→ Mention that the bot is used daily by hundreds across Kenya.
+→ Suggest they try one session and judge for themselves.
+`,
+    hesitant: `
+The user is on the fence. Create gentle, non-pushy urgency.
+→ Remind them the free daily code is already waiting for them.
+→ Make the starting step trivially easy: just click FREE CODE.
+→ Don't pressure. Make it feel like THEIR decision.
+`,
+    browsing: `
+The user is exploring. Be friendly and informative.
+→ Give them a clear picture of what AviSignals offers.
+→ Nudge them toward claiming their free daily code — zero commitment.
+→ Keep it conversational and light.
+`
+};
+
+// ============================================================
+// SESSION SUMMARY — sent to Discord after inactivity
+// ============================================================
+
 async function triggerSessionSummary(userKey) {
     const session = chatSessions.get(userKey);
     if (!session || session.history.length === 0) return;
 
     try {
         const chatHistoryText = session.history
-            .map(m => `${m.role.toUpperCase()}: ${m.content}`)
+            .map(m => `${m.role === 'user' ? 'USER' : 'ARIA'}: ${m.content}`)
             .join('\n');
 
-        const prompt = `Summarize this customer support chat.
-        Identify: 1. User details (${session.userContext}). 2. Core inquiry/problem. 3. Final outcome.
-        Conversation:
-        ${chatHistoryText}
-        Output a professional 2-3 sentence report for the admin.`;
+        const summaryPrompt = `You are an analyst reviewing an AviSignals customer support conversation.
 
-        const chatCompletion = await groq.chat.completions.create({
-            messages: [{ role: "user", content: prompt }],
-            model: "llama-3.3-70b-versatile",
-            temperature: 0.5,
+User: ${session.userContext || 'Guest'}
+Page: ${session.pageLocation || 'Unknown'}
+Intent detected: ${session.intent || 'unknown'}
+
+Full conversation:
+${chatHistoryText}
+
+Write a concise admin report (3-4 sentences max) covering:
+1. Who the user is and what they wanted,include number if available ad if we should call them.
+2. Whether they are a potential paying customer (yes/no and why)
+3. Was the issue resolved? What was the outcome?
+4. Recommended follow-up action for the admin (if any)
+
+Flag as HOT LEAD if the user expressed any interest in buying the $75 code.`;
+
+        const completion = await groq.chat.completions.create({
+            messages: [{ role: 'user', content: summaryPrompt }],
+            model:       'llama-3.3-70b-versatile',
+            temperature: 0.4,
+            max_tokens:  300
         });
 
-        const summary = chatCompletion.choices[0]?.message?.content || "No summary available.";
+        const summary   = completion.choices[0]?.message?.content ?? 'Summary unavailable.';
+        const isHotLead = session.intent === 'ready_to_buy' ||
+                          summary.toLowerCase().includes('hot lead');
 
         // 1. Send to Discord
         await discordAgent.sendChatSummary({
-            text: summary,
-            user: session.userContext || 'Guest / Unlogged',
-            page: session.pageLocation || 'Bot Page'
+            text: `${isHotLead ? '🔥 HOT LEAD\n\n' : ''}${summary}`,
+            user: session.userContext || 'Guest',
+            page: session.pageLocation || 'Unknown'
         });
 
-        // 2. Persist to Supabase (for Admin Dashboard)
-        if (supabase) {
-            try {
-                await supabase
-                    .from('logs')
-                    .insert([{
-                        event_type: 'chat_summary',
-                        details: {
-                            user: session.userContext,
-                            summary: summary,
-                            page: session.pageLocation
-                        },
-                        created_at: new Date().toISOString()
-                    }]);
-            } catch (dbErr) {
-                console.error('⚠️ Chat log persistence failed:', dbErr.message);
-            }
+        // 2. Save full chat to Supabase support_chats table
+        if (supabase && session.history.length > 0) {
+            const rows = session.history.map(m => ({
+                user_id:    session.userId || null,
+                session_id: userKey,
+                message:    m.content,
+                sender:     m.role === 'user' ? 'user' : 'ai',
+                created_at: new Date().toISOString()
+            }));
+
+            await supabase.from('support_chats').insert(rows)
+                .then(({ error }) => {
+                    if (error) console.error('⚠️  Chat persist error:', error.message);
+                });
         }
 
-        // Clean up
-        chatSessions.delete(userKey);
-    } catch (err) {
-        console.error('❌ Chat Summarization Error:', err.message);
-    }
-}
-
-// Central Knowledge Base & Persona
-const SYSTEM_PROMPT = `
-You are the official AviSignals AI Assistant. Your goal is to provide world-class, confident, and persuasive customer support for the Aviator Predictor Platform.
-
-# Critical Persona Rules
-1. **BE CONCISE**: Keep your answers extremely short (1-5 sentences maximum per point).
-2. **Formatting**: Always use **bold text** for important names, buttons, or links (e.g., "Click **FREE CODE**"). Use bullet points for steps.
-3. **Context Aware**: I will pass you the user's login state and current page. Tell them exactly what to click next based on where they are.
-4. **No Registration Pitch**: If they are already logged in (isLoggedIn = true), do NOT ask them to register.
-
-# System Knowledge
-1. **Accuracy**: The bot guarantees **100% accuracy**. Countless clients have turned $100 into over $1,500 rapidly.
-2. **Free Code Structure**: The Predictor Bot is free to use once daily! Users MUST click **FREE CODE** on the Bot page to get their code and unlock a free 30minute session.
-3. **Extra Code**: For a new code on any betting site asked tell user to come back tomorrow for another chance. They can get an extra code by buying. The ONLY payment plan we offer is a **24-Hour continuous activation code** for exactly **$75**. NO OTHER PLANS. This activates the bot for 24hours.
-4. **Using the Bot**: Once a user has a code, they click **Use Bot**, select their site, enter the code, and click **Activate**.
-5. **Support**: For complex issues, contact Admin on **Telegram (@Aadmin4cnc)https://t.me/Aadmin4cnc** or **WhatsApp (+44 7400 756162)https://wa.me/447400756162**.
-6. **Telegram Channel**: Subscribe to our [Telegram Channel](https://t.me/AviSignalsAviatorPredictorBot) for daily free signals and tips on aviator.
-7. **How to Play**: Open the bot app and your aviator game in your betting site at the same time, check the bot on when the plane will fly away then wait for that round and place your bet then cashout before the shown multiplier
-8. **Registration**: Click on Register and enter your details then check your email to confirm your account and login to start getting predictions. You get a free code and can buy an extra code after using the free one or after it expires.
-9. **Betting Site**: The bot works and is 100% accurate with all major betting platforms. To get a code for any site you click Buy Code and make the 75$ payment to activate it.
-`;
-
-async function handleChat(req, res) {
-    try {
-        const { message, history, userContext, pageLocation, isLoggedIn, sessionStatus } = req.body;
-
-        if (!message) {
-            return res.status(400).json({ error: "Message is required" });
-        }
-
-        // Prepare the message array for Groq
-        const messages = [
-            { role: "system", content: SYSTEM_PROMPT }
-        ];
-
-        // Add context if known
-        let userIdentityPrompt = `The user is currently on the ${pageLocation || 'website'} page. `;
-        if (isLoggedIn) {
-            userIdentityPrompt += `They ARE logged into their account. DO NOT ask them to register or login again. `;
-        } else {
-            userIdentityPrompt += `They are NOT logged into their account yet. You should guide them to register on the Bot Page. `;
-        }
-
-        if (userContext && userContext !== 'anonymous') {
-            userIdentityPrompt += `Their username/identifier is: ${userContext}. Address them using this name. `;
-        }
-
-        // Detailed Session Status Injection
-        if (sessionStatus) {
-            if (sessionStatus.hasActiveSession) {
-                userIdentityPrompt += `They have an ACTIVE bot session (Type: ${sessionStatus.activationType}). They should be using the predictor right now. `;
-            } else if (sessionStatus.hasDailyCode) {
-                if (sessionStatus.isCodeUsed) {
-                    userIdentityPrompt += `They have already USED their daily code for today on ${sessionStatus.assignedSite}. They need to wait until tomorrow or buy a $75 24H code. `;
-                } else {
-                    userIdentityPrompt += `They have an UNUSED daily code (${sessionStatus.dailyCode}) for the site ${sessionStatus.assignedSite}. Tell them to click 'Use Bot', select ${sessionStatus.assignedSite}, and enter their code. `;
-                }
-            } else if (sessionStatus.assignedSite !== 'none') {
-                userIdentityPrompt += `They have been assigned to ${sessionStatus.assignedSite} but haven't grabbed their code yet. Tell them to click 'FREE CODE'. `;
-            }
-        }
-
-        messages.push({
-            role: "system",
-            content: userIdentityPrompt
-        });
-
-        // Add recent history to maintain context (last 5 messages to avoid token bloat)
-        if (history && Array.isArray(history)) {
-            const recentHistory = history.slice(-5);
-            recentHistory.forEach(msg => {
-                // Ensure roles are valid ('user' or 'assistant')
-                if (msg.role === 'user' || msg.role === 'assistant') {
-                    messages.push({ role: msg.role, content: msg.content });
-                }
+        // 3. If hot lead — also log to a leads table for marketing follow-up
+        if (isHotLead && session.userContext && session.userContext !== 'anonymous') {
+            await supabase.from('email_sequences').insert({
+                user_id:       session.userId || null,
+                sequence_type: 'hot_lead',
+                step:          1,
+                channel:       'ai_chat',
+                converted:     false
+            }).then(({ error }) => {
+                if (error) console.error('⚠️  Lead log error:', error.message);
             });
         }
 
-        // Finally, add the current user message (if not already the last item in history)
-        const lastHistoryMsg = history && history.length > 0 ? history[history.length - 1] : null;
-        if (!lastHistoryMsg || lastHistoryMsg.content !== message) {
-            messages.push({ role: "user", content: message });
+        chatSessions.delete(userKey);
+
+    } catch (err) {
+        console.error('❌ Session summary error:', err.message);
+    }
+}
+
+// ============================================================
+// MAIN HANDLER
+// ============================================================
+
+async function handleChat(req, res) {
+    try {
+        const {
+            message,
+            history       = [],
+            userContext,
+            pageLocation,
+            isLoggedIn    = false,
+            sessionStatus = {},
+            userId        = null
+        } = req.body;
+
+        if (!message || typeof message !== 'string') {
+            return res.status(400).json({ error: 'Message is required.' });
         }
 
-        // Call Groq AI
-        // Using llama3-70b-8192 for high-quality persuasive reasoning
-        const chatCompletion = await groq.chat.completions.create({
-            messages: messages,
-            model: "llama-3.3-70b-versatile",
-            temperature: 0.7, // Balances creativity with professionalism
-            max_tokens: 500,
+        if (message.length > 1000) {
+            return res.status(400).json({ error: 'Message too long.' });
+        }
+
+        // ── Rate limiting ─────────────────────────────────────
+        const userKey = userContext || req.ip || 'anonymous';
+        if (isRateLimited(userKey)) {
+            return res.status(429).json({
+                reply: "You're sending messages very fast! Give me a second to catch up. 😄"
+            });
+        }
+
+        // ── Detect intent ──────────────────────────────────────
+        const intent     = detectIntent(message, history);
+        const intentAddon = INTENT_ADDONS[intent] || INTENT_ADDONS.browsing;
+
+        // ── Build user context string ──────────────────────────
+        let contextBlock = `\n━━━━━━━━━━━━━━━━━━━━━━━━\nUSER CONTEXT\n━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+        contextBlock += `Current page: ${pageLocation || 'unknown'}\n`;
+        contextBlock += `Logged in: ${isLoggedIn ? 'YES — do NOT ask them to register or log in again' : 'NO — guide them to register'}\n`;
+
+        if (userContext && userContext !== 'anonymous') {
+            contextBlock += `User identifier: ${userContext}\n`;
+        }
+
+        // Session status injection
+        if (sessionStatus) {
+            if (sessionStatus.hasActiveSession) {
+                contextBlock += `Bot session: ACTIVE (${sessionStatus.activationType}) — encourage them to be using the bot RIGHT NOW\n`;
+            } else if (sessionStatus.hasDailyCode) {
+                if (sessionStatus.isCodeUsed) {
+                    contextBlock += `Daily code: ALREADY USED today on ${sessionStatus.assignedSite}. Suggest waiting until tomorrow OR buying the $75 24H code.\n`;
+                } else {
+                    contextBlock += `Daily code: UNUSED — code is ${sessionStatus.dailyCode} for ${sessionStatus.assignedSite}. Guide them to click 'Use Bot', select ${sessionStatus.assignedSite}, enter code, click Activate.\n`;
+                }
+            } else if (sessionStatus.assignedSite && sessionStatus.assignedSite !== 'none') {
+                contextBlock += `Assigned site: ${sessionStatus.assignedSite} — but no code grabbed yet. Tell them to click FREE CODE.\n`;
+            } else {
+                contextBlock += `No code or session yet. Guide them to click FREE CODE on the bot page.\n`;
+            }
+        }
+
+        contextBlock += `Detected intent: ${intent}\n`;
+
+        // ── Assemble message array ─────────────────────────────
+        const messages = [
+            {
+                role:    'system',
+                content: BASE_SYSTEM_PROMPT + contextBlock + `\nINTENT-SPECIFIC INSTRUCTIONS:\n${intentAddon}`
+            }
+        ];
+
+        // Keep last 10 messages (was 5) — enough context without token bloat
+        const recentHistory = Array.isArray(history) ? history.slice(-10) : [];
+        recentHistory.forEach(msg => {
+            if (msg.role === 'user' || msg.role === 'assistant') {
+                messages.push({ role: msg.role, content: String(msg.content).slice(0, 800) });
+            }
         });
 
-        const reply = chatCompletion.choices[0]?.message?.content || "I'm sorry, I encountered an internal error processing that.";
-
-        // Session Tracking for Discord Summary
-        const userKey = userContext || 'anonymous';
-        let session = chatSessions.get(userKey);
-
-        if (!session) {
-            session = {
-                history: [],
-                timer: null,
-                userContext: userContext || 'Guest',
-                pageLocation: pageLocation || 'Bot Page'
-            };
+        // Add current message if not already the last in history
+        const lastMsg = recentHistory[recentHistory.length - 1];
+        if (!lastMsg || lastMsg.content !== message) {
+            messages.push({ role: 'user', content: message });
         }
 
-        // Reset inactivity timer
+        // ── Call Groq ──────────────────────────────────────────
+        let reply;
+        try {
+            const completion = await groq.chat.completions.create({
+                messages,
+                model:       'llama-3.3-70b-versatile',
+                temperature: 0.65,
+                max_tokens:  450
+            });
+            reply = completion.choices[0]?.message?.content?.trim();
+        } catch (groqErr) {
+            console.error('❌ Groq API error:', groqErr.message);
+            // Graceful fallback — don't show a blank error to the user
+            reply = `I'm having a brief technical issue. For immediate help, reach our admin on WhatsApp: [+44 7400 756162](https://wa.me/447400756162) or Telegram: [@Aadmin4cnc](https://t.me/Aadmin4cnc).`;
+        }
+
+        if (!reply) {
+            reply = "Something went wrong on my end. Please try again or contact our admin on WhatsApp.";
+        }
+
+        // ── Update session store ───────────────────────────────
+        let session = chatSessions.get(userKey) || {
+            history:      [],
+            timer:        null,
+            userContext:  userContext || 'Guest',
+            pageLocation: pageLocation || 'Unknown',
+            userId:       userId,
+            intent:       intent
+        };
+
+        // Update intent to the most recent (overwrite if more specific)
+        if (intent !== 'browsing') session.intent = intent;
+
         if (session.timer) clearTimeout(session.timer);
 
-        session.history.push({ role: 'user', content: message });
-        session.history.push({ role: 'assistant', content: reply });
+        session.history.push({ role: 'user',      content: message });
+        session.history.push({ role: 'assistant', content: reply   });
 
-        session.timer = setTimeout(() => {
-            triggerSessionSummary(userKey);
-        }, SESSION_TIMEOUT);
+        // Cap stored history at 20 entries to keep memory usage bounded
+        if (session.history.length > 20) {
+            session.history = session.history.slice(-20);
+        }
 
+        session.timer = setTimeout(() => triggerSessionSummary(userKey), SESSION_TIMEOUT);
         chatSessions.set(userKey, session);
 
-        return res.json({ reply });
+        // ── Respond ────────────────────────────────────────────
+        return res.json({
+            reply,
+            intent // Send intent back so frontend can optionally adjust UI
+        });
 
-    } catch (error) {
-        console.error("Groq Chat Error:", error);
-        return res.status(500).json({ error: "Failed to generate AI response." });
+    } catch (err) {
+        console.error('❌ handleChat error:', err);
+        return res.status(500).json({
+            reply: "I'm having trouble right now. Please contact our admin: [WhatsApp](https://wa.me/447400756162)"
+        });
     }
 }
 
