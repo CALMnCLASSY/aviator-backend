@@ -336,7 +336,7 @@ router.post('/bot/activate-code', async (req, res) => {
             .insert([{
               email: trackingUser.includes('@') ? trackingUser : null,
               phone: !trackingUser.includes('@') ? trackingUser : null,
-              created_at: new Date().toISOString()
+              last_seen: new Date().toISOString()
             }])
             .select('id')
             .single();
@@ -351,11 +351,10 @@ router.post('/bot/activate-code', async (req, res) => {
           const { error: activationErr } = await req.supabase
             .from('activations')
             .insert([{
-              profile_id: profileId,
+              user_id: profileId,
               code: code,
               site: site || 'Unknown',
-              status: 'used',
-              is_free: actualIsFree,
+              code_type: planType,
               activated_at: new Date().toISOString()
             }]);
 

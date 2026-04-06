@@ -79,6 +79,17 @@ function sendToTelegram(message, retries = 3) {
                         const wait = JSON.parse(body)?.parameters?.retry_after ?? 5;
                         console.warn(`⏳ Telegram rate limit — retrying in ${wait}s`);
                         setTimeout(() => sendToTelegram(message, retries - 1).then(resolve).catch(reject), wait * 1000);
+                    } else if (res.statusCode === 400 && retries > 0) {
+                        // Fallback to plain text if Markdown fails
+                        console.warn('⚠️ Telegram Markdown failed — falling back to plain text');
+                        const plainData = JSON.stringify({
+                            chat_id: CHAT_ID,
+                            text: chunks[index]
+                        });
+                        const plainOptions = { ...options, headers: { ...options.headers, 'Content-Length': Buffer.byteLength(plainData) } };
+                        const plainReq = https.request(plainOptions, (r) => resolve());
+                        plainReq.write(plainData);
+                        plainReq.end();
                     } else {
                         console.error(`❌ Telegram error ${res.statusCode}:`, body);
                         resolve(); 
@@ -133,58 +144,52 @@ async function fetchMetrics() {
     ] = await Promise.allSettled([
 
         // New signups today
-        supabase.from('users')
+        supabase.from('profiles')
             .select('id, email, created_at', { count: 'exact', head: false })
             .gte('created_at', todayStart),
 
         // New signups in last hour
-        supabase.from('users')
+        supabase.from('profiles')
             .select('id', { count: 'exact', head: true })
             .gte('created_at', hourAgo),
 
         // Signups this week
-        supabase.from('users')
+        supabase.from('profiles')
             .select('id', { count: 'exact', head: true })
             .gte('created_at', weekAgo),
 
         // Payments today
         supabase.from('payments')
-            .select('amount, currency, method, plan', { count: 'exact', head: false })
-            .gte('paid_at', todayStart)
+            .select('amount, currency, method', { count: 'exact', head: false })
+            .gte('created_at', todayStart)
             .eq('status', 'success'),
 
         // Payments this week
         supabase.from('payments')
             .select('amount', { count: 'exact', head: false })
-            .gte('paid_at', weekAgo)
+            .gte('created_at', weekAgo)
             .eq('status', 'success'),
 
-        // Active subscriptions right now
-        supabase.from('subscriptions')
-            .select('plan', { count: 'exact', head: false })
-            .eq('status', 'active'),
+        // Active activations right now (within last 24h)
+        supabase.from('activations')
+            .select('code_type, site', { count: 'exact', head: false })
+            .gte('activated_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
 
-        // Subscriptions expiring in next 24 hours
-        supabase.from('subscriptions')
-            .select('user_id, expires_at', { count: 'exact', head: false })
-            .eq('status', 'active')
-            .gte('expires_at', new Date().toISOString())
-            .lte('expires_at', new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()),
+        // Activations expiring in next 24 hours (for those activated > 23h ago)
+        supabase.from('activations')
+            .select('user_id, activated_at', { count: 'exact', head: false })
+            .gte('activated_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+            .lte('activated_at', new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString()),
 
         // Users who signed up this week but never paid
-        supabase.from('users')
+        supabase.from('profiles')
             .select('id', { count: 'exact', head: true })
             .gte('created_at', weekAgo),
 
         // Support chats in last hour
         supabase.from('support_chats')
             .select('session_id, sender', { count: 'exact', head: false })
-            .gte('created_at', hourAgo),
-
-        // Signal performance today
-        supabase.from('signals')
-            .select('result, plan_required')
-            .gte('sent_at', todayStart)
+            .gte('created_at', hourAgo)
     ]);
 
     const val = (r) => r.status === 'fulfilled' ? r.value : { data: null, count: 0, error: r.reason };
@@ -197,10 +202,11 @@ async function fetchMetrics() {
     const mpesaPayments     = todayPaymentRows.filter(p => p.method === 'mobile_money').length;
     const cardPayments      = todayPaymentRows.filter(p => p.method === 'card').length;
 
-    // ── Process subscriptions ──────────────────────────────────
-    const subsRows          = val(activeSubscriptions).data ?? [];
-    const planBreakdown     = subsRows.reduce((acc, s) => {
-        acc[s.plan] = (acc[s.plan] || 0) + 1;
+    // ── Process activations ──────────────────────────────────
+    const activationsRows   = val(activeSubscriptions).data ?? [];
+    const planBreakdown     = activationsRows.reduce((acc, s) => {
+        const type = s.code_type === 'FREE_TRIAL' ? 'Free Trial' : 'Paid 24H';
+        acc[type] = (acc[type] || 0) + 1;
         return acc;
     }, {});
 
@@ -232,7 +238,7 @@ async function fetchMetrics() {
         paymentsTodayCount,
         mpesaPayments,
         cardPayments,
-        activeSubscriptions: subsRows.length,
+        activeSubscriptions: activationsRows.length,
         planBreakdown,
         expiringSoon:        val(expiringSoon).count ?? 0,
         conversionRate,

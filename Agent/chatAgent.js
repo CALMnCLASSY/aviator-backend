@@ -14,7 +14,7 @@
 
 'use strict';
 
-const groq         = require('./groqClient');
+const groq = require('./groqClient');
 const discordAgent = require('./discordAgent');
 const { createClient } = require('@supabase/supabase-js');
 
@@ -24,16 +24,16 @@ const supabase = createClient(
 );
 
 // ─── Session store (in-memory) ───────────────────────────────
-const chatSessions   = new Map();
+const chatSessions = new Map();
 const SESSION_TIMEOUT = 6 * 60 * 1000; // 6 min inactivity → trigger summary
 
 // ─── Per-user rate limiting ───────────────────────────────────
-const rateLimitMap   = new Map();
-const RATE_LIMIT     = 30;       // max messages per window
+const rateLimitMap = new Map();
+const RATE_LIMIT = 30;       // max messages per window
 const RATE_WINDOW_MS = 60 * 1000; // per 1 minute
 
 function isRateLimited(userKey) {
-    const now    = Date.now();
+    const now = Date.now();
     const record = rateLimitMap.get(userKey) || { count: 0, windowStart: now };
 
     if (now - record.windowStart > RATE_WINDOW_MS) {
@@ -54,7 +54,7 @@ function isRateLimited(userKey) {
 // ============================================================
 
 function detectIntent(message, history) {
-    const text    = message.toLowerCase();
+    const text = message.toLowerCase();
     const allText = history.map(m => m.content).join(' ').toLowerCase() + ' ' + text;
 
     if (/buy|purchase|pay|payment|mpesa|card|activate|75|dollar|\$75|get code|want (to|the) code/i.test(text))
@@ -83,7 +83,7 @@ function detectIntent(message, history) {
 
 const BASE_SYSTEM_PROMPT = `
 You are ARIA — the AviSignals AI Sales & Support Agent. You are sharp, warm, and results-driven. 
-You work for AviSignals, Kenya's most trusted Aviator game prediction platform.
+You work for AviSignals, Europe's most trusted Aviator game prediction platform.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PERSONA
@@ -112,7 +112,7 @@ PAID TIER:
 - **$75 USD** = 24 hours of continuous uninterrupted predictor access  
 - ONE plan only. No weekly, monthly, or other plans. Just the 24H code.
 - Payment via **Mobile Money** or **Card** through Paystack (safe & instant)
-- After payment, code is activated immediately — no waiting
+- After payment, code is given immediately — no waiting
 
 HOW TO USE THE BOT:
 1. Open avisignals.com/bot.html AND your Aviator game on your betting site simultaneously
@@ -120,7 +120,7 @@ HOW TO USE THE BOT:
 3. Wait for that round → place your bet → cash out just BEFORE the shown multiplier
 4. Repeat every round for the entire session
 
-SUPPORTED SITES: All major betting platforms — 1win, SportyBet, 1xBet, Betika, Betway, Parimatch, BangBet, Bet365, OdiBets, Helabet, MozzartBet, and more.
+SUPPORTED SITES: All major betting platforms — 1win, SportyBet, 1xBet, Betika, Betway, Parimatch, BangBet, Bet365, OdiBets, Helabet, MozzartBet, ClassyBet, 22bet, Hollywoodbet and more.
 
 REGISTRATION:
 - Go to avisignals.com → click **Register** → enter email & password → confirm email → log in → go to Bot page → click **FREE CODE** to start
@@ -227,24 +227,25 @@ Intent detected: ${session.intent || 'unknown'}
 Full conversation:
 ${chatHistoryText}
 
-Write a concise admin report (3-4 sentences max) covering:
-1. Who the user is and what they wanted,include number if available ad if we should call them.
+Write a concise admin report (4-5 sentences max) covering:
+1. Who the user is and what they wanted,include number if available and if we should call them.
 2. Whether they are a potential paying customer (yes/no and why)
 3. Was the issue resolved? What was the outcome?
 4. Recommended follow-up action for the admin (if any)
+5. Something interesting they said 
 
 Flag as HOT LEAD if the user expressed any interest in buying the $75 code.`;
 
         const completion = await groq.chat.completions.create({
             messages: [{ role: 'user', content: summaryPrompt }],
-            model:       'llama-3.3-70b-versatile',
+            model: 'llama-3.3-70b-versatile',
             temperature: 0.4,
-            max_tokens:  300
+            max_tokens: 300
         });
 
-        const summary   = completion.choices[0]?.message?.content ?? 'Summary unavailable.';
+        const summary = completion.choices[0]?.message?.content ?? 'Summary unavailable.';
         const isHotLead = session.intent === 'ready_to_buy' ||
-                          summary.toLowerCase().includes('hot lead');
+            summary.toLowerCase().includes('hot lead');
 
         // 1. Send to Discord
         await discordAgent.sendChatSummary({
@@ -256,10 +257,10 @@ Flag as HOT LEAD if the user expressed any interest in buying the $75 code.`;
         // 2. Save full chat to Supabase support_chats table
         if (supabase && session.history.length > 0) {
             const rows = session.history.map(m => ({
-                user_id:    session.userId || null,
+                user_id: session.userId || null,
                 session_id: userKey,
-                message:    m.content,
-                sender:     m.role === 'user' ? 'user' : 'ai',
+                message: m.content,
+                sender: m.role === 'user' ? 'user' : 'ai',
                 created_at: new Date().toISOString()
             }));
 
@@ -272,11 +273,11 @@ Flag as HOT LEAD if the user expressed any interest in buying the $75 code.`;
         // 3. If hot lead — also log to a leads table for marketing follow-up
         if (isHotLead && session.userContext && session.userContext !== 'anonymous') {
             await supabase.from('email_sequences').insert({
-                user_id:       session.userId || null,
+                user_id: session.userId || null,
                 sequence_type: 'hot_lead',
-                step:          1,
-                channel:       'ai_chat',
-                converted:     false
+                step: 1,
+                channel: 'ai_chat',
+                converted: false
             }).then(({ error }) => {
                 if (error) console.error('⚠️  Lead log error:', error.message);
             });
@@ -297,12 +298,13 @@ async function handleChat(req, res) {
     try {
         const {
             message,
-            history       = [],
+            history = [],
             userContext,
+            contact,
             pageLocation,
-            isLoggedIn    = false,
+            isLoggedIn = false,
             sessionStatus = {},
-            userId        = null
+            userId = null
         } = req.body;
 
         if (!message || typeof message !== 'string') {
@@ -313,25 +315,38 @@ async function handleChat(req, res) {
             return res.status(400).json({ error: 'Message too long.' });
         }
 
-        // ── Rate limiting ─────────────────────────────────────
-        const userKey = userContext || req.ip || 'anonymous';
+        // ── Rate limiting & Session Tracking ──────────────────
+        const userKey = contact || userContext || req.ip || 'anonymous';
         if (isRateLimited(userKey)) {
             return res.status(429).json({
                 reply: "You're sending messages very fast! Give me a second to catch up. 😄"
             });
         }
 
-        // ── Detect intent ──────────────────────────────────────
-        const intent     = detectIntent(message, history);
-        const intentAddon = INTENT_ADDONS[intent] || INTENT_ADDONS.browsing;
+        if (!chatSessions.has(userKey)) {
+            chatSessions.set(userKey, {
+                history: [],
+                intent: 'browsing',
+                userContext: userContext,
+                contact: contact,
+                pageLocation: pageLocation,
+                userId: userId,
+                timer: null
+            });
+        }
+        const session = chatSessions.get(userKey);
+        session.userContext = userContext;
+        session.contact = contact;
+        session.pageLocation = pageLocation;
+        session.userId = userId;
 
         // ── Build user context string ──────────────────────────
         let contextBlock = `\n━━━━━━━━━━━━━━━━━━━━━━━━\nUSER CONTEXT\n━━━━━━━━━━━━━━━━━━━━━━━━\n`;
         contextBlock += `Current page: ${pageLocation || 'unknown'}\n`;
         contextBlock += `Logged in: ${isLoggedIn ? 'YES — do NOT ask them to register or log in again' : 'NO — guide them to register'}\n`;
 
-        if (userContext && userContext !== 'anonymous') {
-            contextBlock += `User identifier: ${userContext}\n`;
+        if (contact || userContext) {
+            contextBlock += `User identifier: ${contact || userContext}\n`;
         }
 
         // Session status injection
@@ -356,7 +371,7 @@ async function handleChat(req, res) {
         // ── Assemble message array ─────────────────────────────
         const messages = [
             {
-                role:    'system',
+                role: 'system',
                 content: BASE_SYSTEM_PROMPT + contextBlock + `\nINTENT-SPECIFIC INSTRUCTIONS:\n${intentAddon}`
             }
         ];
@@ -380,9 +395,9 @@ async function handleChat(req, res) {
         try {
             const completion = await groq.chat.completions.create({
                 messages,
-                model:       'llama-3.3-70b-versatile',
+                model: 'llama-3.3-70b-versatile',
                 temperature: 0.65,
-                max_tokens:  450
+                max_tokens: 450
             });
             reply = completion.choices[0]?.message?.content?.trim();
         } catch (groqErr) {
@@ -396,22 +411,15 @@ async function handleChat(req, res) {
         }
 
         // ── Update session store ───────────────────────────────
-        let session = chatSessions.get(userKey) || {
-            history:      [],
-            timer:        null,
-            userContext:  userContext || 'Guest',
-            pageLocation: pageLocation || 'Unknown',
-            userId:       userId,
-            intent:       intent
-        };
+        // Session was already fetched/initialized at the start of handleChat
 
         // Update intent to the most recent (overwrite if more specific)
         if (intent !== 'browsing') session.intent = intent;
 
         if (session.timer) clearTimeout(session.timer);
 
-        session.history.push({ role: 'user',      content: message });
-        session.history.push({ role: 'assistant', content: reply   });
+        session.history.push({ role: 'user', content: message });
+        session.history.push({ role: 'assistant', content: reply });
 
         // Cap stored history at 20 entries to keep memory usage bounded
         if (session.history.length > 20) {

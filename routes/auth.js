@@ -4,6 +4,13 @@ const fs = require('fs');
 const path = require('path');
 const discordAgent = require('../Agent/discordAgent');
 const emailService = require('../Agent/emailService');
+const { createClient } = require('@supabase/supabase-js');
+
+// Supabase Admin for syncing profiles
+const supabaseAdmin = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 /**
  * LOG SUPERBASE AUTH EVENT (Login/Register/FreeCode)
@@ -44,6 +51,24 @@ router.post('/log-auth-event', async (req, res) => {
                 await emailService.sendWelcomeEmail(email);
             } catch (emailErr) {
                 console.warn('⚠️ Welcome email failed (non-fatal):', emailErr.message);
+            }
+        }
+
+        // 3. Sync Profile to Database
+        if (event === 'REGISTER' || event === 'LOGIN') {
+            try {
+                // Use email as unique identifier for light sync
+                const { error: syncErr } = await supabaseAdmin
+                    .from('profiles')
+                    .upsert({
+                        email: email,
+                        last_seen: new Date().toISOString()
+                    }, { onConflict: 'email' });
+                
+                if (syncErr) console.warn('⚠️ Profile sync failed:', syncErr.message);
+                else console.log(`✅ Profile synced for ${email}`);
+            } catch (syncErr) {
+                console.warn('⚠️ Profile sync exception:', syncErr.message);
             }
         }
 
