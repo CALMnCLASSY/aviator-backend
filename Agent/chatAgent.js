@@ -20,7 +20,7 @@ const { createClient } = require('@supabase/supabase-js');
 
 const supabase = createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_KEY
+    process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 // ─── Session store (in-memory) ───────────────────────────────
@@ -249,9 +249,11 @@ Flag as HOT LEAD if the user expressed any interest in buying the $75 code.`;
 
         // 1. Send to Discord
         await discordAgent.sendChatSummary({
-            text: `${isHotLead ? '🔥 HOT LEAD\n\n' : ''}${summary}`,
+            text: summary,
             user: session.userContext || 'Guest',
-            page: session.pageLocation || 'Unknown'
+            page: session.pageLocation || 'Unknown',
+            intent: session.intent || 'unknown',
+            isHotLead: isHotLead
         });
 
         // 2. Save full chat to Supabase support_chats table
@@ -340,6 +342,11 @@ async function handleChat(req, res) {
         session.pageLocation = pageLocation;
         session.userId = userId;
 
+        // ── Detect Intent & History ──────────────────────────
+        const recentHistory = Array.isArray(history) ? history.slice(-10) : [];
+        const intent = detectIntent(message, recentHistory);
+        const intentAddon = INTENT_ADDONS[intent] || INTENT_ADDONS.browsing;
+
         // ── Build user context string ──────────────────────────
         let contextBlock = `\n━━━━━━━━━━━━━━━━━━━━━━━━\nUSER CONTEXT\n━━━━━━━━━━━━━━━━━━━━━━━━\n`;
         contextBlock += `Current page: ${pageLocation || 'unknown'}\n`;
@@ -377,7 +384,6 @@ async function handleChat(req, res) {
         ];
 
         // Keep last 10 messages (was 5) — enough context without token bloat
-        const recentHistory = Array.isArray(history) ? history.slice(-10) : [];
         recentHistory.forEach(msg => {
             if (msg.role === 'user' || msg.role === 'assistant') {
                 messages.push({ role: msg.role, content: String(msg.content).slice(0, 800) });

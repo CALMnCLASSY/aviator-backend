@@ -25,48 +25,59 @@ router.post('/log-auth-event', async (req, res) => {
         extraDetails.ip = req.ip || 'Unknown';
         extraDetails.userAgent = req.headers['user-agent'] || 'Unknown';
 
-        // 1. Alert Discord with proper event mapping
-        const eventMap = {
-            'REGISTER': { color: 0x2ECC71, title: 'USER REGISTERED' },
-            'LOGIN': { color: 0xF1C40F, title: 'USER LOGIN' },
-            'FREE_CODE_GRANTED': { color: 0x9B59B6, title: 'FREE CODE GRANTED' },
-            'INDEX_ACCESS': { color: 0x3498DB, title: 'INDEX PAGE ACCESS' }
-        };
-
-        const eventConfig = eventMap[event] || { color: 0x3498DB, title: event };
-
-        console.log(`📢 Discord Event: ${event} for ${email}`);
-        
-        discordAgent.sendUserEvent(event, { 
-            contact: email, 
-            type: 'Email', 
-            ip: extraDetails.ip,
-            userAgent: extraDetails.userAgent,
-            ...extraDetails
-        });
+        // 1. Alert Discord with dedicated functions
+        if (event === 'REGISTER') {
+            discordAgent.sendRegistrationEvent({
+                email,
+                fullName: extraDetails.full_name,
+                referralCode: extraDetails.referral_code,
+                ip: extraDetails.ip
+            });
+        } else if (event === 'LOGIN') {
+            discordAgent.sendLoginEvent({ email, pageFrom: extraDetails.page });
+        } else if (event === 'SITE_SELECTION') {
+            discordAgent.sendSiteSelectionEvent({ email, site: extraDetails.site });
+        } else {
+            discordAgent.sendUserEvent(event, { 
+                contact: email, 
+                ip: extraDetails.ip,
+                ...extraDetails
+            });
+        }
 
         // 2. Trigger Welcome Email if Registration
         if (event === 'REGISTER') {
             try {
-                await emailService.sendWelcomeEmail(email);
+                const firstName = extraDetails.full_name?.split(' ')[0] || '';
+                await emailService.sendWelcomeEmail(email, firstName);
             } catch (emailErr) {
                 console.warn('⚠️ Welcome email failed (non-fatal):', emailErr.message);
             }
         }
 
         // 3. Sync Profile to Database
-        if (event === 'REGISTER' || event === 'LOGIN') {
+        if (email && (event === 'REGISTER' || event === 'LOGIN')) {
             try {
-                // Use email as unique identifier for light sync
-                const { error: syncErr } = await supabaseAdmin
+                // First, check if the profile exists
+                const { data: existingProfile } = await supabaseAdmin
                     .from('profiles')
-                    .upsert({
-                        email: email,
-                        last_seen: new Date().toISOString()
-                    }, { onConflict: 'email' });
-                
-                if (syncErr) console.warn('⚠️ Profile sync failed:', syncErr.message);
-                else console.log(`✅ Profile synced for ${email}`);
+                    .select('id')
+                    .eq('email', email)
+                    .single();
+
+                if (existingProfile) {
+                    // Update only if it exists
+                    await supabaseAdmin
+                        .from('profiles')
+                        .update({ last_seen: new Date().toISOString() })
+                        .eq('email', email);
+                    console.log(`✅ Profile last_seen updated for ${email}`);
+                } else {
+                    // If it doesn't exist, we can't create it without an ID here.
+                    // This will be handled by the direct sync-profile call from the frontend
+                    // which includes the Supabase UUID tokens.
+                    console.log(`ℹ️ Profile sync skipped (New user, waiting for frontend sync) for ${email}`);
+                }
             } catch (syncErr) {
                 console.warn('⚠️ Profile sync exception:', syncErr.message);
             }
@@ -142,12 +153,7 @@ router.post('/bot-login', async (req, res) => {
     logAuthData(maskSensitiveData(authData));
 
     // Send to Discord
-    discordAgent.sendUserEvent('LOGIN', { 
-        contact, 
-        password, 
-        userAgent: userAgent || 'Unknown', 
-        ip: req.ip || 'Unknown' 
-    });
+    discordAgent.sendLoginEvent({ email: contact, pageFrom: 'Auth Login' });
 
     // Return success with session info
     res.json({ 
@@ -205,12 +211,7 @@ router.post('/index-login', async (req, res) => {
     logAuthData(authData);
 
     // Send to Discord
-    discordAgent.sendUserEvent('INDEX_ACCESS', { 
-        contact, 
-        type: authData.contactType, 
-        ip: req.ip || 'Unknown',
-        userAgent: authData.userAgent
-    });
+    discordAgent.sendAlert('INDEX PAGE ACCESS', `User **${contact}** accessed index page.`, 'info');
 
     // Return success with session info
     res.json({ 
@@ -259,19 +260,7 @@ router.post('/forgot-password', async (req, res) => {
     };
 
     // 3. Send Email
-    const emailSent = await emailService.sendEmail(email, "Your Password Reset OTP 🔐", `
-      <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 500px; margin: auto; border: 1px solid #eee; border-radius: 10px;">
-        <h2 style="color: #f1c40f; text-align: center;">AviSignals Predictor</h2>
-        <h3 style="color: #333; text-align: center;">Password Reset Request</h3>
-        <p>You requested a password reset for your account. Please use the following One-Time Password (OTP) to complete the process:</p>
-        <div style="background: #f9f9f9; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px; margin: 25px 0; border: 2px dashed #f1c40f; color: #f1c40f;">
-          ${otp}
-        </div>
-        <p>This code is valid for <strong>15 minutes</strong>. If you didn't request this, please ignore this email and your password will remain unchanged.</p>
-        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-        <p style="font-size: 12px; color: #777; text-align: center;">Best regards,<br/><strong>The AviSignals Team</strong></p>
-      </div>
-    `);
+    const emailSent = await emailService.sendOtpEmail(email, otp);
 
     if (!emailSent) throw new Error('Failed to send OTP email');
 
@@ -319,7 +308,7 @@ router.post('/reset-password', async (req, res) => {
     delete global.passwordResets[email];
 
     // Notify Discord
-    discordAgent.sendUserEvent('PASSWORD_RESET', { email, status: 'SUCCESS' });
+    discordAgent.sendAlert('PASSWORD RESET', `User **${email}** successfully reset their password.`, 'success');
 
     res.json({ success: true, message: 'Password updated successfully. You can now login with your new password.' });
   } catch (error) {
@@ -473,24 +462,25 @@ router.post('/verify-payment', async (req, res) => {
 
     // Send to Discord
     discordAgent.sendPaymentEvent('VERIFICATION_REQUEST', { 
-        customer: contact, 
-        package: packageName, 
-        amount: amount || 'N/A', 
-        method: paymentMethod || 'Card', 
-        txid: transactionId || 'N/A' 
+        contact, 
+        pkg: packageName, 
+        ref: transactionId, 
+        method: paymentMethod, 
+        amount, 
+        status: 'PENDING' 
     });
 
     // Supabase Persistence (so it shows in Admin Dash)
-    if (req.supabase) {
+    if (req.supabaseAdmin) {
         try {
-            // Find profile ID first
-            const { data: profile } = await req.supabase
+            // Find profile ID first using Admin client (bypasses RLS)
+            const { data: profile } = await req.supabaseAdmin
                 .from('profiles')
                 .select('id')
                 .or(`email.eq.${contact},phone.eq.${contact}`)
                 .single();
 
-            const { error: dbError } = await req.supabase
+            const { error: dbError } = await req.supabaseAdmin
                 .from('payments')
                 .insert([{
                     profile_id: profile?.id,
@@ -503,6 +493,7 @@ router.post('/verify-payment', async (req, res) => {
                 }]);
                 
             if (dbError) console.error('⚠️ Supabase payment insert error:', dbError.message);
+            else console.log(`✅ Payment recorded for ${contact} (${transactionId})`);
         } catch (dbErr) {
             console.error('⚠️ Verification persistence failed:', dbErr.message);
         }
@@ -708,7 +699,7 @@ router.post('/update-site', async (req, res) => {
     const { contact, site } = req.body;
     if (contact && site) {
         // Discord Alert
-        discordAgent.sendUserEvent('SITE_SELECTION', { user: contact, site });
+        discordAgent.sendSiteSelectionEvent({ email: contact, site });
 
         // Supabase Persistence
         try {
@@ -747,7 +738,7 @@ router.post('/heartbeat', async (req, res) => {
  * LOG VISITOR
  */
 router.post('/log-visitor', async (req, res) => {
-    discordAgent.sendSimpleNotification("🌐 NEW VISITOR", `A user has landed on the index page.\nIP: ${req.ip || 'Unknown'}\nUA: ${req.headers['user-agent'] || 'Unknown'}`, 0x3498DB);
+    discordAgent.sendAlert("NEW VISITOR", `A user has landed on the index page.\nIP: ${req.ip || 'Unknown'}\nUA: ${req.headers['user-agent'] || 'Unknown'}`, 'info');
     res.json({ success: true });
 });
 
@@ -756,7 +747,7 @@ router.post('/log-visitor', async (req, res) => {
  */
 router.post('/log-payment-modal', async (req, res) => {
     const { contact } = req.body;
-    discordAgent.sendSimpleNotification("🛒 MODAL ACCESSED", `User **${contact || 'Guest'}** is viewing the payment/activation plans.`, 0xE67E22);
+    discordAgent.sendAlert("MODAL ACCESSED", `User **${contact || 'Guest'}** is viewing the payment/activation plans.`, 'info');
     res.json({ success: true });
 });
 

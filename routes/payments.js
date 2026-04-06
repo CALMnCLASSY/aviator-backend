@@ -40,7 +40,7 @@ router.post('/usdt/create-order', async (req, res) => {
 
     const reference = `USDT_${Date.now()}_${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
 
-    const { data, error } = await req.supabase
+    const { data, error } = await req.supabaseAdmin
       .from('payments')
       .insert([{
         user_id,
@@ -69,7 +69,7 @@ router.post('/usdt/create-order', async (req, res) => {
  */
 router.get('/status/:reference', async (req, res) => {
   try {
-    const { data, error } = await req.supabase
+    const { data, error } = await req.supabaseAdmin
       .from('payments')
       .select('status, amount, reference')
       .eq('reference', req.params.reference)
@@ -90,11 +90,11 @@ router.get('/bot/status/:reference', async (req, res) => {
   try {
     const { reference } = req.params;
     
-    if (!req.supabase) {
+    if (!req.supabaseAdmin) {
       return res.json({ success: true, status: 'pending', message: 'Payment verification in progress' });
     }
 
-    const { data, error } = await req.supabase
+    const { data, error } = await req.supabaseAdmin
       .from('payments')
       .select('status, amount, reference, created_at')
       .eq('reference', reference)
@@ -130,7 +130,7 @@ router.post('/admin-verify/:reference', async (req, res) => {
     const { verified, reason } = req.body;
     const { reference } = req.params;
 
-    const { data, error } = await req.supabase
+    const { data, error } = await req.supabaseAdmin
       .from('payments')
       .update({ status: verified ? 'verified' : 'rejected' })
       .eq('reference', reference)
@@ -139,7 +139,22 @@ router.post('/admin-verify/:reference', async (req, res) => {
     if (error) throw error;
 
     // Discord Alert
-    discordAgent.sendPaymentEvent(verified ? 'PAYMENT_VERIFIED' : 'PAYMENT_REJECTED', { ref: reference, reason: reason || 'N/A' });
+    if (verified && data[0]) {
+        const payment = data[0];
+        discordAgent.sendRevenueAlert({
+            email: payment.email || 'Unknown', // Need to ensure email is in the record or passed
+            amount: payment.amount,
+            currency: payment.currency || 'USD',
+            method: payment.method || 'Unknown',
+            plan: payment.package || '24H Code',
+            paystackRef: payment.reference
+        });
+    } else {
+        discordAgent.sendPaymentEvent(verified ? 'PAYMENT_VERIFIED' : 'PAYMENT_REJECTED', { 
+            ref: reference, 
+            reason: reason || 'N/A' 
+        });
+    }
 
     res.json({ success: true, data });
   } catch (err) {
@@ -164,10 +179,10 @@ router.post('/bot/create-payment/:reference', async (req, res) => {
     let profileId = null;
 
     // Find or create profile to get proper UUID for user_id
-    if (req.supabase) {
+    if (req.supabaseAdmin) {
       try {
         // Try to find existing profile by email or phone
-        const { data: existingProfile } = await req.supabase
+        const { data: existingProfile } = await req.supabaseAdmin
           .from('profiles')
           .select('id')
           .or(`email.eq.${contact},phone.eq.${contact}`)
@@ -177,7 +192,7 @@ router.post('/bot/create-payment/:reference', async (req, res) => {
           profileId = existingProfile.id;
         } else {
           // Create new profile if doesn't exist
-          const { data: newProfile, error: createErr } = await req.supabase
+          const { data: newProfile, error: createErr } = await req.supabaseAdmin
             .from('profiles')
             .insert([{
               email: contact.includes('@') ? contact : null,
@@ -196,7 +211,7 @@ router.post('/bot/create-payment/:reference', async (req, res) => {
 
         // Insert pending payment record with proper UUID
         if (profileId) {
-          const { error: dbError } = await req.supabase
+          const { error: dbError } = await req.supabaseAdmin
             .from('payments')
             .insert([{
               user_id: profileId,
@@ -267,11 +282,11 @@ router.post('/bot/reveal-code', async (req, res) => {
 
     // Send Discord notification for free code grant
     if (isFree) {
-      discordAgent.sendUserEvent('FREE_CODE_GRANTED', {
-        user: user || 'Anonymous',
+      discordAgent.sendCodeEvent({
         site: siteKey,
+        codeType: 'FREE_TRIAL',
         code: code,
-        timestamp: new Date().toISOString()
+        generatedAt: new Date().toISOString()
       });
     }
 
@@ -318,10 +333,10 @@ router.post('/bot/activate-code', async (req, res) => {
 
     // Find or create profile for this user
     let profileId = null;
-    if (req.supabase) {
+    if (req.supabaseAdmin) {
       try {
         // Try to find existing profile
-        const { data: existingProfile } = await req.supabase
+        const { data: existingProfile } = await req.supabaseAdmin
           .from('profiles')
           .select('id')
           .or(`email.eq.${trackingUser},phone.eq.${trackingUser}`)
@@ -331,7 +346,7 @@ router.post('/bot/activate-code', async (req, res) => {
           profileId = existingProfile.id;
         } else {
           // Create new profile
-          const { data: newProfile, error: createErr } = await req.supabase
+          const { data: newProfile, error: createErr } = await req.supabaseAdmin
             .from('profiles')
             .insert([{
               email: trackingUser.includes('@') ? trackingUser : null,
@@ -348,7 +363,7 @@ router.post('/bot/activate-code', async (req, res) => {
 
         // Create activation record
         if (profileId) {
-          const { error: activationErr } = await req.supabase
+          const { error: activationErr } = await req.supabaseAdmin
             .from('activations')
             .insert([{
               user_id: profileId,
@@ -436,10 +451,10 @@ router.post('/bot/mark-code-used', async (req, res) => {
 
     // Find or create profile for this user
     let profileId = null;
-    if (req.supabase) {
+    if (req.supabaseAdmin) {
       try {
         // Try to find existing profile
-        const { data: existingProfile } = await req.supabase
+        const { data: existingProfile } = await req.supabaseAdmin
           .from('profiles')
           .select('id')
           .or(`email.eq.${user},phone.eq.${user}`)
@@ -449,7 +464,7 @@ router.post('/bot/mark-code-used', async (req, res) => {
           profileId = existingProfile.id;
         } else {
           // Create new profile
-          const { data: newProfile, error: createErr } = await req.supabase
+          const { data: newProfile, error: createErr } = await req.supabaseAdmin
             .from('profiles')
             .insert([{
               email: user.includes('@') ? user : null,
@@ -466,7 +481,7 @@ router.post('/bot/mark-code-used', async (req, res) => {
 
         // Create activation record
         if (profileId) {
-          const { error: activationErr } = await req.supabase
+          const { error: activationErr } = await req.supabaseAdmin
             .from('activations')
             .insert([{
               profile_id: profileId,

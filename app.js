@@ -15,11 +15,15 @@ const app = express();
 // Supabase Initialization
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
-const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Attach supabase to req for use in routes
+const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
+const supabaseAdmin = (supabaseUrl && supabaseServiceKey) ? createClient(supabaseUrl, supabaseServiceKey) : null;
+
+// Attach supabase clients to req for use in routes
 app.use((req, res, next) => {
   req.supabase = supabase;
+  req.supabaseAdmin = supabaseAdmin;
   next();
 });
 

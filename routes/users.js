@@ -45,14 +45,14 @@ router.post('/sync-profile', async (req, res) => {
     const { id, email, phone } = req.body;
     if (!id || !email) return res.status(400).json({ success: false, error: 'Missing req fields' });
 
-    const { data, error } = await req.supabase
+    const { data, error } = await req.supabaseAdmin
       .from('profiles')
       .upsert({ id, email, phone, updated_at: new Date().toISOString() });
 
     if (error) throw error;
 
     // Async alert (Discord)
-    discordAgent.sendUserEvent('PROFILE_SYNC', { email, phone: phone || 'N/A' });
+    discordAgent.sendAlert('PROFILE SYNC', `Profile synced for **${email}** (Phone: ${phone || 'N/A'})`, 'info');
 
     res.json({ success: true, data });
   } catch (err) {
@@ -69,14 +69,14 @@ router.post('/log-activation', async (req, res) => {
     const { user_id, email, code, code_type, site } = req.body;
     if (!user_id || !code) return res.status(400).json({ success: false, error: 'Missing fields' });
 
-    const { data, error } = await req.supabase
+    const { data, error } = await req.supabaseAdmin
       .from('activations')
       .insert([{ user_id, code, code_type, site }]);
 
     if (error) throw error;
 
     // Discord Alert
-    discordAgent.sendBotEvent({ user: email, code, code_type, site });
+    await discordAgent.sendAlert('ACTIVATION_LOG', `User action logged: ACTIVATION_LOG\nDetails: ${JSON.stringify({ user: email, code, code_type, site })}`, 'info');
 
     res.json({ success: true, data });
   } catch (err) {
@@ -89,7 +89,7 @@ router.post('/log-activation', async (req, res) => {
  */
 router.get('/:id', async (req, res) => {
   try {
-    const { data, error } = await req.supabase
+    const { data, error } = await req.supabaseAdmin
       .from('profiles')
       .select('*')
       .eq('id', req.params.id)
@@ -98,7 +98,7 @@ router.get('/:id', async (req, res) => {
     if (error) throw error;
     res.json({ success: true, data });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(404).json({ success: false, error: 'Profile not found' });
   }
 });
 

@@ -36,12 +36,12 @@ router.post('/login', (req, res) => {
 router.get('/stats', async (req, res) => {
     try {
         // 1. Total Users
-        const { count: totalUsers } = await req.supabase
+        const { count: totalUsers } = await req.supabaseAdmin
             .from('profiles')
             .select('*', { count: 'exact', head: true });
 
         // 2. Pending Payments
-        const { count: pendingPayments } = await req.supabase
+        const { count: pendingPayments } = await req.supabaseAdmin
             .from('payments')
             .select('*', { count: 'exact', head: true })
             .eq('status', 'pending');
@@ -49,13 +49,13 @@ router.get('/stats', async (req, res) => {
         // 3. Activations Today
         const today = new Date();
         today.setHours(0,0,0,0);
-        const { count: activationsToday } = await req.supabase
+        const { count: activationsToday } = await req.supabaseAdmin
             .from('activations')
             .select('*', { count: 'exact', head: true })
             .gte('activated_at', today.toISOString());
 
         // 4. Revenue Today (Verified Payments)
-        const { data: paymentsToday } = await req.supabase
+        const { data: paymentsToday } = await req.supabaseAdmin
             .from('payments')
             .select('amount')
             .eq('status', 'verified')
@@ -70,7 +70,7 @@ router.get('/stats', async (req, res) => {
                 pendingVerifications: pendingPayments || 0,
                 todayRevenue: revenueToday,
                 todayActivations: activationsToday || 0,
-                onlineCount: await getOnlineCount(req.supabase)
+                onlineCount: await getOnlineCount(req.supabaseAdmin)
             }
         });
     } catch (err) {
@@ -92,7 +92,7 @@ async function getOnlineCount(supabase) {
  */
 router.get('/pending-verifications', async (req, res) => {
     try {
-        const { data, error } = await req.supabase
+        const { data, error } = await req.supabaseAdmin
             .from('payments')
             .select('*, profiles(email, phone)')
             .eq('status', 'pending')
@@ -123,7 +123,7 @@ router.get('/pending-verifications', async (req, res) => {
  */
 router.get('/users', async (req, res) => {
     try {
-        const { data, error } = await req.supabase
+        const { data, error } = await req.supabaseAdmin
             .from('profiles')
             .select('*, activations(count), payments(count)')
             .order('last_seen', { ascending: false, nullsFirst: false });
@@ -167,7 +167,7 @@ router.post('/rotate-activation-codes', (req, res) => {
  */
 router.get('/activations', async (req, res) => {
     try {
-        const { data, error } = await req.supabase
+        const { data, error } = await req.supabaseAdmin
             .from('activations')
             .select('*, profiles(email, phone)')
             .order('activated_at', { ascending: false })
@@ -185,7 +185,7 @@ router.get('/activations', async (req, res) => {
  */
 router.get('/chat-summaries', async (req, res) => {
     try {
-        const { data, error } = await req.supabase
+        const { data, error } = await req.supabaseAdmin
             .from('logs')
             .select('*')
             .eq('event_type', 'chat_summary')
