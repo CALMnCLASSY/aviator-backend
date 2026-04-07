@@ -18,6 +18,12 @@ const discordAgent = require('./discordAgent');
 
 // ─── Transporter (Resend SMTP) ────────────────────────────────
 let _transporter = null;
+let _brevoTransporter = null;
+
+let resendEmailCount = 0;
+let lastResetDate = new Date().toDateString();
+const RESEND_DAILY_LIMIT = 98;
+const sentWelcomeEmails = new Set(); // For memory debounce
 
 function getTransporter() {
     if (!_transporter) {
@@ -33,6 +39,22 @@ function getTransporter() {
         });
     }
     return _transporter;
+}
+
+function getBrevoTransporter() {
+    if (!_brevoTransporter) {
+        if (!process.env.BREVO_SMTP_KEY || !process.env.BREVO_USER) {
+            console.warn('⚠️  BREVO configuration missing — fallback emails will not be sent.');
+            return null;
+        }
+        _brevoTransporter = nodemailer.createTransport({
+            host:   'smtp-relay.brevo.com',
+            port:   587,
+            secure: false, // true for 465, false for other ports
+            auth:   { user: process.env.BREVO_USER, pass: process.env.BREVO_SMTP_KEY }
+        });
+    }
+    return _brevoTransporter;
 }
 
 // ─── Constants ────────────────────────────────────────────────
@@ -161,36 +183,65 @@ async function sendEmail(to, subject, htmlBody, retries = 3) {
         return false;
     }
 
-    const transporter = getTransporter();
-    if (!transporter) return false;
+    // Reset daily counter if a new day has started
+    const today = new Date().toDateString();
+    if (lastResetDate !== today) {
+        resendEmailCount = 0;
+        lastResetDate = today;
+    }
 
     // Inject real unsubscribe URL
     const finalHtml = htmlBody.replace(/UNSUBSCRIBE_URL/g, unsubscribeUrl(to));
+    const mailOptions = {
+        from:    `"${FROM_NAME}" <${FROM_ADDRESS}>`,
+        replyTo: REPLY_TO,
+        to,
+        subject,
+        html:    finalHtml
+    };
+
+    // Determine primary transporter
+    let useBrevo = resendEmailCount >= RESEND_DAILY_LIMIT;
+    let transporter = useBrevo ? getBrevoTransporter() : getTransporter();
+
+    if (!transporter) {
+         console.warn(`⚠️  Email aborted: Transporter not available (useBrevo: ${useBrevo})`);
+         return false;
+    }
 
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
-            const info = await transporter.sendMail({
-                from:    `"${FROM_NAME}" <${FROM_ADDRESS}>`,
-                replyTo: REPLY_TO,
-                to,
-                subject,
-                html:    finalHtml
-            });
+            const info = await transporter.sendMail(mailOptions);
 
-            console.log(`📧 Email sent → ${to} | ${info.messageId}`);
+            console.log(`📧 Email sent (${useBrevo ? 'Brevo' : 'Resend'}) → ${to} | ${info.messageId}`);
+            
+            if (!useBrevo) {
+                resendEmailCount++;
+            }
 
             // Discord notification only on success
             discordAgent.sendSimpleNotification(
                 '📭 Email Sent',
-                `**To:** ${to}\n**Subject:** ${subject}`,
+                `**To:** ${to}\n**Subject:** ${subject}\n**via:** ${useBrevo ? 'Brevo' : 'Resend'}`,
                 0x9B59B6
             ).catch(() => {});
 
             return true;
 
         } catch (err) {
-            console.error(`❌ Email attempt ${attempt}/${retries} failed for ${to}:`, err.message);
-            if (attempt < retries) {
+            console.error(`❌ Email attempt ${attempt}/${retries} failed for ${to} (via ${useBrevo ? 'Brevo' : 'Resend'}):`, err.message);
+            
+            // If we hit Quota error on Resend, switch to Brevo immediately
+            if (!useBrevo && (err.message.includes('quota') || err.message.includes('rate') || err.responseCode === 550 || err.responseCode === 429)) {
+                console.log(`🔄 Quota/Rate warning on Resend. Switching to Brevo for remaining attempts.`);
+                resendEmailCount = RESEND_DAILY_LIMIT; // force Brevo for subsequent emails
+                useBrevo = true;
+                transporter = getBrevoTransporter();
+                if (!transporter) {
+                    console.error(`❌ Cannot switch to Brevo. Not configured.`);
+                    break;
+                }
+            } else if (attempt < retries) {
                 await new Promise(r => setTimeout(r, attempt * 2000)); // backoff
             }
         }
@@ -207,6 +258,12 @@ async function sendEmail(to, subject, htmlBody, retries = 3) {
 
 // Day 0 — fires immediately on registration
 async function sendWelcomeEmail(to, firstName = '') {
+    if (sentWelcomeEmails.has(to.toLowerCase())) {
+        console.warn(`⚠️ Duplicate welcome email suppressed for: ${to}`);
+        return false;
+    }
+    sentWelcomeEmails.add(to.toLowerCase());
+
     const name = firstName || to.split('@')[0];
     const subject = `Welcome to AviSignals, ${name}! 🚀 Claim your free code`;
 

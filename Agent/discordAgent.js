@@ -358,11 +358,11 @@ function sendBotEvent(details) {
 /**
  * Code generated or refreshed
  */
-function sendCodeEvent({ site, codeType, code, generatedAt }) {
+function sendCodeEvent({ site, codeType, code, generatedAt, user }) {
     const embed = baseEmbed({
         title:  `🔑 CODE ${String(codeType || 'GENERATED').toUpperCase()}`,
         color:  COLOR.teal,
-        fields: buildFields({ site, code_type: codeType, code, generated_at: generatedAt })
+        fields: buildFields({ user: user || '—', site, code_type: codeType, code, generated_at: generatedAt })
     });
     dispatch('bot', embed);
 }

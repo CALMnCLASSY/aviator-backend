@@ -38,7 +38,7 @@ if (missingEnv.length) {
 const RECOMMENDED_ENV = [
     'TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID', 'TELEGRAM_CHANNEL_ID',
     'RESEND_API_KEY', 'DISCORD_WEBHOOK_URL', 'GROQ_API_KEY',
-    'MASTER_ADMIN_CODE', 'ADMIN_PANEL_TOKEN', 'PAYSTACK_SECRET_KEY'
+    'MASTER_ADMIN_CODE', 'ADMIN_PANEL_TOKEN', 'BREVO_USER', 'BREVO_SMTP_KEY'
 ];
 RECOMMENDED_ENV.forEach(k => {
     if (!process.env[k]) console.warn(`⚠️  Optional env var not set: ${k}`);
@@ -53,6 +53,7 @@ const path       = require('path');
 const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
+app.set('trust proxy', 1);
 
 // ============================================================
 // SUPABASE — single shared client
@@ -61,6 +62,14 @@ const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_KEY
 );
+
+let supabaseAdmin = null;
+if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    supabaseAdmin = createClient(
+        process.env.SUPABASE_URL,
+        process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+}
 
 // ============================================================
 // GLOBALS — initialised BEFORE routes so nothing hits undefined
@@ -346,6 +355,7 @@ app.use((req, res, next) => {
 // ============================================================
 app.use((req, _res, next) => {
     req.supabase = supabase;
+    req.supabaseAdmin = supabaseAdmin;
     next();
 });
 

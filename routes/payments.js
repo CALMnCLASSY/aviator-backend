@@ -286,7 +286,8 @@ router.post('/bot/reveal-code', async (req, res) => {
         site: siteKey,
         codeType: 'FREE_TRIAL',
         code: code,
-        generatedAt: new Date().toISOString()
+        generatedAt: new Date().toISOString(),
+        user: user || 'Anonymous'
       });
     }
 
