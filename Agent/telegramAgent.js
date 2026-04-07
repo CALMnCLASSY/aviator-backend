@@ -360,7 +360,7 @@ const GENERATORS = {
 };
 
 // ============================================================
-// CHANNEL BROADCASTER — runs 3x per hour
+// CHANNEL BROADCASTER — runs at :15 and :45
 // ============================================================
 async function runChannelPost() {
     const type = nextContentType();
@@ -610,17 +610,20 @@ function stopPolling() {
 function startTelegramAgent() {
     console.log('🚀 AviSignals Telegram Agent v2 — Initializing...');
 
-    // 3 posts per hour — at :00, :20, and :40 past each hour
+    // 2 posts per hour — at :15 and :45 past each hour
     // Covers 6am to 11pm Nairobi time (adjust if VPS is not UTC+3)
-    cron.schedule('0 6-23 * * *', runChannelPost);  // on the hour
-    cron.schedule('20 6-23 * * *', runChannelPost);  // 20 past
-    cron.schedule('40 6-23 * * *', runChannelPost);  // 40 past
+    cron.schedule('15,45 6-23 * * *', runChannelPost);
 
     // Start admin bot polling
     pollForAdminMessages();
 
+    // Initialize Marketing Bot
+    const TelegramMarketingBot = require('../marketing/telegramMarketing');
+    const marketingBot = new TelegramMarketingBot();
+    marketingBot.start();
+
     console.log('✅ Telegram Agent ready:');
-    console.log('   📢 Channel broadcast — 3x per hour (:00, :20, :40), 6am–11pm');
+    console.log('   📢 Channel broadcast — 2x per hour (:15, :45), 6am–11pm');
     console.log('   👂 Admin bot polling  — always on, responds to your messages');
     console.log(`   💬 Admin chat ID      — ${ADMIN_CHAT || 'NOT SET (set TELEGRAM_CHAT_ID)'}`);
     console.log(`   📣 Channel            — ${CHANNEL_ID}`);

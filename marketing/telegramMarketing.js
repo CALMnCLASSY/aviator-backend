@@ -2,6 +2,7 @@
 const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
+const cron = require('node-cron');
 
 class TelegramMarketingBot {
     constructor() {
@@ -676,10 +677,8 @@ class TelegramMarketingBot {
     }
 
     getNextPostDelay() {
-        // Fixed 15-minute interval with ±2 min jitter for natural feel
-        const baseDelay = 15 * 60 * 1000; // 15 minutes
-        const jitter = (Math.random() - 0.5) * 4 * 60 * 1000; // ±2 minutes
-        return Math.max(13 * 60 * 1000, baseDelay + jitter); // minimum 13 minutes
+        // Obsolete function, retained for compatibility mapping if needed.
+        return 0;
     }
 
     async start() {
@@ -697,30 +696,27 @@ class TelegramMarketingBot {
 
         this.isRunning = true;
         console.log('✅ Marketing bot started successfully');
-        console.log(`📊 Mode: UNLIMITED signals every ~15 minutes`);
-        console.log(`🎥 Videos: ${this.videoLibrary.length} in rotation (target 6-10/day)`);
-        console.log(`📸 Images: ${Object.values(this.imageLibrary).flat().length} mapped across ${Object.keys(this.imageLibrary).length} categories`);
+        console.log(`📊 Mode: SCHEDULED signals at exactly :00 and :30`);
+        console.log(`🎥 Videos: ${this.videoLibrary.length} in rotation`);
+        console.log(`📸 Images: ${Object.values(this.imageLibrary).flat().length} tags`);
 
-        // Send first post immediately
-        console.log('🚀 Sending immediate startup post...');
-        this.sendMarketingPost();
+        // Send first post immediately, unless we are in the middle of the night
+        const currentHour = new Date().getHours();
+        if (currentHour >= 6 && currentHour <= 23) {
+            console.log('🚀 Sending immediate startup marketing post...');
+            this.sendMarketingPost();
+        }
 
-        // Then schedule recurring posts
-        this.scheduleNextPost();
+        // Schedule to run exactly on the hour and half hour (:00 and :30) between 6am and 11pm
+        cron.schedule('0,30 6-23 * * *', async () => {
+            if (this.isRunning) {
+                await this.sendMarketingPost();
+            }
+        });
     }
 
     scheduleNextPost() {
-        if (!this.isRunning) return;
-
-        const delay = this.getNextPostDelay();
-        console.log(`⏰ Next marketing post in ${Math.round(delay / 60000)} minutes`);
-
-        setTimeout(async () => {
-            if (this.isRunning) {
-                await this.sendMarketingPost();
-                this.scheduleNextPost();
-            }
-        }, delay);
+        // Handled completely by Node Cron now.
     }
 
     stop() {
