@@ -15,31 +15,41 @@ const supabaseAdmin = createClient(
 /**
  * LOG SUPERBASE AUTH EVENT (Login/Register/FreeCode)
  */
+/**
+ * LOG SUPERBASE AUTH EVENT (Login/Register/FreeCode)
+ * Optimized v2: Handles phone numbers, merges duplicates, and removes legacy fields.
+ */
 router.post('/log-auth-event', async (req, res) => {
     try {
         const { event, email, details } = req.body;
-        if (!event || !email) return res.status(400).json({ success: false });
+        if (!event || !email) return res.status(400).json({ success: false, error: 'Missing event or email' });
 
-        // Add user agent and IP stats
         const extraDetails = details || {};
         extraDetails.ip = req.ip || 'Unknown';
         extraDetails.userAgent = req.headers['user-agent'] || 'Unknown';
+        
+        // Extract phone number from any possible field
+        const phone = extraDetails.phone || extraDetails.number || req.body.phone || '—';
 
-        // 1. Alert Discord with dedicated functions
+        // 1. Alert Discord
         if (event === 'REGISTER') {
             discordAgent.sendRegistrationEvent({
                 email,
-                fullName: extraDetails.full_name,
-                referralCode: extraDetails.referral_code,
+                phone,
                 ip: extraDetails.ip
             });
         } else if (event === 'LOGIN') {
-            discordAgent.sendLoginEvent({ email, pageFrom: extraDetails.page });
+            discordAgent.sendLoginEvent({ 
+                email, 
+                phone,
+                pageFrom: extraDetails.page || extraDetails.from_page 
+            });
         } else if (event === 'SITE_SELECTION') {
             discordAgent.sendSiteSelectionEvent({ email, site: extraDetails.site });
         } else {
             discordAgent.sendUserEvent(event, { 
                 contact: email, 
+                phone,
                 ip: extraDetails.ip,
                 ...extraDetails
             });
@@ -48,7 +58,8 @@ router.post('/log-auth-event', async (req, res) => {
         // 2. Trigger Welcome Email if Registration
         if (event === 'REGISTER') {
             try {
-                const firstName = extraDetails.full_name?.split(' ')[0] || '';
+                // Use email prefix as name since we don't collect names anymore
+                const firstName = email.split('@')[0];
                 await emailService.sendWelcomeEmail(email, firstName);
             } catch (emailErr) {
                 console.warn('⚠️ Welcome email failed (non-fatal):', emailErr.message);
@@ -58,7 +69,6 @@ router.post('/log-auth-event', async (req, res) => {
         // 3. Sync Profile to Database
         if (email && (event === 'REGISTER' || event === 'LOGIN')) {
             try {
-                // First, check if the profile exists
                 const { data: existingProfile } = await supabaseAdmin
                     .from('profiles')
                     .select('id')
@@ -66,17 +76,10 @@ router.post('/log-auth-event', async (req, res) => {
                     .single();
 
                 if (existingProfile) {
-                    // Update only if it exists
                     await supabaseAdmin
                         .from('profiles')
                         .update({ last_seen: new Date().toISOString() })
                         .eq('email', email);
-                    console.log(`✅ Profile last_seen updated for ${email}`);
-                } else {
-                    // If it doesn't exist, we can't create it without an ID here.
-                    // This will be handled by the direct sync-profile call from the frontend
-                    // which includes the Supabase UUID tokens.
-                    console.log(`ℹ️ Profile sync skipped (New user, waiting for frontend sync) for ${email}`);
                 }
             } catch (syncErr) {
                 console.warn('⚠️ Profile sync exception:', syncErr.message);
@@ -317,24 +320,7 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
-// LOG AUTH EVENT (Updated to handle phone)
-router.post('/log-auth-event', async (req, res) => {
-  try {
-    const { event, email, details } = req.body;
-    console.log(`📡 Logging auth event: ${event} for ${email}`);
-    
-    let eventDetails = { email, ...details };
-    
-    // Explicitly check for phone in details or root
-    if (details && details.phone) eventDetails.phone = details.phone;
 
-    await discordAgent.sendUserEvent(event, eventDetails);
-    res.json({ success: true });
-  } catch (error) {
-    console.error('❌ Log auth event error:', error);
-    res.status(500).json({ success: false });
-  }
-});
 
 // Session validation endpoint
 router.post('/validate-session', async (req, res) => {

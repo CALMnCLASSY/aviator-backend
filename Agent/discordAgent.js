@@ -229,15 +229,14 @@ function sendEmbed(channel, embed) {
 /**
  * User registered on the platform
  */
-function sendRegistrationEvent({ email, fullName, referralCode, ip }) {
+function sendRegistrationEvent({ email, phone, ip }) {
     const embed = baseEmbed({
         title:  '🟢 NEW REGISTRATION',
         color:  COLOR.green,
         fields: buildFields({
-            name:          fullName || '—',
-            email,
-            referral_code: referralCode || '—',
-            ip:            ip || '—',
+            phone: phone || '—',
+            email: email || '—',
+            ip:    ip    || '—',
         }),
         footer: `${FOOTER_TAG} · New user`
     });
@@ -247,11 +246,15 @@ function sendRegistrationEvent({ email, fullName, referralCode, ip }) {
 /**
  * User logged in
  */
-function sendLoginEvent({ email, pageFrom }) {
+function sendLoginEvent({ email, phone, pageFrom }) {
     const embed = baseEmbed({
         title:  '🔵 USER LOGIN',
         color:  COLOR.blue,
-        fields: buildFields({ email, from_page: pageFrom || '—' })
+        fields: buildFields({ 
+            phone:     phone    || '—',
+            email:     email    || '—',
+            from_page: pageFrom || '—' 
+        })
     });
     dispatch('users', embed);
 }
