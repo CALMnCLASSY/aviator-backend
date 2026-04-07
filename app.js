@@ -393,7 +393,8 @@ const server = app.listen(PORT, () => {
   console.log(`✅ MongoDB: Removed - Using Telegram + file logs instead!`);
   console.log(`🎯 Simple, efficient, cost-effective solution!`);
 
-  // Initialize Telegram Marketing Bot
+  /* 
+  // Initialize Telegram Marketing Bot (Legacy - Replaced by Telegram Agent v2)
   console.log(`🚀 Initializing Telegram Marketing Bot...`);
   const TelegramMarketingBot = require('./marketing/telegramMarketing');
   const marketingBot = new TelegramMarketingBot();
@@ -406,6 +407,7 @@ const server = app.listen(PORT, () => {
 
   // Store marketing bot instance globally for admin controls
   app.locals.marketingBot = marketingBot;
+  */
 
   // Initialize AI Agents
   console.log(`🚀 Initializing Groq AI Agents...`);
