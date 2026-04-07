@@ -22,72 +22,72 @@ const { sendToAdmin, sendToChannel } = require('./telegramAgent');
 // ─── Platform specs ───────────────────────────────────────────
 const PLATFORMS = {
     facebook: {
-        name:      'Facebook',
+        name: 'Facebook',
         charLimit: 500,   // optimal (not max) for reach
-        tone:      'conversational, community-driven, story-based',
+        tone: 'conversational, community-driven, story-based',
         hashtagCount: '3-5',
-        emoji:     'moderate',
+        emoji: 'moderate',
     },
     tiktok: {
-        name:      'TikTok',
+        name: 'TikTok',
         charLimit: 150,   // caption — hook must be in first line
-        tone:      'punchy, youth-oriented, trend-aware, hype',
+        tone: 'punchy, youth-oriented, trend-aware, hype',
         hashtagCount: '5-8 (mix niche + trending)',
-        emoji:     'heavy',
+        emoji: 'heavy',
     },
     instagram: {
-        name:      'Instagram',
+        name: 'Instagram',
         charLimit: 300,   // optimal for feed posts
-        tone:      'aspirational, visual storytelling, lifestyle',
+        tone: 'aspirational, visual storytelling, lifestyle',
         hashtagCount: '8-12',
-        emoji:     'moderate-heavy',
+        emoji: 'moderate-heavy',
     },
     twitter: {
-        name:      'Twitter/X',
+        name: 'Twitter/X',
         charLimit: 240,
-        tone:      'sharp, punchy, opinion-driven, concise',
+        tone: 'sharp, punchy, opinion-driven, concise',
         hashtagCount: '1-2',
-        emoji:     'light',
+        emoji: 'light',
     }
 };
 
 // ─── Content themes — rotates daily ──────────────────────────
 const DAILY_THEMES = [
-    { theme: 'hype',         description: 'Big win energy, FOMO, excitement about results'             },
-    { theme: 'education',    description: 'Teach something useful about Aviator or the predictor'      },
-    { theme: 'testimonial',  description: 'Real member success story, social proof'                   },
-    { theme: 'behind_scenes',description: 'How the AI predictor works, mystery and trust-building'    },
-    { theme: 'urgency',      description: 'Daily code resets, limited time, act now messaging'        },
-    { theme: 'community',    description: 'Join the AviSignals family, Telegram channel growth push'  },
-    { theme: 'comparison',   description: 'Playing Aviator without a predictor vs with one'           },
+    { theme: 'hype', description: 'Big win energy, FOMO, excitement about results' },
+    { theme: 'education', description: 'Teach something useful about Aviator or the predictor' },
+    { theme: 'testimonial', description: 'Real member success story, social proof' },
+    { theme: 'behind_scenes', description: 'How the AI predictor works, mystery and trust-building' },
+    { theme: 'urgency', description: 'Daily code resets, limited time, act now messaging' },
+    { theme: 'community', description: 'Join the AviSignals family, Telegram channel growth push' },
+    { theme: 'comparison', description: 'Playing Aviator without a predictor vs with one' },
 ];
 
 // ─── Success stories pool ─────────────────────────────────────
 const STORIES = [
-    { name: 'James M.',  city: 'Nairobi',       from: 'KES 8,000',   to: 'KES 150,000',  site: 'Betika'  },
-    { name: 'Grace W.',  city: 'Cape Town',        from: 'KES 5,000',   to: 'KES 62,000',   site: 'Betway'     },
-    { name: 'Brian O.',  city: 'Accra',         from: 'KES 3,000',   to: 'KES 41,000',   site: '1xBet'      },
-    { name: 'Amara K.',  city: 'Kampala',        from: 'UGX 50,000',  to: 'UGX 900,000',  site: 'Bangbet'     },
-    { name: 'David N.',  city: 'Montreal',        from: 'CAD 100',  to: 'CAD 7,100',  site: 'OdiBets'    },
-    { name: 'Fatima H.', city: 'Dar es Salaam',  from: 'TZS 20,000',  to: 'TZS 380,000',  site: 'Parimatch'  },
-    { name: 'Tom K.',    city: 'London',        from: 'GBP 750',   to: 'GBP 28,000',   site: '1win' },
+    { name: 'James M.', city: 'Nairobi', from: 'KES 8,000', to: 'KES 150,000', site: 'Betika' },
+    { name: 'Grace W.', city: 'Cape Town', from: 'KES 5,000', to: 'KES 62,000', site: 'Betway' },
+    { name: 'Brian O.', city: 'Accra', from: 'KES 3,000', to: 'KES 41,000', site: '1xBet' },
+    { name: 'Amara K.', city: 'Kampala', from: 'UGX 50,000', to: 'UGX 900,000', site: 'Bangbet' },
+    { name: 'David N.', city: 'Montreal', from: 'CAD 100', to: 'CAD 7,100', site: 'OdiBets' },
+    { name: 'Fatima H.', city: 'Dar es Salaam', from: 'TZS 20,000', to: 'TZS 380,000', site: 'Parimatch' },
+    { name: 'Tom K.', city: 'London', from: 'GBP 750', to: 'GBP 28,000', site: '1win' },
 ];
 let storyIdx = 0;
 const nextStory = () => { const s = STORIES[storyIdx++ % STORIES.length]; return s; };
 
 // ─── Hashtag banks ────────────────────────────────────────────
 const HASHTAGS = {
-    core:    ['#AviSignals', '#AviatorPredictor', '#AviatorGame'],
-    kenyan:  ['#Hustle', '#KenyanTwitter', '#SportyBetKe', '#BetikaKe', '#OdiBets', '#mzansi', '#london'],
-    gaming:  ['#AviatorHack', '#AviatorTips', '#AviatorStrategy', '#AviatorCashout', '#mzansi', '#london'],
-    money:   ['#MoneyMoves', '#HustleSmart', '#EarnOnline', '#SideHustle', '#mzansi', '#london'],
-    tiktok:  ['#aviator', '#aviatorgame', '#foryou', '#foryoupage', '#viral', '#kenya', '#nairobi', '#mzansi', '#london'],
+    core: ['#AviSignals', '#AviatorPredictor', '#AviatorGame'],
+    kenyan: ['#Hustle', '#KenyanTwitter', '#SportyBetKe', '#BetikaKe', '#OdiBets', '#mzansi', '#london'],
+    gaming: ['#AviatorHack', '#AviatorTips', '#AviatorStrategy', '#AviatorCashout', '#mzansi', '#london'],
+    money: ['#MoneyMoves', '#HustleSmart', '#EarnOnline', '#SideHustle', '#mzansi', '#london'],
+    tiktok: ['#aviator', '#aviatorgame', '#foryou', '#foryoupage', '#viral', '#kenya', '#nairobi', '#mzansi', '#london'],
 };
 
 function hashtagSet(platforms, theme) {
     const base = [...HASHTAGS.core, ...HASHTAGS.gaming];
-    if (theme === 'hype' || theme === 'urgency')  base.push(...HASHTAGS.money);
-    if (platforms.includes('tiktok'))             base.push(...HASHTAGS.tiktok.slice(0, 4));
+    if (theme === 'hype' || theme === 'urgency') base.push(...HASHTAGS.money);
+    if (platforms.includes('tiktok')) base.push(...HASHTAGS.tiktok.slice(0, 4));
     base.push(...HASHTAGS.kenyan.slice(0, 2));
     return [...new Set(base)].join(' ');
 }
@@ -97,7 +97,7 @@ function hashtagSet(platforms, theme) {
 // ============================================================
 
 async function generatePlatformPost(platform, theme, story = null) {
-    const spec       = PLATFORMS[platform];
+    const spec = PLATFORMS[platform];
     const storyBlock = story
         ? `\nUse this real success story as inspiration:\n${story.name} from ${story.city}: turned ${story.from} → ${story.to} on ${story.site} using AviSignals.`
         : '';
@@ -120,16 +120,16 @@ BRAND RULES:
 - Target audience: Global world clients of players aged 18-35
 - NEVER use: "guaranteed", "100% win", "get rich quick", "risk-free"
 - ALWAYS focus on: AI-powered, data-driven, smart play, free trial available
-- CTA must link to: https://avisignals.com/bot.html
+- CTA must link to: https://avisignals.com/bot
 
 OUTPUT FORMAT:
 Return ONLY the post text + hashtags. No labels, no explanations, no quotes around the post.`;
 
     const completion = await groq.chat.completions.create({
-        messages:    [{ role: 'user', content: prompt }],
-        model:       'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: prompt }],
+        model: 'llama-3.3-70b-versatile',
         temperature: 0.85,
-        max_tokens:  400
+        max_tokens: 400
     });
 
     return completion.choices[0]?.message?.content?.trim() || '';
@@ -151,10 +151,10 @@ Format your response exactly like this:
 Be specific and creative. Make it something that would actually go viral in Kenya.`;
 
     const completion = await groq.chat.completions.create({
-        messages:    [{ role: 'user', content: prompt }],
-        model:       'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: prompt }],
+        model: 'llama-3.3-70b-versatile',
         temperature: 0.9,
-        max_tokens:  400
+        max_tokens: 400
     });
 
     return completion.choices[0]?.message?.content?.trim() || '';
@@ -167,21 +167,21 @@ Be specific and creative. Make it something that would actually go viral in Keny
 // ============================================================
 
 async function generateDailyContentPack() {
-    const now       = new Date();
-    const dayIdx    = now.getDay(); // 0=Sun, 1=Mon...
-    const theme     = DAILY_THEMES[dayIdx % DAILY_THEMES.length];
-    const story     = (theme.theme === 'testimonial') ? nextStory() : null;
-    const dateStr   = now.toLocaleDateString('en-KE', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'Africa/Nairobi' });
+    const now = new Date();
+    const dayIdx = now.getDay(); // 0=Sun, 1=Mon...
+    const theme = DAILY_THEMES[dayIdx % DAILY_THEMES.length];
+    const story = (theme.theme === 'testimonial') ? nextStory() : null;
+    const dateStr = now.toLocaleDateString('en-KE', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'Africa/Nairobi' });
 
     console.log(`📱 Generating daily content pack — theme: ${theme.theme}`);
 
     try {
         // Generate all platform content in parallel
         const [fbPost, igPost, twPost, ttCaption, videoIdea] = await Promise.all([
-            generatePlatformPost('facebook',  theme, story),
+            generatePlatformPost('facebook', theme, story),
             generatePlatformPost('instagram', theme, story),
-            generatePlatformPost('twitter',   theme, story),
-            generatePlatformPost('tiktok',    theme, story),
+            generatePlatformPost('twitter', theme, story),
+            generatePlatformPost('tiktok', theme, story),
             generateVideoIdea(theme),
         ]);
 
@@ -264,14 +264,14 @@ Format as a clean, scannable list. Use bold for day names.`;
 
     try {
         const completion = await groq.chat.completions.create({
-            messages:    [{ role: 'user', content: prompt }],
-            model:       'llama-3.3-70b-versatile',
+            messages: [{ role: 'user', content: prompt }],
+            model: 'llama-3.3-70b-versatile',
             temperature: 0.75,
-            max_tokens:  1000
+            max_tokens: 1000
         });
 
         const calendar = completion.choices[0]?.message?.content?.trim() || 'Calendar generation failed.';
-        const header   = `🗓 *AviSignals Weekly Content Calendar*\n_Generated: ${new Date().toLocaleDateString('en-KE', { timeZone: 'Africa/Nairobi' })}_\n\n`;
+        const header = `🗓 *AviSignals Weekly Content Calendar*\n_Generated: ${new Date().toLocaleDateString('en-KE', { timeZone: 'Africa/Nairobi' })}_\n\n`;
 
         const chunks = splitMessage(header + calendar, 4000);
         for (const chunk of chunks) {
@@ -306,17 +306,17 @@ Rules:
 - 5-8 lines maximum
 - Heavy emojis — this is Telegram
 - Kenyan/East African audience
-- Include CTA linking to https://avisignals.com/bot.html
+- Include CTA linking to https://avisignals.com/bot
 - No "guaranteed" or "get rich" language
 - Make it feel fresh and relevant to right now
 
 Write ONLY the post. No labels or explanations.`;
 
         const completion = await groq.chat.completions.create({
-            messages:    [{ role: 'user', content: prompt }],
-            model:       'llama-3.3-70b-versatile',
+            messages: [{ role: 'user', content: prompt }],
+            model: 'llama-3.3-70b-versatile',
             temperature: 0.88,
-            max_tokens:  350
+            max_tokens: 350
         });
 
         const post = completion.choices[0]?.message?.content?.trim()

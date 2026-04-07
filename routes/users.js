@@ -45,17 +45,19 @@ router.post('/sync-profile', async (req, res) => {
     const { id, email, phone } = req.body;
     if (!id || !email) return res.status(400).json({ success: false, error: 'Missing req fields' });
 
+    if (!req.supabaseAdmin) {
+      return res.status(503).json({ success: false, error: 'Database admin client not available' });
+    }
+
     const { data, error } = await req.supabaseAdmin
       .from('profiles')
-      .upsert({ id, email, phone, updated_at: new Date().toISOString() });
+      .upsert({ id, email, phone, last_seen: new Date().toISOString() });
 
     if (error) throw error;
 
-    // Async alert (Discord)
-    discordAgent.sendAlert('PROFILE SYNC', `Profile synced for **${email}** (Phone: ${phone || 'N/A'})`, 'info');
-
     res.json({ success: true, data });
   } catch (err) {
+    console.error('❌ Sync Profile Error:', err.message);
     res.status(500).json({ success: false, error: err.message });
   }
 });

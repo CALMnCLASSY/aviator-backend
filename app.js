@@ -417,7 +417,7 @@ app.get('/', (_req, res) => res.json({ status: 'ok' }));
 app.get('/health', async (_req, res) => {
     let dbStatus = 'unknown';
     try {
-        const { error } = await supabase.from('users').select('id').limit(1);
+        const { error } = await supabase.from('profiles').select('id').limit(1);
         dbStatus = error ? 'error' : 'connected';
     } catch (_) { dbStatus = 'unreachable'; }
 

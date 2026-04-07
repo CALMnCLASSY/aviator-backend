@@ -23,9 +23,9 @@
 
 'use strict';
 
-const cron  = require('node-cron');
+const cron = require('node-cron');
 const https = require('https');
-const groq  = require('./groqClient');
+const groq = require('./groqClient');
 const { createClient } = require('@supabase/supabase-js');
 
 const supabase = createClient(
@@ -34,11 +34,11 @@ const supabase = createClient(
 );
 
 // ─── Config ───────────────────────────────────────────────────
-const BOT_TOKEN  = process.env.TELEGRAM_BOT_TOKEN;
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL_ID = process.env.TELEGRAM_CHANNEL_ID || '@AviSignalsAviatorPredictorBot';
 const ADMIN_CHAT = process.env.TELEGRAM_CHAT_ID;    // your personal Telegram chat ID
-const SITE_URL   = 'https://avisignals.com';
-const BOT_URL    = `${SITE_URL}/bot.html`;
+const SITE_URL = 'https://avisignals.com';
+const BOT_URL = `${SITE_URL}/bot`;
 
 // ─── Post history (in-memory, last 10 posts) ─────────────────
 // Fed back to AI so it never repeats the same content
@@ -79,15 +79,15 @@ function telegramRequest(method, payload, retries = 3) {
             return resolve(null);
         }
 
-        const body    = JSON.stringify(payload);
+        const body = JSON.stringify(payload);
         const bodyBuf = Buffer.from(body, 'utf8');
 
         const options = {
             hostname: 'api.telegram.org',
-            path:     `/bot${BOT_TOKEN}/${method}`,
-            method:   'POST',
-            headers:  {
-                'Content-Type':   'application/json',
+            path: `/bot${BOT_TOKEN}/${method}`,
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
                 'Content-Length': bodyBuf.length
             }
         };
@@ -131,7 +131,7 @@ function telegramRequest(method, payload, retries = 3) {
 
 function sendToChannel(text) {
     return telegramRequest('sendMessage', {
-        chat_id:    CHANNEL_ID,
+        chat_id: CHANNEL_ID,
         text,
         parse_mode: 'HTML',
         link_preview_options: { is_disabled: true }
@@ -144,7 +144,7 @@ function sendToAdmin(text) {
         return Promise.resolve(null);
     }
     return telegramRequest('sendMessage', {
-        chat_id:    ADMIN_CHAT,
+        chat_id: ADMIN_CHAT,
         text,
         parse_mode: 'Markdown',
         link_preview_options: { is_disabled: true }
@@ -157,11 +157,11 @@ function sendToAdmin(text) {
 
 // Success stories pool — rotated so the AI has real material to work with
 const SUCCESS_STORIES = [
-    { name: 'James M.',  city: 'Sydney',  start: 'AUD 8,000',  end: 'AUD 150,000', site: '1xBet',  days: 2  },
-    { name: 'Grace W.',  city: 'Mombasa',  start: 'KES 5,000',  end: 'KES 162,000',  site: 'Betika',     days: 1  },
-    { name: 'Brian O.',  city: 'Cape Town',   start: 'R 3,000',  end: 'R 41,000',  site: 'Betway',      days: 1  },
-    { name: 'Amara K.',  city: 'Kampala',  start: 'UGX 50,000', end: 'UGX 1,900,000', site: 'Bangbet',     days: 3  },
-    { name: 'David N.',  city: 'London',  start: 'GBP 1,000', end: 'GBP 75,000', site: '1win',    days: 2  },
+    { name: 'James M.', city: 'Sydney', start: 'AUD 8,000', end: 'AUD 150,000', site: '1xBet', days: 2 },
+    { name: 'Grace W.', city: 'Mombasa', start: 'KES 5,000', end: 'KES 162,000', site: 'Betika', days: 1 },
+    { name: 'Brian O.', city: 'Cape Town', start: 'R 3,000', end: 'R 41,000', site: 'Betway', days: 1 },
+    { name: 'Amara K.', city: 'Kampala', start: 'UGX 50,000', end: 'UGX 1,900,000', site: 'Bangbet', days: 3 },
+    { name: 'David N.', city: 'London', start: 'GBP 1,000', end: 'GBP 75,000', site: '1win', days: 2 },
     { name: 'Fatima H.', city: 'Dar es Salaam', start: 'TZS 20,000', end: 'TZS 880,000', site: 'Parimatch', days: 1 },
 ];
 let storyIndex = 0;
@@ -202,7 +202,7 @@ Write ONLY the post text, nothing else. No labels, no explanations.`;
 }
 
 async function generateSuccessStory() {
-    const story  = nextStory();
+    const story = nextStory();
     const prompt = `You are the AviSignals Telegram Channel broadcaster. Write a success story post for our public channel.
 
 Use this real member story as your base — you can embellish slightly but keep the numbers accurate:
@@ -351,19 +351,19 @@ Write ONLY the post. No labels.`;
 
 // ─── Route to correct generator ──────────────────────────────
 const GENERATORS = {
-    sales_pitch:   generateSalesPitch,
+    sales_pitch: generateSalesPitch,
     success_story: generateSuccessStory,
-    signal_tease:  generateSignalTease,
-    urgency:       generateUrgencyPost,
-    educational:   generateEducationalPost,
-    testimonial:   generateTestimonialPost,
+    signal_tease: generateSignalTease,
+    urgency: generateUrgencyPost,
+    educational: generateEducationalPost,
+    testimonial: generateTestimonialPost,
 };
 
 // ============================================================
 // CHANNEL BROADCASTER — runs 3x per hour
 // ============================================================
 async function runChannelPost() {
-    const type      = nextContentType();
+    const type = nextContentType();
     const generator = GENERATORS[type];
 
     console.log(`📢 Broadcasting [${type}] to Telegram channel...`);
@@ -404,29 +404,29 @@ let lastUpdateId = 0;
 async function fetchLiveContext() {
     try {
         const [users, subs, payments, online] = await Promise.allSettled([
-            supabase.from('users').select('id', { count: 'exact', head: true }),
-            supabase.from('subscriptions').select('plan', { count: 'exact', head: false }).eq('status', 'active'),
+            supabase.from('profiles').select('id', { count: 'exact', head: true }),
+            supabase.from('activations').select('code_type', { count: 'exact', head: false }),
             supabase.from('payments').select('amount').eq('status', 'success')
-                .gte('paid_at', new Date(new Date().setHours(0,0,0,0)).toISOString()),
+                .gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString()),
             Promise.resolve(global.activeSessions?.size || 0)
         ]);
 
-        const subsData     = subs.status === 'fulfilled' ? subs.value.data : [];
+        const subsData = subs.status === 'fulfilled' ? subs.value.data : [];
         const paymentsData = payments.status === 'fulfilled' ? payments.value.data : [];
         const totalRevToday = paymentsData.reduce((s, p) => s + Number(p.amount || 0), 0);
         const planBreakdown = (subsData || []).reduce((acc, s) => {
-            acc[s.plan] = (acc[s.plan] || 0) + 1; return acc;
+            acc[s.code_type] = (acc[s.code_type] || 0) + 1; return acc;
         }, {});
 
         return {
-            totalUsers:         users.status === 'fulfilled' ? (users.value.count || 0) : '?',
-            activeSubscribers:  (subsData || []).length,
-            planBreakdown:      JSON.stringify(planBreakdown),
-            revenueToday:       `$${totalRevToday.toFixed(2)}`,
-            paymentsToday:      paymentsData.length,
-            onlineNow:          online,
-            postsToday:         postHistory.length,
-            lastPostType:       postHistory[postHistory.length - 1]?.type || 'none',
+            totalUsers: users.status === 'fulfilled' ? (users.value.count || 0) : '?',
+            activeSubscribers: (subsData || []).length,
+            planBreakdown: JSON.stringify(planBreakdown),
+            revenueToday: `$${totalRevToday.toFixed(2)}`,
+            paymentsToday: paymentsData.length,
+            onlineNow: online,
+            postsToday: postHistory.length,
+            lastPostType: postHistory[postHistory.length - 1]?.type || 'none',
         };
     } catch (_) {
         return { error: 'Could not fetch live data' };
@@ -455,9 +455,9 @@ TONE: Like a sharp, loyal COO speaking to the CEO. Confident, data-driven, no fl
 FORMAT: Use Telegram Markdown — *bold*, _italic_, bullet points with -`;
 
 async function handleAdminMessage(message) {
-    const text     = message.text || '';
-    const chatId   = message.chat.id;
-    const fromId   = message.from?.id;
+    const text = message.text || '';
+    const chatId = message.chat.id;
+    const fromId = message.from?.id;
 
     // Security — only respond to the configured admin chat
     if (String(chatId) !== String(ADMIN_CHAT) && String(fromId) !== String(ADMIN_CHAT)) {
@@ -480,8 +480,8 @@ async function handleAdminMessage(message) {
             `🕐 As of: ${new Date().toLocaleTimeString('en-KE', { timeZone: 'Africa/Nairobi' })}`;
 
         await telegramRequest('sendMessage', {
-            chat_id:    chatId,
-            text:       statusMsg,
+            chat_id: chatId,
+            text: statusMsg,
             parse_mode: 'Markdown'
         });
         return;
@@ -489,14 +489,14 @@ async function handleAdminMessage(message) {
 
     if (text.startsWith('/post') || text.toLowerCase() === 'post now') {
         await telegramRequest('sendMessage', {
-            chat_id:    chatId,
-            text:       '📢 Triggering a channel post now...',
+            chat_id: chatId,
+            text: '📢 Triggering a channel post now...',
             parse_mode: 'Markdown'
         });
         await runChannelPost();
         await telegramRequest('sendMessage', {
-            chat_id:    chatId,
-            text:       '✅ Post sent to channel.',
+            chat_id: chatId,
+            text: '✅ Post sent to channel.',
             parse_mode: 'Markdown'
         });
         return;
@@ -515,8 +515,8 @@ async function handleAdminMessage(message) {
             `Or just ask me anything in plain English. I have live access to your business data.`;
 
         await telegramRequest('sendMessage', {
-            chat_id:    chatId,
-            text:       helpMsg,
+            chat_id: chatId,
+            text: helpMsg,
             parse_mode: 'Markdown'
         });
         return;
@@ -532,27 +532,27 @@ async function handleAdminMessage(message) {
         const completion = await groq.chat.completions.create({
             messages: [
                 { role: 'system', content: ADMIN_SYSTEM_PROMPT + contextBlock },
-                { role: 'user',   content: text }
+                { role: 'user', content: text }
             ],
-            model:       'llama-3.3-70b-versatile',
+            model: 'llama-3.3-70b-versatile',
             temperature: 0.6,
-            max_tokens:  600
+            max_tokens: 600
         });
 
         const reply = completion.choices[0]?.message?.content?.trim()
             || 'Sorry, I had trouble generating a response. Try again.';
 
         await telegramRequest('sendMessage', {
-            chat_id:    chatId,
-            text:       reply,
+            chat_id: chatId,
+            text: reply,
             parse_mode: 'Markdown'
         });
 
     } catch (err) {
         console.error('❌ Admin bot AI error:', err.message);
         await telegramRequest('sendMessage', {
-            chat_id:    chatId,
-            text:       '⚠️ I had an error processing that. Try again in a moment.',
+            chat_id: chatId,
+            text: '⚠️ I had an error processing that. Try again in a moment.',
             parse_mode: 'Markdown'
         });
     }
@@ -571,8 +571,8 @@ async function pollForAdminMessages() {
     const poll = async () => {
         try {
             const res = await telegramRequest('getUpdates', {
-                offset:          lastUpdateId + 1,
-                timeout:         30,   // long poll — waits up to 30s for a message
+                offset: lastUpdateId + 1,
+                timeout: 30,   // long poll — waits up to 30s for a message
                 allowed_updates: ['message']
             });
 
@@ -610,7 +610,7 @@ function startTelegramAgent() {
 
     // 3 posts per hour — at :00, :20, and :40 past each hour
     // Covers 6am to 11pm Nairobi time (adjust if VPS is not UTC+3)
-    cron.schedule('0 6-23 * * *',  runChannelPost);  // on the hour
+    cron.schedule('0 6-23 * * *', runChannelPost);  // on the hour
     cron.schedule('20 6-23 * * *', runChannelPost);  // 20 past
     cron.schedule('40 6-23 * * *', runChannelPost);  // 40 past
 

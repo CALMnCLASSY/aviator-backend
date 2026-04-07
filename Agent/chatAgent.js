@@ -116,7 +116,7 @@ PAID TIER:
 - After payment, code is given immediately — no waiting
 
 HOW TO USE THE BOT:
-1. Open avisignals.com/bot.html AND your Aviator game on your betting site simultaneously
+1. Open avisignals.com/bot AND your Aviator game on your betting site simultaneously
 2. Watch the bot — it shows the predicted multiplier for the NEXT round
 3. Wait for that round → place your bet → cash out just BEFORE the shown multiplier
 4. Repeat every round for the entire session
@@ -146,8 +146,8 @@ SALES RULES — READ CAREFULLY
 8. IF the user seems hesitant → create gentle urgency: "Slots fill up fast — the free code is already reserved for you."
 9. UPSELL TRIGGER: After helping a user with their free code, ALWAYS end with one soft upsell sentence about the 24H plan.
 10. NEVER tell a user they can't use the bot on their site. The bot works on ALL sites so they just come back the next day to get a new code on a new site.
-11. If a client want a code for a specific site tell clarify distinction on Free Code and Paid tier and tell them to come back the next day for their luck to get a code on their site, but if they want a specidic one and don't want to wait the next day they have to pay.
-
+11. If a client want a code for a specific site clarify distinction on Free Code and Paid tier and tell them to come back the next day for their luck to get a code on their site, but if they want a specidic one and don't want to wait the next day they have to pay.
+12. If they seem to be a hot lead and are having trouble making payment ask them for their contact(best way to reach out to them) and provide admin details
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 OBJECTION HANDLING
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -167,7 +167,7 @@ const INTENT_ADDONS = {
     ready_to_buy: `
 The user is showing BUY INTENT. This is a HOT lead.
 → Confirm price immediately: $75 for 24 hours.
-→ Tell them to click **Buy Code** on the bot page (avisignals.com/bot.html).
+→ Tell them to click **Buy Code** on the bot page (avisignals.com/bot).
 → Mention both Mobile-money and card are accepted, even crypto.
 → Emphasise instant activation — they start right after payment.
 → Keep it SHORT and action-focused. Remove all friction.
@@ -230,12 +230,11 @@ Intent detected: ${session.intent || 'unknown'}
 Full conversation:
 ${chatHistoryText}
 
-Write a concise admin report (5-6 sentences max) covering:
+Write a concise admin report (4-5 sentences max) covering:
 1. Who the user is and what they wanted,include number if available and if we should call them.
 2. Whether they are a potential paying customer (yes/no and why)
 3. Was the issue resolved? What was the outcome?
 4. Recommended follow-up action for the admin (if any)
-5. Something interesting they have to say(Ask them for a review on what they would like the admin to do to and the easiest way to reach them(contact info)) 
 
 Flag as HOT LEAD if the user expressed any interest in buying the $75 code.`;
 

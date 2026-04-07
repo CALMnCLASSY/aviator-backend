@@ -220,11 +220,13 @@ async function sendEmail(to, subject, htmlBody, retries = 3) {
             }
 
             // Discord notification only on success
-            discordAgent.sendSimpleNotification(
-                '📭 Email Sent',
-                `**To:** ${to}\n**Subject:** ${subject}\n**via:** ${useBrevo ? 'Brevo' : 'Resend'}`,
-                0x9B59B6
-            ).catch(() => {});
+            try {
+                discordAgent.sendSimpleNotification(
+                    '📭 Email Sent',
+                    `**To:** ${to}\n**Subject:** ${subject}\n**via:** ${useBrevo ? 'Brevo' : 'Resend'}`,
+                    0x9B59B6
+                );
+            } catch (_) {}
 
             return true;
 
