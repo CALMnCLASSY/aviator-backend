@@ -417,11 +417,13 @@ async function fetchLiveContext() {
         const planBreakdown = (subsData || []).reduce((acc, s) => {
             acc[s.code_type] = (acc[s.code_type] || 0) + 1; return acc;
         }, {});
+        
+        const planStr = Object.entries(planBreakdown).map(([k, v]) => `${(k || 'UNKNOWN').replace(/_/g, ' ')}: ${v}`).join(', ') || 'None';
 
         return {
             totalUsers: users.status === 'fulfilled' ? (users.value.count || 0) : '?',
             activeSubscribers: (subsData || []).length,
-            planBreakdown: JSON.stringify(planBreakdown),
+            planBreakdown: planStr,
             revenueToday: `$${totalRevToday.toFixed(2)}`,
             paymentsToday: paymentsData.length,
             onlineNow: online,
