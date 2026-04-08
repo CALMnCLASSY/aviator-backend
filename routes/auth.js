@@ -334,26 +334,27 @@ router.post('/reset-password', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid or expired OTP. Please request a new one.' });
     }
 
-    // Update password in Supabase
-    if (req.supabase) {
-      // Find the user ID by email
-      const { data: profile, error: findError } = await req.supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', email)
-        .single();
-      
-      if (findError || !profile) {
-        throw new Error('User account not found');
-      }
-
-      const { error: resetError } = await req.supabase.auth.admin.updateUserById(
-        profile.id,
-        { password: newPassword }
-      );
-      
-      if (resetError) throw resetError;
+    // Update password in Supabase — requires service role (admin) client
+    const adminClient = req.supabaseAdmin;
+    if (!adminClient) {
+      return res.status(500).json({ success: false, error: 'Server misconfiguration: admin client unavailable.' });
     }
+
+    // Find the user ID by email from Supabase Auth directly (more reliable than profiles table)
+    const { data: { users }, error: findError } = await adminClient.auth.admin.listUsers();
+    const matchedUser = (users || []).find(u => u.email?.toLowerCase() === email.toLowerCase());
+
+    if (findError || !matchedUser) {
+      throw new Error('User account not found in auth system.');
+    }
+
+    const { error: resetError } = await adminClient.auth.admin.updateUserById(
+      matchedUser.id,
+      { password: newPassword }
+    );
+
+    if (resetError) throw resetError;
+
 
     // Clear reset data
     delete global.passwordResets[email];
