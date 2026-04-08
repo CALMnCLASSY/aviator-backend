@@ -99,7 +99,8 @@ class TelegramMarketingBot {
             'promos': ['general', 'site_promo', 'features'],
             'tips': ['features', 'general'],
             'free_trial': ['free_trial', 'site_promo'],
-            'payment_promo': ['payment'],
+            'payment_promo': ['payment', 'general'],
+            'plans_promo': ['payment', 'site_promo', 'general'],
             'social_proof': ['win_proof', 'features']
         };
 
@@ -179,6 +180,13 @@ class TelegramMarketingBot {
             socialProof: [
                 { type: 'social_proof', weight: 1 },
                 { type: 'classy_promos', weight: 0.9, delay: [2, 3] }
+            ],
+
+            // Plans Promo Flow (highlights the 3-tier pricing)
+            plansPromo: [
+                { type: 'plans_promo', weight: 1 },
+                { type: 'payment_promo', weight: 0.7, delay: [2, 4] },
+                { type: 'classy_promos', weight: 0.8, delay: [1, 2] }
             ]
         };
 
@@ -190,7 +198,7 @@ class TelegramMarketingBot {
             },
             trader: {
                 name: "Pro Trader",
-                categories: ['tips', 'hype', 'promos', 'betting_sites', 'classy_promos', 'free_trial', 'payment_promo', 'social_proof'],
+                categories: ['tips', 'hype', 'promos', 'betting_sites', 'classy_promos', 'free_trial', 'payment_promo', 'plans_promo', 'social_proof'],
                 emoji: "💎"
             }
         };
@@ -514,20 +522,22 @@ class TelegramMarketingBot {
             selectedFlow = 'immediateSignal';
         } else if (random < 0.30) {
             selectedFlow = 'immediateCancellation';
-        } else if (random < 0.42) {
+        } else if (random < 0.40) {
             selectedFlow = 'premiumSignal';
-        } else if (random < 0.54) {
+        } else if (random < 0.50) {
             selectedFlow = 'freeSignal';
-        } else if (random < 0.62) {
+        } else if (random < 0.57) {
             selectedFlow = 'educational';
-        } else if (random < 0.70) {
+        } else if (random < 0.64) {
             selectedFlow = 'celebration';
-        } else if (random < 0.78) {
+        } else if (random < 0.72) {
             selectedFlow = 'marketing';
-        } else if (random < 0.85) {
+        } else if (random < 0.79) {
             selectedFlow = 'freeTrialPromo';
-        } else if (random < 0.92) {
+        } else if (random < 0.86) {
             selectedFlow = 'paymentPromo';
+        } else if (random < 0.93) {
+            selectedFlow = 'plansPromo';
         } else {
             selectedFlow = 'socialProof';
         }
@@ -646,7 +656,7 @@ class TelegramMarketingBot {
             const visualTypes = [
                 'hype', 'promos', 'celebration', 'win_results', 'classy_promos',
                 'signals', 'signal_confirmations', 'tips', 'free_trial',
-                'payment_promo', 'social_proof'
+                'payment_promo', 'plans_promo', 'social_proof'
             ];
             const shouldSendImage = Math.random() < 0.50 && visualTypes.includes(messageType);
 
