@@ -45,6 +45,15 @@ router.post('/log-auth-event', async (req, res) => {
                 phone,
                 pageFrom: extraDetails.page || extraDetails.from_page 
             });
+        } else if (event === 'SITE_SELECTION') {
+            discordAgent.sendSiteSelectionEvent({ email, site: extraDetails.site });
+        } else {
+            discordAgent.sendUserEvent(event, { 
+                contact: email, 
+                phone,
+                ip: extraDetails.ip,
+                ...extraDetails
+            });
         }
 
         // --- Journey Tracker ---
@@ -55,16 +64,7 @@ router.post('/log-auth-event', async (req, res) => {
         } else if (event === 'SITE_SELECTION') {
             journeyAgent.logEvent(email, 'SITE_SELECTED', { site: extraDetails.site });
         }
-        // ------------------------ else if (event === 'SITE_SELECTION') {
-            discordAgent.sendSiteSelectionEvent({ email, site: extraDetails.site });
-        } else {
-            discordAgent.sendUserEvent(event, { 
-                contact: email, 
-                phone,
-                ip: extraDetails.ip,
-                ...extraDetails
-            });
-        }
+        // ------------------------
 
         // 2. Trigger Welcome Email if Registration
         if (event === 'REGISTER') {
