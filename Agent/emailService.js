@@ -201,11 +201,18 @@ async function sendEmail(to, subject, htmlBody, retries = 3) {
     };
 
     // Determine primary transporter
-    let useBrevo = resendEmailCount >= RESEND_DAILY_LIMIT;
-    let transporter = useBrevo ? getBrevoTransporter() : getTransporter();
+    // We now always start with Brevo as the primary provider
+    let useBrevo = true;
+    let transporter = getBrevoTransporter();
+
+    // If Brevo is unconfigured, fallback to Resend immediately
+    if (!transporter) {
+        useBrevo = false;
+        transporter = getTransporter();
+    }
 
     if (!transporter) {
-         console.warn(`⚠️  Email aborted: Transporter not available (useBrevo: ${useBrevo})`);
+         console.warn('⚠️  Email aborted: No email provider (Brevo or Resend) is configured.');
          return false;
     }
 
@@ -215,6 +222,7 @@ async function sendEmail(to, subject, htmlBody, retries = 3) {
 
             console.log(`📧 Email sent (${useBrevo ? 'Brevo' : 'Resend'}) → ${to} | ${info.messageId}`);
             
+            // Increment Resend counter only if Resend was actually used
             if (!useBrevo) {
                 resendEmailCount++;
             }
@@ -233,17 +241,22 @@ async function sendEmail(to, subject, htmlBody, retries = 3) {
         } catch (err) {
             console.error(`❌ Email attempt ${attempt}/${retries} failed for ${to} (via ${useBrevo ? 'Brevo' : 'Resend'}):`, err.message);
             
-            // If we hit Quota error on Resend, switch to Brevo immediately
-            if (!useBrevo && (err.message.includes('quota') || err.message.includes('rate') || err.responseCode === 550 || err.responseCode === 429)) {
-                console.log(`🔄 Quota/Rate warning on Resend. Switching to Brevo for remaining attempts.`);
-                resendEmailCount = RESEND_DAILY_LIMIT; // force Brevo for subsequent emails
-                useBrevo = true;
-                transporter = getBrevoTransporter();
-                if (!transporter) {
-                    console.error(`❌ Cannot switch to Brevo. Not configured.`);
-                    break;
+            // FAILOVER LOGIC:
+            // If primary (Brevo) fails and we haven't tried Resend yet, switch to Resend for the next attempt.
+            // Or if Resend fails and we haven't tried Brevo (unlikely), switch vice versa.
+            if (useBrevo) {
+                const resendTransporter = getTransporter();
+                if (resendTransporter) {
+                    console.log(`🔄 Brevo failed. Switching to Resend fallback for attempt ${attempt + 1}.`);
+                    useBrevo = false;
+                    transporter = resendTransporter;
                 }
-            } else if (attempt < retries) {
+            } else {
+                // If Resend fails, we could try Brevo if we started with Resend (already logic above handles fallback)
+                // but since we start with Brevo, this block is if the fallback also fails.
+            }
+
+            if (attempt < retries) {
                 await new Promise(r => setTimeout(r, attempt * 2000)); // backoff
             }
         }
