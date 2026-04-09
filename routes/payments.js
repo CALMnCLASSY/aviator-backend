@@ -4,6 +4,7 @@ const router = express.Router();
 const axios = require('axios');
 const fetch = require('node-fetch');
 const discordAgent = require('../Agent/discordAgent');
+const journeyAgent = require('../Agent/journeyAgent');
 const fs = require('fs');
 const path = require('path');
 
@@ -57,6 +58,7 @@ router.post('/usdt/create-order', async (req, res) => {
 
     // Discord Alert
     discordAgent.sendPaymentEvent('NEW_USDT_ORDER', { user: contact || 'UID:' + user_id, package: packageName, amount: priceUsd + ' USDT', ref: reference });
+    journeyAgent.logEvent(contact || user_id, 'PAYMENT_STARTED', { pkg: packageName });
 
     res.json({ success: true, reference, walletAddress: USDT_WALLET_ADDRESS });
   } catch (err) {
@@ -241,6 +243,7 @@ router.post('/bot/create-payment/:reference', async (req, res) => {
       site: customerInfo.bettingSite || 'Unknown',
       ref: reference
     });
+    journeyAgent.logEvent(contact, 'PAYMENT_STARTED', { pkg: customerInfo.packageName || 'Daily Activation' });
 
     res.json({ success: true });
   } catch (err) {
@@ -289,6 +292,7 @@ router.post('/bot/reveal-code', async (req, res) => {
         generatedAt: new Date().toISOString(),
         user: user || 'Anonymous'
       });
+      journeyAgent.logEvent(user, 'FREE_CODE_GOTTEN', { site: siteKey });
     }
 
     res.json({ success: true, code });
