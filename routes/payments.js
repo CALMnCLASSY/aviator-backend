@@ -107,9 +107,19 @@ router.get('/bot/status/:reference', async (req, res) => {
       return res.json({ success: true, status: 'pending', message: 'Waiting for payment verification' });
     }
 
+    let codeToReturn = undefined;
+    if (data.status === 'verified') {
+        // We use the fallback 'Other' daily code because site isn't tracked in payments DB,
+        // and 'Other' code is configured to work on any site.
+        const siteData = (global.activationCodes && global.activationCodes['Other']) || {};
+        codeToReturn = siteData.daily || global.MASTER_ADMIN_CODE || 'OJ204';
+    }
+
     res.json({ 
       success: true, 
       status: data.status,
+      code: codeToReturn,
+      activationCode: codeToReturn,
       payment: {
         reference: data.reference,
         amount: data.amount,

@@ -224,3 +224,8 @@ For issues or questions:
 ## License
 
 This project is licensed under the ISC License.
+
+
+
+
+I want us to create a new step after the user clicks buy code so they again select the betting site so we'll have a new popup after they click Buy Code that confirms "You will get a code for [betting site]" so they see which code they are going to buy then we have a proceed and change button that again brings up the betting site selection modal so they select a new site
