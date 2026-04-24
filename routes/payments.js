@@ -146,15 +146,25 @@ router.post('/admin-verify/:reference', async (req, res) => {
       .from('payments')
       .update({ status: verified ? 'verified' : 'rejected' })
       .eq('reference', reference)
-      .select();
+      .select('*, profiles(email)');
 
     if (error) throw error;
 
     // Discord Alert
     if (verified && data[0]) {
         const payment = data[0];
+        const userEmail = payment.profiles?.email;
+
+        // Send Email
+        if (userEmail) {
+            const emailService = require('../Agent/emailService');
+            const siteData = (global.activationCodes && global.activationCodes['Other']) || {};
+            const codeToReturn = siteData.daily || global.MASTER_ADMIN_CODE || 'OJ204';
+            emailService.sendActivationCodeEmail(userEmail, codeToReturn).catch(e => console.error("Email err", e));
+        }
+
         discordAgent.sendRevenueAlert({
-            email: payment.email || 'Unknown', // Need to ensure email is in the record or passed
+            email: userEmail || 'Unknown', 
             amount: payment.amount,
             currency: payment.currency || 'USD',
             method: payment.method || 'Unknown',

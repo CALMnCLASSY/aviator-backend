@@ -574,6 +574,46 @@ async function sendOtpEmail(to, otp) {
     return sendEmail(to, subject, html);
 }
 
+// Transactional — Code Activation Delivery
+async function sendActivationCodeEmail(to, code) {
+    const name    = to.split('@')[0];
+    const subject = `Your AviSignals Activation Code 🚀`;
+
+    const body = `
+    <p style="color:#ccc;">Hey <strong style="color:#fff;">${name}</strong>,</p>
+    <p style="color:#ccc;">Your payment has been successfully verified! Here is your activation code:</p>
+    
+    <div style="background:rgba(46,204,113,0.1);border:2px dashed ${BRAND_GREEN};padding:24px;text-align:center;margin:32px 0;border-radius:12px;">
+      <div style="font-size:36px;font-weight:800;letter-spacing:5px;color:${BRAND_GREEN};text-shadow:0 0 10px rgba(46,204,113,0.3);">
+        ${code}
+      </div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:10px;text-transform:uppercase;letter-spacing:1px;">
+        Valid for 24 hours
+      </div>
+    </div>
+
+    <p style="color:#ccc;"><strong>How to use it:</strong></p>
+    <ol style="color:#ccc;padding-left:20px;">
+      <li style="margin-bottom:8px;">Go to the <a href="${BOT_URL}" style="color:${BRAND_GOLD};">Bot Page</a></li>
+      <li style="margin-bottom:8px;">Select your betting site</li>
+      <li style="margin-bottom:8px;">Click <strong style="color:${BRAND_GOLD};">Use Bot</strong></li>
+      <li style="margin-bottom:8px;">Enter your code and click <strong style="color:${BRAND_GOLD};">Activate</strong></li>
+    </ol>
+
+    <p style="color:#ccc;">If you need any help, please contact our support team.</p>`;
+
+    const html = wrapInTemplate({
+        previewText: `Your payment is verified. Your AviSignals activation code is ${code}`,
+        headline:    `Payment Verified ✅`,
+        body,
+        ctaText: 'Open Bot Now',
+        ctaUrl:  BOT_URL,
+        footerNote:  'This is a transactional email regarding your recent purchase.'
+    });
+
+    return sendEmail(to, subject, html);
+}
+
 // ============================================================
 // EXPORTS
 // ============================================================
@@ -586,5 +626,6 @@ module.exports = {
     sendReengagementEmail,
     sendRenewalWarningEmail,
     sendHotLeadEmail,
-    sendOtpEmail
+    sendOtpEmail,
+    sendActivationCodeEmail
 };

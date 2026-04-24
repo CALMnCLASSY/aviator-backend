@@ -119,6 +119,29 @@ router.get('/pending-verifications', async (req, res) => {
 });
 
 /**
+ * CLEAR EXPIRED VERIFICATIONS
+ * Deletes or marks as rejected all pending payments older than 24 hours
+ */
+router.post('/clear-expired-verifications', async (req, res) => {
+    try {
+        const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        
+        const { data, error } = await req.supabaseAdmin
+            .from('payments')
+            .delete() // or .update({ status: 'rejected' })
+            .eq('status', 'pending')
+            .lt('created_at', yesterday)
+            .select();
+
+        if (error) throw error;
+
+        res.json({ success: true, message: `Cleared ${data.length} expired verifications`, count: data.length });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+/**
  * GET ALL USERS
  */
 router.get('/users', async (req, res) => {
