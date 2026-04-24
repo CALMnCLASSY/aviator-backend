@@ -398,16 +398,15 @@ function sendChatSummary({ text, user, page, intent, isHotLead = false }) {
  * User activity summary — condensed journey report
  * Called by journeyAgent after inactivity timeout
  */
-function sendJourneySummary({ user, activities }) {
+function sendJourneySummary({ user, summaryText }) {
     const embed = baseEmbed({
         title:       '🚀 USER ACTIVITY SUMMARY',
         color:       COLOR.blue,
-        description: Array.isArray(activities) ? activities.join('\n') : String(activities),
+        description: String(summaryText),
         fields:      [
-            { name: 'IDENTIFIER', value: safeValue(user), inline: true },
-            { name: 'EVENTS',    value: `**${(activities || []).length}**`, inline: true },
+            { name: 'IDENTIFIER', value: safeValue(user), inline: true }
         ],
-        footer: `${FOOTER_TAG} · Journey Tracker`
+        footer: `${FOOTER_TAG} · Journey Tracker (AI)`
     });
     dispatch('journey', embed);
 }
