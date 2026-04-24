@@ -146,7 +146,7 @@ router.post('/admin-verify/:reference', async (req, res) => {
       .from('payments')
       .update({ status: verified ? 'verified' : 'rejected' })
       .eq('reference', reference)
-      .select('*, profiles(email)');
+      .select('*, profiles(email, assigned_site)');
 
     if (error) throw error;
 
@@ -154,13 +154,14 @@ router.post('/admin-verify/:reference', async (req, res) => {
     if (verified && data[0]) {
         const payment = data[0];
         const userEmail = payment.profiles?.email;
+        const siteName = payment.profiles?.assigned_site || 'your selected betting site';
 
         // Send Email
         if (userEmail) {
             const emailService = require('../Agent/emailService');
             const siteData = (global.activationCodes && global.activationCodes['Other']) || {};
             const codeToReturn = siteData.daily || global.MASTER_ADMIN_CODE || 'OJ204';
-            emailService.sendActivationCodeEmail(userEmail, codeToReturn).catch(e => console.error("Email err", e));
+            emailService.sendActivationCodeEmail(userEmail, codeToReturn, siteName).catch(e => console.error("Email err", e));
         }
 
         discordAgent.sendRevenueAlert({

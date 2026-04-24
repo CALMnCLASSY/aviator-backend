@@ -575,27 +575,27 @@ async function sendOtpEmail(to, otp) {
 }
 
 // Transactional — Code Activation Delivery
-async function sendActivationCodeEmail(to, code) {
+async function sendActivationCodeEmail(to, code, siteName = 'your selected betting site') {
     const name    = to.split('@')[0];
     const subject = `Your AviSignals Activation Code 🚀`;
 
     const body = `
     <p style="color:#ccc;">Hey <strong style="color:#fff;">${name}</strong>,</p>
-    <p style="color:#ccc;">Your payment has been successfully verified! Here is your activation code:</p>
+    <p style="color:#ccc;">Your payment has been successfully verified! Here is your activation code for <strong style="color:${BRAND_GOLD};">${siteName}</strong>:</p>
     
     <div style="background:rgba(46,204,113,0.1);border:2px dashed ${BRAND_GREEN};padding:24px;text-align:center;margin:32px 0;border-radius:12px;">
       <div style="font-size:36px;font-weight:800;letter-spacing:5px;color:${BRAND_GREEN};text-shadow:0 0 10px rgba(46,204,113,0.3);">
         ${code}
       </div>
       <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:10px;text-transform:uppercase;letter-spacing:1px;">
-        Valid for 24 hours
+        Valid for 24 hours on ${siteName}
       </div>
     </div>
 
     <p style="color:#ccc;"><strong>How to use it:</strong></p>
     <ol style="color:#ccc;padding-left:20px;">
       <li style="margin-bottom:8px;">Go to the <a href="${BOT_URL}" style="color:${BRAND_GOLD};">Bot Page</a></li>
-      <li style="margin-bottom:8px;">Select your betting site</li>
+      <li style="margin-bottom:8px;">Select <strong style="color:${BRAND_GOLD};">${siteName}</strong> as your betting site</li>
       <li style="margin-bottom:8px;">Click <strong style="color:${BRAND_GOLD};">Use Bot</strong></li>
       <li style="margin-bottom:8px;">Enter your code and click <strong style="color:${BRAND_GOLD};">Activate</strong></li>
     </ol>
