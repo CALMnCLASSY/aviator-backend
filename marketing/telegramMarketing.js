@@ -709,10 +709,10 @@ class TelegramMarketingBot {
                 }
             }
 
-            const codeMsg = `🏆 *CODE REVEALED:* \\`${dailyCode}\\`\\n\\n` +
-                `First 10 to use it win free access!\\n` +
-                `👉 Enter it here: avisignals.com/bot.html`;
-            
+            const codeMsg = '🏆 *CODE REVEALED:* `' + dailyCode + '`\n\n' +
+                'First 10 to use it win free access!\n' +
+                '👉 Enter it here: avisignals.com/bot.html';
+
             await this.sendToChannel(codeMsg);
             console.log('✅ Giveaway code revealed.');
         } catch (error) {
@@ -730,7 +730,7 @@ class TelegramMarketingBot {
             await new Promise(resolve => setTimeout(resolve, 10000)); // 10s for manual
             await this.sendToChannel("⏳ *Almost time!* Code users, log in now.");
             await new Promise(resolve => setTimeout(resolve, 10000)); // 10s for manual
-            await this.sendToChannel("🟢 *WE ARE LIVE!* Today's session is OPEN.\\nFree code at avisignals.com/bot.html");
+            await this.sendToChannel("🟢 *WE ARE LIVE!* Today's session is OPEN.\\nFree code at avisignals.com/bot");
             console.log('✅ Manual countdown complete.');
         } catch (error) {
             console.error('❌ Error in runCountdownSequence:', error);
@@ -795,7 +795,7 @@ class TelegramMarketingBot {
 
         // T-0: 7:00 PM EAT (16:00 UTC)
         cron.schedule('0 16 * * *', async () => {
-            if (this.isRunning) await this.sendToChannel("🟢 *WE ARE LIVE!* Today's session is OPEN.\\nFree code at avisignals.com/bot.html");
+            if (this.isRunning) await this.sendToChannel("🟢 *WE ARE LIVE!* Today's session is OPEN.\\nFree code at avisignals.com/bot");
         });
     }
 

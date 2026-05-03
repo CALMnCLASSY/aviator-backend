@@ -25,6 +25,7 @@
 
 const cron = require('node-cron');
 const https = require('https');
+const groq = require('./groqClient');
 const { createClient } = require('@supabase/supabase-js');
 
 const supabase = createClient(
@@ -76,11 +77,11 @@ function pickRandom(arr) {
 }
 
 const SALES_PITCH_POOL = [
-    `🚀 <b>Don't guess. Predict.</b>\n\nAviSignals uses real-time AI analysis to tell you when to cash out — before the round ends.\n\n🆓 Grab your FREE daily code at <a href="${BOT_URL}">avisignals.com/bot.html</a>\n💎 Want full 24H access? Just $75. No subscriptions.`,
-    `🎯 <b>Your edge in Aviator starts here.</b>\n\n3,200+ members are using AviSignals daily to time their cash-outs with precision.\n\n🆓 Try it FREE — no payment needed to start.\n👉 <a href="${BOT_URL}">avisignals.com/bot.html</a>`,
-    `⚡ <b>The smart way to play Aviator.</b>\n\nOur AI reads the game — you just follow the signal and cash out at the right moment.\n\n✅ Free daily code available right now.\n🔗 <a href="${BOT_URL}">avisignals.com/bot.html</a>`,
-    `🔥 <b>Stop losing. Start predicting.</b>\n\nAviSignals gives you data-driven signals for every Aviator round on any site worldwide.\n\n🆓 One free code per day — no card required.\n📲 <a href="${BOT_URL}">Get started now</a>`,
-    `💡 <b>What if you knew when to cash out?</b>\n\nThat's exactly what AviSignals does. AI-powered round analysis. Real-time signals.\n\n🎁 Your free code is waiting: <a href="${BOT_URL}">avisignals.com/bot.html</a>`,
+    `🚀 *Don't guess. Predict.*\n\nAviSignals uses real-time AI analysis to tell you when to cash out — before the round ends.\n\n🆓 Grab your FREE daily code: ${BOT_URL}\n💎 Want full 24H access? Just $75. No subscriptions.`,
+    `🎯 *Your edge in Aviator starts here.*\n\n3,200+ members are using AviSignals daily to time their cash-outs with precision.\n\n🆓 Try it FREE — no payment needed to start.\n👉 ${BOT_URL}`,
+    `⚡ *The smart way to play Aviator.*\n\nOur AI reads the game — you just follow the signal and cash out at the right moment.\n\n✅ Free daily code available right now.\n🔗 ${BOT_URL}`,
+    `🔥 *Stop losing. Start predicting.*\n\nAviSignals gives you data-driven signals for every Aviator round on any site worldwide.\n\n🆓 One free code per day — no card required.\n📲 ${BOT_URL}`,
+    `💡 *What if you knew when to cash out?*\n\nThat's exactly what AviSignals does. AI-powered round analysis. Real-time signals.\n\n🎁 Your free code is waiting: ${BOT_URL}`,
 ];
 
 const SUCCESS_STORIES = [
@@ -100,31 +101,31 @@ function generateSalesPitch() {
 function generateSuccessStory() {
     const s = SUCCESS_STORIES[storyIndex % SUCCESS_STORIES.length];
     storyIndex++;
-    const text = `🏆 <b>Real member. Real results.</b>\n\n<i>"I started with ${s.start} on ${s.site}. After ${s.days} day(s) using AviSignals, I walked away with ${s.end}."</i>\n— <b>${s.name}</b>, ${s.city}\n\n🚀 Start your own story — grab your FREE code at <a href="${BOT_URL}">avisignals.com/bot.html</a>`;
+    const text = `🏆 *Real member. Real results.*\n\n_"I started with ${s.start} on ${s.site}. After ${s.days} day(s) using AviSignals, I walked away with ${s.end}."_\n— *${s.name}*, ${s.city}\n\n🚀 Start your own story — grab your FREE code: ${BOT_URL}`;
     return { choices: [{ message: { content: text } }] };
 }
 
 function generateSignalTease() {
-    const multipliers = ['7.4×', '12.1×', '3.8×', '18.6×', '5.2×', '9.9×', '22.4×'];
+    const multipliers = ['7.4x', '12.1x', '3.8x', '18.6x', '5.2x', '9.9x', '22.4x'];
     const multi = pickRandom(multipliers);
-    const text = `📡 <b>Signal confirmed: ${multi}</b>\n\nOur bot called it. Members who followed the signal cashed out at exactly the right moment — again. 🎯\n\n🆓 Get your free daily code and see it for yourself:\n👉 <a href="${BOT_URL}">avisignals.com/bot.html</a>`;
+    const text = `📡 *Signal confirmed: ${multi}*\n\nOur bot called it. Members who followed the signal cashed out at exactly the right moment. 🎯\n\n🆓 Get your free daily code and see it for yourself:\n👉 ${BOT_URL}`;
     return { choices: [{ message: { content: text } }] };
 }
 
 function generateUrgencyPost() {
     const hour = new Date().getHours();
     const session = hour < 12 ? 'morning session' : hour < 18 ? 'afternoon session' : "tonight's session";
-    const text = `⏰ <b>The ${session} is LIVE right now.</b>\n\nMembers are already using their codes. Don't miss today's rounds.\n\n🆓 Your free code resets every day — use it or lose it.\n💎 Want 24H access? Get a premium code for $75.\n\n👉 <a href="${BOT_URL}">avisignals.com/bot.html</a>`;
+    const text = `⏰ *The ${session} is LIVE right now.*\n\nMembers are already using their codes. Don't miss today's rounds.\n\n🆓 Your free code resets every day — use it or lose it.\n💎 Want 24H access? Get a premium code for $75.\n\n👉 ${BOT_URL}`;
     return { choices: [{ message: { content: text } }] };
 }
 
 function generateEducationalPost() {
     const tips = [
-        `📌 <b>Pro Tip: Cash out early on high-volatility rounds.</b>\n\nWhen the AviSignals bot shows a low confidence score, take your profit at 1.5× or 2× instead of pushing for 10×. Consistency beats luck.\n\n💡 Get the bot: <a href="${BOT_URL}">avisignals.com/bot.html</a>`,
-        `📌 <b>Free vs Premium Code — what's the difference?</b>\n\n🆓 Free code: 30-minute trial session, assigned site.\n💎 Premium code: Full 24H access, any site worldwide.\n\nBoth give you real-time AI signals. Try free first.\n👉 <a href="${BOT_URL}">avisignals.com/bot.html</a>`,
-        `📌 <b>Timing your bet matters more than bet size.</b>\n\nA KES 100 bet at the right moment beats a KES 1,000 bet at the wrong one. AviSignals tells you exactly when to enter — and when to hold off.\n\n🔗 <a href="${BOT_URL}">avisignals.com/bot.html</a>`,
-        `💡 <b>How to use AviSignals and play at the same time:</b>\n\n1. Open the bot on your phone\n2. Open your betting site on the same device (split screen) or another device\n3. Follow the signal — cash out when the bot says GO\n\n🆓 Get your free code: <a href="${BOT_URL}">avisignals.com/bot.html</a>`,
-        `📌 <b>The most common mistake new Aviator players make:</b>\n\nWaiting too long. The game is designed to test your nerves. Our bot removes the guesswork — it tells you the optimal cash-out window based on round data.\n\n🚀 Try it free: <a href="${BOT_URL}">avisignals.com/bot.html</a>`,
+        `📌 *Pro Tip: Cash out early on high-volatility rounds.*\n\nWhen the AviSignals bot shows a low confidence score, take your profit at 1.5x or 2x instead of pushing for 10x. Consistency beats luck.\n\n💡 Get the bot: ${BOT_URL}`,
+        `📌 *Free vs Premium Code — what's the difference?*\n\n🆓 Free code: 30-minute trial session, assigned site.\n💎 Premium code: Full 24H access, any site worldwide.\n\nBoth give you real-time AI signals. Try free first.\n👉 ${BOT_URL}`,
+        `📌 *Timing your bet matters more than bet size.*\n\nA KES 100 bet at the right moment beats a KES 1,000 bet at the wrong one. AviSignals tells you exactly when to enter and when to hold off.\n\n🔗 ${BOT_URL}`,
+        `💡 *How to use AviSignals and play at the same time:*\n\n1. Open the bot on your phone\n2. Open your betting site on the same device or another\n3. Follow the signal — cash out when the bot says GO\n\n🆓 Get your free code: ${BOT_URL}`,
+        `📌 *The most common mistake new Aviator players make:*\n\nWaiting too long. The game is designed to test your nerves. Our bot removes the guesswork — it tells you the optimal cash-out window.\n\n🚀 Try it free: ${BOT_URL}`,
     ];
     return { choices: [{ message: { content: pickRandom(tips) } }] };
 }
@@ -138,7 +139,7 @@ function generateTestimonialPost() {
         { text: "Best $75 I've spent. Used it for a full 24 hours on SportyBet. More than covered the cost in the first hour.", name: "Tom K.", city: "Madrid" },
     ];
     const t = pickRandom(testimonials);
-    const text = `💬 <i>"${t.text}"</i>\n— <b>${t.name}</b>, ${t.city}\n\n✅ The free daily code is available right now — no payment needed to start.\n👉 <a href="${BOT_URL}">avisignals.com/bot.html</a>`;
+    const text = `💬 _"${t.text}"_\n— *${t.name}*, ${t.city}\n\n✅ The free daily code is available right now — no payment needed to start.\n👉 ${BOT_URL}`;
     return { choices: [{ message: { content: text } }] };
 }
 
@@ -218,7 +219,7 @@ function sendToChannel(text) {
     return telegramRequest('sendMessage', {
         chat_id: CHANNEL_ID,
         text,
-        parse_mode: 'HTML',
+        parse_mode: 'Markdown',
         link_preview_options: { is_disabled: true }
     });
 }
