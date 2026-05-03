@@ -236,31 +236,6 @@ function sendToAdmin(text) {
     });
 }
 
-// ============================================================
-// CONTENT GENERATORS — one per content type
-// ============================================================
-
-// Success stories pool — rotated so the AI has real material to work with
-const SUCCESS_STORIES = [
-    { name: 'James M.', city: 'Sydney', start: 'AUD 8,000', end: 'AUD 150,000', site: '1xBet', days: 2 },
-    { name: 'Grace W.', city: 'Mombasa', start: 'KES 5,000', end: 'KES 162,000', site: 'Betika', days: 1 },
-    { name: 'Brian O.', city: 'Cape Town', start: 'R 3,000', end: 'R 41,000', site: 'Betway', days: 1 },
-    { name: 'Amara K.', city: 'Kampala', start: 'UGX 50,000', end: 'UGX 1,900,000', site: 'Bangbet', days: 3 },
-    { name: 'David N.', city: 'London', start: 'GBP 1,000', end: 'GBP 75,000', site: '1win', days: 2 },
-    { name: 'Fatima H.', city: 'Dar es Salaam', start: 'TZS 20,000', end: 'TZS 880,000', site: 'Parimatch', days: 1 },
-];
-let storyIndex = 0;
-function nextStory() {
-    const s = SUCCESS_STORIES[storyIndex % SUCCESS_STORIES.length];
-    storyIndex++;
-    return s;
-}
-
-const RECENT_HISTORY_TEXT = () =>
-    postHistory.length
-        ? `\nRecent posts you already sent (DO NOT repeat these ideas):\n${postHistory.map(p => `- [${p.type}] "${p.preview}"`).join('\n')}`
-        : '';
-
 
 
 // ============================================================
