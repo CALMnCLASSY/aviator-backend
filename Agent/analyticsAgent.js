@@ -263,30 +263,24 @@ async function runHourlyPulse() {
         metrics = { error: err.message, timestamp: new Date().toLocaleString('en-KE', { timeZone: 'Africa/Nairobi' }) };
     }
 
-    const systemPrompt = `You are the Senior Growth Analyst for AviSignals. Write a sharp, punchy HOURLY PULSE REPORT for the CEO. Be direct. Flag problems. Give ONE specific action to take NOW. Format with Telegram Markdown (*bold* and bullets).`;
+    // Build structured report — no AI tokens used
+    const signupBar  = metrics.signupsToday >= BUSINESS_CONTEXT.dailySignupGoal ? '✅' : metrics.signupsToday >= BUSINESS_CONTEXT.dailySignupGoal * 0.5 ? '🟡' : '🔴';
+    const convBar    = parseFloat(metrics.conversionRate) >= 15 ? '✅' : parseFloat(metrics.conversionRate) >= 8 ? '🟡' : '🔴';
 
-    const userPrompt = `Live metrics for ${metrics.timestamp}:
-📊 SIGNUPS: Last Hr: ${metrics.signupsLastHour}, Today: ${metrics.signupsToday} (Goal: ${BUSINESS_CONTEXT.dailySignupGoal})
-💰 REVENUE: Today: $${metrics.todayRevenue?.toFixed(2)}, Week: $${metrics.weekRevenue?.toFixed(2)}
-👥 SUBS: Active: ${metrics.activeSubscriptions}, Expiring 24h: ${metrics.expiringSoon}
-📈 CONV: Rate: ${metrics.conversionRate}%
-🟢 LIVE: Online: ${metrics.onlineNow}, Chat Hr: ${metrics.chatSessionsLastHour}`;
+    const report = [
+        `⚡ *AviSignals Hourly Pulse — ${metrics.timestamp}*`,
+        ``,
+        `📊 *Signups:* ${metrics.signupsLastHour} this hr | ${metrics.signupsToday}/${BUSINESS_CONTEXT.dailySignupGoal} today ${signupBar}`,
+        `💰 *Revenue:* $${metrics.todayRevenue?.toFixed(2)} today | $${metrics.weekRevenue?.toFixed(2)} this week`,
+        `👥 *Active subs:* ${metrics.activeSubscriptions} | Expiring 24h: ${metrics.expiringSoon}`,
+        `📈 *Conversion:* ${metrics.conversionRate}% ${convBar}`,
+        `🟢 *Online now:* ${metrics.onlineNow} | Chat sessions/hr: ${metrics.chatSessionsLastHour}`,
+        metrics.recentSignupEmails?.length ? `\n📧 *Recent:* ${metrics.recentSignupEmails.join(', ')}` : ''
+    ].filter(Boolean).join('\n');
 
-    try {
-        const completion = await groq.chat.completions.create({
-            messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
-            model: 'llama-3.3-70b-versatile',
-            temperature: 0.55,
-            max_tokens: 600
-        });
-
-        const report = completion.choices[0]?.message?.content ?? 'Report generation failed.';
-        const header = `⚡ *AviSignals Hourly Pulse — ${metrics.timestamp}*\n\n`;
-        await sendToTelegram(header + report);
-    } catch (err) {
-        console.error('❌ Groq hourly pulse error:', err.message);
-    }
+    await sendToTelegram(report);
 }
+
 
 async function runMorningBriefing() {
     let metrics;
@@ -330,20 +324,19 @@ async function runNightlyReport() {
 
 async function runChurnAlert(metrics) {
     if (!metrics.expiringSoon || metrics.expiringSoon < 3) return;
-    const systemPrompt = `You are the Retention Manager. Write an urgent retention alert for the CEO.`;
-    const userPrompt = `URGENT: ${metrics.expiringSoon} subs expiring in 24h. Financial impact: ~$${(metrics.expiringSoon * 75)}. Recommended renewal message?`;
-
-    try {
-        const completion = await groq.chat.completions.create({
-            messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
-            model: 'llama-3.3-70b-versatile',
-            temperature: 0.5,
-            max_tokens: 400
-        });
-        const alert = completion.choices[0]?.message?.content ?? 'Churn alert failed.';
-        const header = `🔴 *CHURN ALERT — ${metrics.expiringSoon} subs expiring soon!*\n\n`;
-        await sendToTelegram(header + alert);
-    } catch (err) { console.error('❌ Groq churn alert error:', err.message); }
+    const impact = metrics.expiringSoon * 75;
+    const alert = [
+        `🔴 *CHURN ALERT — ${metrics.expiringSoon} subs expiring soon!*`,
+        ``,
+        `⚠️ *${metrics.expiringSoon}* active subscribers are expiring in the next 24 hours.`,
+        `💸 *Potential loss:* ~$${impact} if they don't renew.`,
+        ``,
+        `*Recommended actions:*`,
+        `- Message expiring users with a renewal reminder`,
+        `- Post a time-limited promo to the Telegram channel`,
+        `- Check if any payments are stuck in pending status`
+    ].join('\n');
+    await sendToTelegram(alert);
 }
 
 // ============================================================

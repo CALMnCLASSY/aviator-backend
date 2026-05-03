@@ -211,11 +211,11 @@ const DEV_ORIGINS = [
 
 const corsOptions = {
     origin(origin, callback) {
-        if (!origin) return callback(null, true); // non-browser clients
+        // Allow: no origin (server-to-server), null origin (PWA standalone mode), allowed list, dev
+        if (!origin || origin === 'null') return callback(null, true);
 
         const isProd      = process.env.NODE_ENV === 'production';
         const isAllowed   = ALLOWED_ORIGINS.includes(origin);
-        // Exact match only in production — no string.includes() tricks
         const isDevAllowed = !isProd && DEV_ORIGINS.includes(origin);
 
         if (isAllowed || isDevAllowed) {

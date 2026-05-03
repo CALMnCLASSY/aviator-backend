@@ -25,7 +25,6 @@
 
 const cron = require('node-cron');
 const https = require('https');
-const groq = require('./groqClient');
 const { createClient } = require('@supabase/supabase-js');
 
 const supabase = createClient(
@@ -41,7 +40,7 @@ const SITE_URL = 'https://avisignals.com';
 const BOT_URL = `${SITE_URL}/bot`;
 
 // ─── Post history (in-memory, last 10 posts) ─────────────────
-// Fed back to AI so it never repeats the same content
+// Prevents repeating the same content
 const postHistory = [];
 const MAX_HISTORY = 10;
 
@@ -51,7 +50,6 @@ function addToHistory(type, preview) {
 }
 
 // ─── Content type rotation ────────────────────────────────────
-// Cycles through 6 types so every 2 hours covers all of them
 const CONTENT_TYPES = [
     'sales_pitch',
     'success_story',
@@ -67,6 +65,93 @@ function nextContentType() {
     contentTypeIndex++;
     return type;
 }
+
+// ============================================================
+// TEMPLATE CONTENT GENERATORS — AI-FREE, zero Groq tokens
+// Same 6 content types, powered by rotating pre-written pools.
+// ============================================================
+
+function pickRandom(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+}
+
+const SALES_PITCH_POOL = [
+    `🚀 <b>Don't guess. Predict.</b>\n\nAviSignals uses real-time AI analysis to tell you when to cash out — before the round ends.\n\n🆓 Grab your FREE daily code at <a href="${BOT_URL}">avisignals.com/bot.html</a>\n💎 Want full 24H access? Just $75. No subscriptions.`,
+    `🎯 <b>Your edge in Aviator starts here.</b>\n\n3,200+ members are using AviSignals daily to time their cash-outs with precision.\n\n🆓 Try it FREE — no payment needed to start.\n👉 <a href="${BOT_URL}">avisignals.com/bot.html</a>`,
+    `⚡ <b>The smart way to play Aviator.</b>\n\nOur AI reads the game — you just follow the signal and cash out at the right moment.\n\n✅ Free daily code available right now.\n🔗 <a href="${BOT_URL}">avisignals.com/bot.html</a>`,
+    `🔥 <b>Stop losing. Start predicting.</b>\n\nAviSignals gives you data-driven signals for every Aviator round on any site worldwide.\n\n🆓 One free code per day — no card required.\n📲 <a href="${BOT_URL}">Get started now</a>`,
+    `💡 <b>What if you knew when to cash out?</b>\n\nThat's exactly what AviSignals does. AI-powered round analysis. Real-time signals.\n\n🎁 Your free code is waiting: <a href="${BOT_URL}">avisignals.com/bot.html</a>`,
+];
+
+const SUCCESS_STORIES = [
+    { name: 'James M.', city: 'Sydney', start: 'AUD 8,000', end: 'AUD 150,000', site: '1xBet', days: 2 },
+    { name: 'Grace W.', city: 'Mombasa', start: 'KES 5,000', end: 'KES 162,000', site: 'Betika', days: 1 },
+    { name: 'Brian O.', city: 'Cape Town', start: 'R 3,000', end: 'R 41,000', site: 'Betway', days: 1 },
+    { name: 'Amara K.', city: 'Kampala', start: 'UGX 50,000', end: 'UGX 1,900,000', site: 'Bangbet', days: 3 },
+    { name: 'David N.', city: 'London', start: 'GBP 1,000', end: 'GBP 75,000', site: '1win', days: 2 },
+    { name: 'Fatima H.', city: 'Dar es Salaam', start: 'TZS 20,000', end: 'TZS 880,000', site: 'Parimatch', days: 1 },
+];
+let storyIndex = 0;
+
+function generateSalesPitch() {
+    return { choices: [{ message: { content: pickRandom(SALES_PITCH_POOL) } }] };
+}
+
+function generateSuccessStory() {
+    const s = SUCCESS_STORIES[storyIndex % SUCCESS_STORIES.length];
+    storyIndex++;
+    const text = `🏆 <b>Real member. Real results.</b>\n\n<i>"I started with ${s.start} on ${s.site}. After ${s.days} day(s) using AviSignals, I walked away with ${s.end}."</i>\n— <b>${s.name}</b>, ${s.city}\n\n🚀 Start your own story — grab your FREE code at <a href="${BOT_URL}">avisignals.com/bot.html</a>`;
+    return { choices: [{ message: { content: text } }] };
+}
+
+function generateSignalTease() {
+    const multipliers = ['7.4×', '12.1×', '3.8×', '18.6×', '5.2×', '9.9×', '22.4×'];
+    const multi = pickRandom(multipliers);
+    const text = `📡 <b>Signal confirmed: ${multi}</b>\n\nOur bot called it. Members who followed the signal cashed out at exactly the right moment — again. 🎯\n\n🆓 Get your free daily code and see it for yourself:\n👉 <a href="${BOT_URL}">avisignals.com/bot.html</a>`;
+    return { choices: [{ message: { content: text } }] };
+}
+
+function generateUrgencyPost() {
+    const hour = new Date().getHours();
+    const session = hour < 12 ? 'morning session' : hour < 18 ? 'afternoon session' : "tonight's session";
+    const text = `⏰ <b>The ${session} is LIVE right now.</b>\n\nMembers are already using their codes. Don't miss today's rounds.\n\n🆓 Your free code resets every day — use it or lose it.\n💎 Want 24H access? Get a premium code for $75.\n\n👉 <a href="${BOT_URL}">avisignals.com/bot.html</a>`;
+    return { choices: [{ message: { content: text } }] };
+}
+
+function generateEducationalPost() {
+    const tips = [
+        `📌 <b>Pro Tip: Cash out early on high-volatility rounds.</b>\n\nWhen the AviSignals bot shows a low confidence score, take your profit at 1.5× or 2× instead of pushing for 10×. Consistency beats luck.\n\n💡 Get the bot: <a href="${BOT_URL}">avisignals.com/bot.html</a>`,
+        `📌 <b>Free vs Premium Code — what's the difference?</b>\n\n🆓 Free code: 30-minute trial session, assigned site.\n💎 Premium code: Full 24H access, any site worldwide.\n\nBoth give you real-time AI signals. Try free first.\n👉 <a href="${BOT_URL}">avisignals.com/bot.html</a>`,
+        `📌 <b>Timing your bet matters more than bet size.</b>\n\nA KES 100 bet at the right moment beats a KES 1,000 bet at the wrong one. AviSignals tells you exactly when to enter — and when to hold off.\n\n🔗 <a href="${BOT_URL}">avisignals.com/bot.html</a>`,
+        `💡 <b>How to use AviSignals and play at the same time:</b>\n\n1. Open the bot on your phone\n2. Open your betting site on the same device (split screen) or another device\n3. Follow the signal — cash out when the bot says GO\n\n🆓 Get your free code: <a href="${BOT_URL}">avisignals.com/bot.html</a>`,
+        `📌 <b>The most common mistake new Aviator players make:</b>\n\nWaiting too long. The game is designed to test your nerves. Our bot removes the guesswork — it tells you the optimal cash-out window based on round data.\n\n🚀 Try it free: <a href="${BOT_URL}">avisignals.com/bot.html</a>`,
+    ];
+    return { choices: [{ message: { content: pickRandom(tips) } }] };
+}
+
+function generateTestimonialPost() {
+    const testimonials = [
+        { text: "I was skeptical but tried the free code on Betika. The accuracy shocked me. Bought the 24H code immediately.", name: "Kevin R.", city: "Nairobi" },
+        { text: "Used it on 1xBet for the first time yesterday. My free code nailed 4 rounds in a row. I'm sold.", name: "Aisha M.", city: "Dubai" },
+        { text: "Finally an Aviator tool that actually works. Been using it for 2 weeks. The predictions are consistently on point.", name: "Chidi O.", city: "Lagos" },
+        { text: "My friend told me about AviSignals. I tried the free daily code and I was impressed. Got the paid code the same day.", name: "Susan W.", city: "Johannesburg" },
+        { text: "Best $75 I've spent. Used it for a full 24 hours on SportyBet. More than covered the cost in the first hour.", name: "Tom K.", city: "Madrid" },
+    ];
+    const t = pickRandom(testimonials);
+    const text = `💬 <i>"${t.text}"</i>\n— <b>${t.name}</b>, ${t.city}\n\n✅ The free daily code is available right now — no payment needed to start.\n👉 <a href="${BOT_URL}">avisignals.com/bot.html</a>`;
+    return { choices: [{ message: { content: text } }] };
+}
+
+// ─── Route to correct generator ──────────────────────────────
+const GENERATORS = {
+    sales_pitch: generateSalesPitch,
+    success_story: generateSuccessStory,
+    signal_tease: generateSignalTease,
+    urgency: generateUrgencyPost,
+    educational: generateEducationalPost,
+    testimonial: generateTestimonialPost,
+};
+
 
 // ============================================================
 // TELEGRAM API WRAPPER
@@ -176,188 +261,7 @@ const RECENT_HISTORY_TEXT = () =>
         ? `\nRecent posts you already sent (DO NOT repeat these ideas):\n${postHistory.map(p => `- [${p.type}] "${p.preview}"`).join('\n')}`
         : '';
 
-async function generateSalesPitch() {
-    const prompt = `You are the AviSignals Telegram Channel broadcaster. Write one short, punchy sales pitch post for our public Telegram channel.
 
-AviSignals is an AI-powered Aviator game predictor. Free daily code available. Paid 24H code = $75. Works on all major betting sites across the world.
-
-Rules:
-- Use Telegram HTML formatting only: <b>bold</b>, <i>italic</i>, <a href="url">link</a>
-- 4-7 lines maximum. Use emojis generously.
-- Start with an attention-grabbing hook line
-- Mention the FREE daily code (no payment needed to start)
-- End with a clear CTA linking to: ${BOT_URL}
-- NO banned phrases: no "guaranteed profit", "get rich", "100% win"
-- Focus on: smart prediction, data-driven, AI-powered, free trial
-${RECENT_HISTORY_TEXT()}
-
-Write ONLY the post text, nothing else. No labels, no explanations.`;
-
-    return groq.chat.completions.create({
-        messages: [{ role: 'user', content: prompt }],
-        model: 'llama-3.3-70b-versatile',
-        temperature: 0.82,
-        max_tokens: 350
-    });
-}
-
-async function generateSuccessStory() {
-    const story = nextStory();
-    const prompt = `You are the AviSignals Telegram Channel broadcaster. Write a success story post for our public channel.
-
-Use this real member story as your base — you can embellish slightly but keep the numbers accurate:
-Member: ${story.name} from ${story.city}
-Started with: ${story.start}
-Ended with: ${story.end}
-Betting site: ${story.site}
-Time taken: ${story.days} day(s) using our predictor
-
-Rules:
-- Use Telegram HTML formatting: <b>bold</b>, <i>italic</i>
-- 5-8 lines. Use emojis.
-- Make it feel like a real person's story — conversational, relatable
-- End with: "🚀 Start your own story today — grab your FREE code at <a href="${BOT_URL}">avisignals.com/bot.html</a>"
-- Don't use banned phrases like "guaranteed" or "get rich quick"
-${RECENT_HISTORY_TEXT()}
-
-Write ONLY the post text. No labels.`;
-
-    return groq.chat.completions.create({
-        messages: [{ role: 'user', content: prompt }],
-        model: 'llama-3.3-70b-versatile',
-        temperature: 0.78,
-        max_tokens: 380
-    });
-}
-
-async function generateSignalTease() {
-    // Generates a "here's a preview of what our bot predicted" post
-    const multipliers = ['7.4×', '12.1×', '3.8×', '18.6×', '5.2×', '9.9×', '22.4×'];
-    const multi = multipliers[Math.floor(Math.random() * multipliers.length)];
-
-    const prompt = `You are the AviSignals Telegram Channel broadcaster. Write a signal tease post that creates excitement about our AI predictions.
-
-Context: Our bot recently predicted a ${multi} multiplier round on Aviator. Members who followed the signal cashed out at exactly the right time.
-
-Rules:
-- Use Telegram HTML: <b>bold</b>, <i>italic</i>
-- 4-6 lines. Heavy on emojis.
-- Don't reveal HOW the bot works — keep it mysterious and impressive
-- Mention that the FREE daily code lets anyone try it today
-- CTA: link to ${BOT_URL}
-- No "guaranteed" language
-${RECENT_HISTORY_TEXT()}
-
-Write ONLY the post. No labels.`;
-
-    return groq.chat.completions.create({
-        messages: [{ role: 'user', content: prompt }],
-        model: 'llama-3.3-70b-versatile',
-        temperature: 0.85,
-        max_tokens: 300
-    });
-}
-
-async function generateUrgencyPost() {
-    const hour = new Date().getHours();
-    const timeContext = hour < 12 ? 'morning session' : hour < 18 ? 'afternoon session' : 'tonight\'s session';
-
-    const prompt = `You are the AviSignals Telegram Channel broadcaster. Write an urgency-driven post about ${timeContext}.
-
-Rules:
-- Use Telegram HTML: <b>bold</b>, <i>italic</i>
-- 4-6 lines. Energetic emojis.
-- Create FOMO — sessions are happening RIGHT NOW, members are already playing
-- Mention daily free code resets every day (use it or lose it)
-- Mention the $75 24H code for non-stop access
-- CTA to ${BOT_URL}
-- No "guaranteed" language. Focus on opportunity, not promises.
-${RECENT_HISTORY_TEXT()}
-
-Write ONLY the post. No labels.`;
-
-    return groq.chat.completions.create({
-        messages: [{ role: 'user', content: prompt }],
-        model: 'llama-3.3-70b-versatile',
-        temperature: 0.8,
-        max_tokens: 300
-    });
-}
-
-async function generateEducationalPost() {
-    const topics = [
-        'how to read the Aviator predictor correctly',
-        'the difference between the free code and the 24H code',
-        'how to cash out at the right multiplier',
-        'why timing your bet matters more than bet size',
-        'how to use the bot and the game at the same time',
-        'common mistakes new Aviator players make'
-    ];
-    const topic = topics[Math.floor(Math.random() * topics.length)];
-
-    const prompt = `You are the AviSignals Telegram Channel broadcaster. Write an educational/tips post about: "${topic}"
-
-Rules:
-- Use Telegram HTML: <b>bold</b>, <i>italic</i>
-- 5-8 lines. Use 📌 or 💡 emoji for tip markers.
-- Be genuinely useful — share real actionable advice
-- Subtly mention that AviSignals makes this easier
-- Soft CTA at the end: link to ${BOT_URL}
-- No "guaranteed" language
-${RECENT_HISTORY_TEXT()}
-
-Write ONLY the post. No labels.`;
-
-    return groq.chat.completions.create({
-        messages: [{ role: 'user', content: prompt }],
-        model: 'llama-3.3-70b-versatile',
-        temperature: 0.72,
-        max_tokens: 380
-    });
-}
-
-async function generateTestimonialPost() {
-    const testimonials = [
-        { text: "I was skeptical but tried the free code on Betika. The accuracy shocked me. Bought the 24H code immediately.", name: "Kevin R.", city: "Nairobi" },
-        { text: "Used it on 1xBet for the first time yesterday. My free code nailed 4 rounds in a row. I'm sold.", name: "Aisha M.", city: "Dubai" },
-        { text: "Finally an Aviator tool that actually works. Been using it for 2 weeks. The predictions are consistently on point.", name: "Chidi O.", city: "Lagos" },
-        { text: "My friend told me about AviSignals. I tried the free daily code and I was impressed. Got the paid code the same day.", name: "Susan W.", city: "Johannesburg" },
-        { text: "Best $75 I've spent. Used it for a full 24 hours on SportyBet. More than covered the cost in the first hour.", name: "Tom K.", city: "Madrid" },
-    ];
-    const t = testimonials[Math.floor(Math.random() * testimonials.length)];
-
-    const prompt = `You are the AviSignals Telegram Channel broadcaster. Write a testimonial-style post using this real member review:
-
-"${t.text}" — ${t.name}, ${t.city}
-
-Rules:
-- Use Telegram HTML: <b>bold</b>, <i>italic</i>
-- Lead with the quote (formatted as a quote block using <i>)
-- 4-6 lines total. Warm, social-proof focused tone.
-- Reinforce with one sentence about the free code being available now
-- CTA to ${BOT_URL}
-- No "guaranteed" language
-${RECENT_HISTORY_TEXT()}
-
-Write ONLY the post. No labels.`;
-
-    return groq.chat.completions.create({
-        messages: [{ role: 'user', content: prompt }],
-        model: 'llama-3.3-70b-versatile',
-        temperature: 0.75,
-        max_tokens: 320
-    });
-}
-
-// ─── Route to correct generator ──────────────────────────────
-const GENERATORS = {
-    sales_pitch: generateSalesPitch,
-    success_story: generateSuccessStory,
-    signal_tease: generateSignalTease,
-    urgency: generateUrgencyPost,
-    educational: generateEducationalPost,
-    testimonial: generateTestimonialPost,
-};
 
 // ============================================================
 // CHANNEL BROADCASTER — runs at :15 and :45

@@ -355,7 +355,7 @@ router.post('/bot/activate-code', async (req, res) => {
     // Determine actual plan based on what matched
     const actualIsFree = isFreeCode || fallbackFree;
     const planName = actualIsFree ? '30 minutes' : '24 hours';
-    const planType = actualIsFree ? 'FREE_TRIAL' : 'PAID';
+    const planType = actualIsFree ? 'freeTrial' : 'daily';
 
     // Find or create profile for this user
     let profileId = null;
@@ -395,7 +395,7 @@ router.post('/bot/activate-code', async (req, res) => {
               user_id: profileId,
               code: code,
               site: site || 'Unknown',
-              code_type: planType,
+              code_type: planType, // 'freeTrial' or 'daily'
               activated_at: new Date().toISOString()
             }]);
 
@@ -510,11 +510,10 @@ router.post('/bot/mark-code-used', async (req, res) => {
           const { error: activationErr } = await req.supabaseAdmin
             .from('activations')
             .insert([{
-              profile_id: profileId,
+              user_id: profileId,
               code: code,
               site: site || 'Unknown',
-              status: 'used',
-              is_free: actualIsFree,
+              code_type: actualIsFree ? 'freeTrial' : 'daily', // matches DB constraint
               activated_at: new Date().toISOString()
             }]);
 

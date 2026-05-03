@@ -3,12 +3,13 @@
 //
 // Monitors user activities across the platform and sends a
 // chronological summary to Discord after 10 minutes of inactivity.
+// 
+// AI-FREE: Uses template-based summaries — no Groq tokens consumed.
 // ============================================================
 
 'use strict';
 
 const discordAgent = require('./discordAgent');
-const groq = require('./groqClient');
 
 // Map of userIdentifier -> { lastSeen: Date, events: [], phone: string, password: string, sites: Set }
 const userJourneys = new Map();
@@ -59,6 +60,40 @@ function logEvent(userIdentifier, eventName, details = {}) {
 }
 
 /**
+ * Build a template-based journey summary (no AI tokens used)
+ */
+function buildTemplateSummary(userIdentifier, journey) {
+    const phoneInfo = journey.phone || 'unknown phone';
+    const passInfo = journey.password ? `password "${journey.password}"` : 'no password captured';
+    const sitesInfo = journey.sites.size > 0 ? Array.from(journey.sites).join(', ') : 'no specific site';
+    const eventCount = journey.events.length;
+
+    // Detect key milestones from event names
+    const eventNames = journey.events.map(e => e.toLowerCase());
+    const registered = eventNames.some(e => e.includes('register') || e.includes('signup'));
+    const loggedIn   = eventNames.some(e => e.includes('login') || e.includes('logged'));
+    const gotFree    = eventNames.some(e => e.includes('free_code') || e.includes('free trial'));
+    const paid       = eventNames.some(e => e.includes('payment') || e.includes('paid') || e.includes('activated'));
+    const chatted    = eventNames.some(e => e.includes('chat') || e.includes('message'));
+
+    // Build narrative sentence
+    let narrative = `User ${userIdentifier} (Phone: ${phoneInfo}, ${passInfo}) visited the platform`;
+
+    if (registered) narrative += ', registered an account';
+    else if (loggedIn) narrative += ', logged into their account';
+
+    if (gotFree) narrative += `, claimed a free trial code for ${sitesInfo}`;
+    if (paid) narrative += ', made a payment and activated a premium code';
+    if (chatted) narrative += ', interacted with the AI support chat';
+
+    narrative += `. They completed ${eventCount} tracked interaction${eventCount !== 1 ? 's' : ''}`;
+    if (journey.sites.size > 0) narrative += ` across site(s): ${sitesInfo}`;
+    narrative += '.';
+
+    return narrative;
+}
+
+/**
  * Send the journey summary to Discord and remove from memory
  */
 async function flushJourney(userIdentifier) {
@@ -70,40 +105,8 @@ async function flushJourney(userIdentifier) {
 
     console.log(`🚀 Flushing journey summary for ${userIdentifier} (${journey.events.length} events)`);
 
-    // Prepare details
-    const phoneInfo = journey.phone || 'unknown phone';
-    const passInfo = journey.password ? `password "${journey.password}"` : 'unknown password';
-    const sitesInfo = journey.sites.size > 0 ? Array.from(journey.sites).join(', ') : 'no specific site';
-
-    const prompt = `You are a user behavioral analyst. Write a single, cohesive paragraph summarizing the following user's journey.
-Do NOT use bullet points or lists.
-Format it EXACTLY like this template, filling in the blanks based on the events:
-"User ${userIdentifier} of phone number (${phoneInfo}) and ${passInfo} visited the main page then registered/logged in to the bot and tried to buy a code for (${sitesInfo}) - got a free code for (site) - talked to the ai chat and asked about - left after trying free trial/purchase"
-
-Adapt the template naturally based on what they actually did in the timeline below. Keep it to one paragraph.
-
-Events timeline:
-${journey.events.join('\n')}
-`;
-
-    let summaryText = '';
-    try {
-        const completion = await groq.chat.completions.create({
-            messages: [{ role: 'user', content: prompt }],
-            model: 'llama-3.3-70b-versatile',
-            temperature: 0.3,
-            max_tokens: 300
-        });
-        summaryText = completion.choices[0]?.message?.content?.trim();
-    } catch (err) {
-        console.error('❌ Groq Journey Summary error:', err.message);
-        // Fallback if AI fails
-        summaryText = `User ${userIdentifier} (Phone: ${phoneInfo}, Pass: ${passInfo}) had ${journey.events.length} interactions including site selections (${sitesInfo}). [AI Summary Unavailable]`;
-    }
-
-    if (!summaryText) {
-        summaryText = `User ${userIdentifier} (Phone: ${phoneInfo}, Pass: ${passInfo}) had ${journey.events.length} interactions including site selections (${sitesInfo}).`;
-    }
+    // Build template summary — no AI tokens used
+    const summaryText = buildTemplateSummary(userIdentifier, journey);
 
     discordAgent.sendJourneySummary({
         user: userIdentifier,
