@@ -435,29 +435,67 @@ async function fetchLiveContext() {
     }
 }
 
-const ADMIN_SYSTEM_PROMPT = `You are ARIA, the AviSignals AI Business Assistant speaking directly to the founder/CEO via Telegram.
+const ADMIN_SYSTEM_PROMPT = `You are ARIA, the AviSignals AI Business Assistant — the founder's private, always-on COO via Telegram.
 
 BUSINESS OVERVIEW:
-- AviSignals: AI-powered Aviator game prediction platform, based in Kenya
+- AviSignals: AI-powered Aviator game prediction platform
 - Free tier: 1 free daily prediction code (30-min session)
-- Paid tier: $75 = 24-hour continuous access
-- Payment: M-Pesa + card via Paystack
-- Target market: Global, Whole World
-- Channels: Telegram channel, WhatsApp, website (avisignals.com)
+- Paid tier: $75 = 24-hour continuous access code
+- Payments: Paystack (card/M-Pesa), USDT, Selar
+- Target market: Global — Africa, Europe, Asia, Americas
+- Key channels: Telegram channel, WhatsApp, website (avisignals.com)
+- Telegram channel posts 2x/hour (content broadcast) + 3 daily marketing events
+
+MARKETING EVENTS (scheduled daily):
+- 1:00 PM EAT — Code Giveaway in channel
+- 6:30–7:00 PM EAT — Live Session Countdown in channel
+- 3 admin briefings: 7AM, 12PM, 9PM EAT
 
 YOUR ROLE:
-- Answer any question the founder asks about the business
-- Give live stats when asked (I will inject them into your context)
-- Suggest growth ideas, marketing tactics, and fixes
-- Help draft messages, posts, or emails when asked
-- Flag anything that needs urgent attention
-- Be direct, concise, and actionable — this is a busy founder
+- Answer any business question immediately and precisely
+- Give live stats when asked (injected into your context below)
+- Suggest growth tactics, conversion improvements, retention strategies
+- Draft posts, emails, or messages on request
+- Flag urgent issues (payment failures, low conversions, unusual patterns)
+- Help admin run channel events (giveaways, countdowns) on demand
 
-TONE: Like a sharp, loyal COO speaking to the CEO. Confident, data-driven, no fluff.
-FORMAT: Use Telegram Markdown — *bold*, _italic_, bullet points with -`;
+AVAILABLE ADMIN COMMANDS (remind user if relevant):
+/status — live metrics snapshot
+/briefing — full styled business briefing
+/revenue — revenue-only snapshot
+/users — user count + today's signups
+/giveaway — trigger a code giveaway to channel NOW
+/countdown — trigger live session countdown to channel NOW
+/post — trigger a random channel broadcast NOW
+/broadcast [msg] — post a custom message to channel
+/help — full command list
+
+TONE: Sharp, direct, loyal COO. Data-driven, no filler. Short sentences.
+FORMAT: Telegram Markdown only — *bold*, _italic_, \`code\`, bullet points with -`;
+
+// ============================================================
+// ADMIN BRIEFING — full styled business summary
+// ============================================================
+async function sendAdminBriefing(label = 'Scheduled') {
+    const ctx = await fetchLiveContext();
+    const now = new Date().toLocaleTimeString('en-KE', { timeZone: 'Africa/Nairobi', hour: '2-digit', minute: '2-digit' });
+    const date = new Date().toLocaleDateString('en-KE', { timeZone: 'Africa/Nairobi', weekday: 'short', day: 'numeric', month: 'short' });
+
+    const briefing = `📋 *${label.toUpperCase()} BRIEFING — ${date} ${now}*\n\n` +
+        `👥 *Users:* ${ctx.totalUsers} total\n` +
+        `✅ *Active Subs:* ${ctx.activeSubscribers}\n` +
+        `📦 *Plans:* ${ctx.planBreakdown}\n` +
+        `💰 *Revenue Today:* ${ctx.revenueToday} (${ctx.paymentsToday} payments)\n` +
+        `🟢 *Online Now:* ${ctx.onlineNow}\n` +
+        `📢 *Channel Posts:* ${ctx.postsToday} (last: _${ctx.lastPostType}_)\n\n` +
+        `💡 _Use /help for admin commands_`;
+
+    await sendToAdmin(briefing);
+    console.log(`✅ ${label} briefing sent to admin`);
+}
 
 async function handleAdminMessage(message) {
-    const text = message.text || '';
+    const text = message.text?.trim() || '';
     const chatId = message.chat.id;
     const fromId = message.from?.id;
 
@@ -469,58 +507,119 @@ async function handleAdminMessage(message) {
 
     console.log(`📩 Admin message received: "${text.slice(0, 60)}"`);
 
-    // Handle commands
-    if (text.startsWith('/status') || text.toLowerCase().includes('status')) {
+    // ── /status ────────────────────────────────────────────────
+    if (text.startsWith('/status') || text.toLowerCase() === 'status') {
         const ctx = await fetchLiveContext();
-        const statusMsg = `📊 *Live AviSignals Status*\n\n` +
-            `👥 Total users: *${ctx.totalUsers}*\n` +
-            `✅ Active subscribers: *${ctx.activeSubscribers}*\n` +
-            `📦 Plan breakdown: ${ctx.planBreakdown}\n` +
-            `💰 Revenue today: *${ctx.revenueToday}* (${ctx.paymentsToday} payments)\n` +
+        const msg = `📊 *Live Status*\n\n` +
+            `👥 Users: *${ctx.totalUsers}* | Active subs: *${ctx.activeSubscribers}*\n` +
+            `💰 Revenue today: *${ctx.revenueToday}* (${ctx.paymentsToday} txns)\n` +
+            `📦 Plans: ${ctx.planBreakdown}\n` +
             `🟢 Online now: *${ctx.onlineNow}*\n` +
-            `📢 Channel posts today: *${ctx.postsToday}* (last: ${ctx.lastPostType})\n` +
-            `🕐 As of: ${new Date().toLocaleTimeString('en-KE', { timeZone: 'Africa/Nairobi' })}`;
-
-        await telegramRequest('sendMessage', {
-            chat_id: chatId,
-            text: statusMsg,
-            parse_mode: 'Markdown'
-        });
+            `📢 Posts today: *${ctx.postsToday}* (last: _${ctx.lastPostType}_)\n` +
+            `🕐 ${new Date().toLocaleTimeString('en-KE', { timeZone: 'Africa/Nairobi' })}`;
+        await telegramRequest('sendMessage', { chat_id: chatId, text: msg, parse_mode: 'Markdown' });
         return;
     }
 
+    // ── /briefing ──────────────────────────────────────────────
+    if (text.startsWith('/briefing')) {
+        await telegramRequest('sendMessage', { chat_id: chatId, text: '📋 Generating briefing...', parse_mode: 'Markdown' });
+        await sendAdminBriefing('On-Demand');
+        return;
+    }
+
+    // ── /revenue ───────────────────────────────────────────────
+    if (text.startsWith('/revenue')) {
+        const ctx = await fetchLiveContext();
+        const msg = `💰 *Revenue Snapshot*\n\n` +
+            `Today: *${ctx.revenueToday}* across ${ctx.paymentsToday} payments\n` +
+            `Active subs: *${ctx.activeSubscribers}*\n` +
+            `Plans: ${ctx.planBreakdown}`;
+        await telegramRequest('sendMessage', { chat_id: chatId, text: msg, parse_mode: 'Markdown' });
+        return;
+    }
+
+    // ── /users ─────────────────────────────────────────────────
+    if (text.startsWith('/users')) {
+        const ctx = await fetchLiveContext();
+        // Count today's signups
+        const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+        const { count: newToday } = await supabase
+            .from('profiles').select('id', { count: 'exact', head: true })
+            .gte('created_at', todayStart.toISOString()).catch(() => ({ count: '?' }));
+        const msg = `👥 *User Stats*\n\n` +
+            `Total registered: *${ctx.totalUsers}*\n` +
+            `New today: *${newToday ?? '?'}*\n` +
+            `Active subscribers: *${ctx.activeSubscribers}*`;
+        await telegramRequest('sendMessage', { chat_id: chatId, text: msg, parse_mode: 'Markdown' });
+        return;
+    }
+
+    // ── /giveaway ──────────────────────────────────────────────
+    if (text.startsWith('/giveaway')) {
+        await telegramRequest('sendMessage', { chat_id: chatId, text: '🎁 Triggering giveaway to channel...', parse_mode: 'Markdown' });
+        const marketingBot = global.marketingBotInstance;
+        if (marketingBot) {
+            await marketingBot.runCodeGiveaway();
+            await telegramRequest('sendMessage', { chat_id: chatId, text: '✅ Giveaway posted to channel.', parse_mode: 'Markdown' });
+        } else {
+            await telegramRequest('sendMessage', { chat_id: chatId, text: '⚠️ Marketing bot not running.', parse_mode: 'Markdown' });
+        }
+        return;
+    }
+
+    // ── /countdown ─────────────────────────────────────────────
+    if (text.startsWith('/countdown')) {
+        await telegramRequest('sendMessage', { chat_id: chatId, text: '⏳ Triggering live session countdown...', parse_mode: 'Markdown' });
+        const marketingBot = global.marketingBotInstance;
+        if (marketingBot) {
+            await marketingBot.runCountdownSequence();
+            await telegramRequest('sendMessage', { chat_id: chatId, text: '✅ Countdown posted to channel.', parse_mode: 'Markdown' });
+        } else {
+            await telegramRequest('sendMessage', { chat_id: chatId, text: '⚠️ Marketing bot not running.', parse_mode: 'Markdown' });
+        }
+        return;
+    }
+
+    // ── /broadcast ─────────────────────────────────────────────
+    if (text.startsWith('/broadcast ')) {
+        const customMsg = text.replace('/broadcast ', '').trim();
+        if (!customMsg) {
+            await telegramRequest('sendMessage', { chat_id: chatId, text: '⚠️ Usage: /broadcast Your message here', parse_mode: 'Markdown' });
+            return;
+        }
+        const result = await sendToChannel(customMsg);
+        const reply = result?.ok ? '✅ Message posted to channel.' : '❌ Failed to post message.';
+        await telegramRequest('sendMessage', { chat_id: chatId, text: reply, parse_mode: 'Markdown' });
+        return;
+    }
+
+    // ── /post ──────────────────────────────────────────────────
     if (text.startsWith('/post') || text.toLowerCase() === 'post now') {
-        await telegramRequest('sendMessage', {
-            chat_id: chatId,
-            text: '📢 Triggering a channel post now...',
-            parse_mode: 'Markdown'
-        });
-        await runChannelPost();
-        await telegramRequest('sendMessage', {
-            chat_id: chatId,
-            text: '✅ Post sent to channel.',
-            parse_mode: 'Markdown'
-        });
+        const parts = text.split(' ');
+        const postType = parts[1]; // optional: /post sales_pitch
+        await telegramRequest('sendMessage', { chat_id: chatId, text: '📢 Posting to channel now...', parse_mode: 'Markdown' });
+        await runChannelPost(postType);
+        await telegramRequest('sendMessage', { chat_id: chatId, text: '✅ Post sent to channel.', parse_mode: 'Markdown' });
         return;
     }
 
-    if (text.startsWith('/help')) {
-        const helpMsg = `🤖 *ARIA — AviSignals Business Assistant*\n\n` +
-            `Here's what you can ask me:\n\n` +
-            `- *Any business question* — growth, marketing, conversions\n` +
-            `- *"status"* or */status* — live business metrics\n` +
-            `- *"post now"* or */post* — trigger a channel broadcast immediately\n` +
-            `- *"write a post about X"* — draft a channel post\n` +
-            `- *"write an email about X"* — draft a subscriber email\n` +
-            `- *"how many subscribers"* — subscriber stats\n` +
-            `- *"what should I do today"* — daily priorities\n\n` +
-            `Or just ask me anything in plain English. I have live access to your business data.`;
-
-        await telegramRequest('sendMessage', {
-            chat_id: chatId,
-            text: helpMsg,
-            parse_mode: 'Markdown'
-        });
+    // ── /help ──────────────────────────────────────────────────
+    if (text.startsWith('/help') || text.startsWith('/start')) {
+        const helpMsg =
+            `🤖 *ARIA — AviSignals Admin Bot*\n\n` +
+            `*QUICK COMMANDS*\n` +
+            `• /status — live metrics\n` +
+            `• /briefing — full business briefing\n` +
+            `• /revenue — revenue snapshot\n` +
+            `• /users — user count + today's signups\n` +
+            `• /giveaway — run a code giveaway NOW\n` +
+            `• /countdown — start live session countdown NOW\n` +
+            `• /post — random channel broadcast NOW\n` +
+            `• /broadcast [msg] — post custom message to channel\n\n` +
+            `*OR* just ask me anything in plain English!\n` +
+            `_e.g. "what should I focus on today?" or "write a win post"_`;
+        await telegramRequest('sendMessage', { chat_id: chatId, text: helpMsg, parse_mode: 'Markdown' });
         return;
     }
 
@@ -608,24 +707,35 @@ function stopPolling() {
 // STARTUP
 // ============================================================
 function startTelegramAgent() {
-    console.log('🚀 AviSignals Telegram Agent v2 — Initializing...');
+    console.log('🚀 AviSignals Telegram Agent v3 — Initializing...');
 
-    // 2 posts per hour — at :15 and :45 past each hour
-    // Covers 6am to 11pm Nairobi time (adjust if VPS is not UTC+3)
+    // ── Channel content broadcast: 2x per hour (:15, :45), 6am–11pm ──
     cron.schedule('15,45 6-23 * * *', runChannelPost);
 
-    // Start admin bot polling
+    // ── Daily Admin Briefings (EAT timezone = UTC+3) ──────────────────
+    // 🌅 Morning briefing: 7:00 AM EAT = 04:00 UTC
+    cron.schedule('0 4 * * *', () => sendAdminBriefing('🌅 Morning'));
+    // ☀️ Midday briefing:  12:00 PM EAT = 09:00 UTC
+    cron.schedule('0 9 * * *', () => sendAdminBriefing('☀️ Midday'));
+    // 🌙 Night briefing:    9:00 PM EAT = 18:00 UTC
+    cron.schedule('0 18 * * *', () => sendAdminBriefing('🌙 Night'));
+
+    // ── Start admin bot polling ────────────────────────────────────────
     pollForAdminMessages();
 
-    // Initialize Marketing Bot
+    // ── Initialize Marketing Bot (countdowns + giveaways) ─────────────
     const TelegramMarketingBot = require('../marketing/telegramMarketing');
     const marketingBot = new TelegramMarketingBot();
+    global.marketingBotInstance = marketingBot; // expose for admin commands
     marketingBot.start();
 
-    console.log('✅ Telegram Agent ready:');
-    console.log('   📢 Channel broadcast — 2x per hour (:15, :45), 6am–11pm');
-    console.log('   👂 Admin bot polling  — always on, responds to your messages');
-    console.log(`   💬 Admin chat ID      — ${ADMIN_CHAT || 'NOT SET (set TELEGRAM_CHAT_ID)'}`);
+    console.log('✅ Telegram Agent v3 ready:');
+    console.log('   📢 Channel broadcast  — 2x/hour (:15, :45) 6am–11pm EAT');
+    console.log('   📋 Admin briefings    — 7AM, 12PM, 9PM EAT (no hourly spam)');
+    console.log('   🎁 Code giveaway      — 1:00 PM EAT daily');
+    console.log('   🔴 Live countdown     — 6:30→7:00 PM EAT daily');
+    console.log('   👂 Admin bot polling  — always on');
+    console.log(`   💬 Admin chat ID      — ${ADMIN_CHAT || 'NOT SET'}`);
     console.log(`   📣 Channel            — ${CHANNEL_ID}`);
 }
 

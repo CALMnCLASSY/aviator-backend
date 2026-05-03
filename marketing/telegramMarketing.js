@@ -686,6 +686,57 @@ class TelegramMarketingBot {
         }
     }
 
+    async runCodeGiveaway() {
+        try {
+            console.log('🎁 Starting code giveaway sequence...');
+            // Announce giveaway
+            const announceMsg = "🎁 *GIVEAWAY in 30 seconds!*\\n\\nFirst 10 to comment get a free code! Be ready! 🚀";
+            await this.sendToChannel(announceMsg);
+
+            // Wait 30 seconds
+            await new Promise(resolve => setTimeout(resolve, 30000));
+
+            // Load today's code (we'll just pull the first daily code we find)
+            const codesPath = path.join(__dirname, '..', 'activation_codes.json');
+            let dailyCode = 'DAILYCODE';
+            if (fs.existsSync(codesPath)) {
+                const codes = JSON.parse(fs.readFileSync(codesPath, 'utf8'));
+                for (const site in codes) {
+                    if (codes[site].daily) {
+                        dailyCode = codes[site].daily;
+                        break;
+                    }
+                }
+            }
+
+            const codeMsg = `🏆 *CODE REVEALED:* \\`${dailyCode}\\`\\n\\n` +
+                `First 10 to use it win free access!\\n` +
+                `👉 Enter it here: avisignals.com/bot.html`;
+            
+            await this.sendToChannel(codeMsg);
+            console.log('✅ Giveaway code revealed.');
+        } catch (error) {
+            console.error('❌ Error in runCodeGiveaway:', error);
+        }
+    }
+
+    async runCountdownSequence() {
+        // Since cron handles the exact times, this method can be called directly
+        // for testing, or we can just let the crons handle the individual messages.
+        // For /countdown command, we will do a fast-forward version.
+        try {
+            console.log('⏳ Running manual fast-forward countdown sequence...');
+            await this.sendToChannel("🔴 *LIVE session starting soon!* Get your code ready.");
+            await new Promise(resolve => setTimeout(resolve, 10000)); // 10s for manual
+            await this.sendToChannel("⏳ *Almost time!* Code users, log in now.");
+            await new Promise(resolve => setTimeout(resolve, 10000)); // 10s for manual
+            await this.sendToChannel("🟢 *WE ARE LIVE!* Today's session is OPEN.\\nFree code at avisignals.com/bot.html");
+            console.log('✅ Manual countdown complete.');
+        } catch (error) {
+            console.error('❌ Error in runCountdownSequence:', error);
+        }
+    }
+
     getNextPostDelay() {
         // Obsolete function, retained for compatibility mapping if needed.
         return 0;
@@ -722,6 +773,29 @@ class TelegramMarketingBot {
             if (this.isRunning) {
                 await this.sendMarketingPost();
             }
+        });
+
+        // ── NEW: Scheduled Marketing Events (EAT timezone = UTC+3) ──
+
+        // 🎁 Code Giveaway: 1:00 PM EAT (10:00 UTC)
+        cron.schedule('0 10 * * *', async () => {
+            if (this.isRunning) await this.runCodeGiveaway();
+        });
+
+        // 🔴 Live Session Countdown Series
+        // T-30: 6:30 PM EAT (15:30 UTC)
+        cron.schedule('30 15 * * *', async () => {
+            if (this.isRunning) await this.sendToChannel("🔴 *LIVE session starting in 30 minutes!* Get your code ready.");
+        });
+
+        // T-10: 6:50 PM EAT (15:50 UTC)
+        cron.schedule('50 15 * * *', async () => {
+            if (this.isRunning) await this.sendToChannel("⏳ *10 MINUTES to go!* Code users, log in now.");
+        });
+
+        // T-0: 7:00 PM EAT (16:00 UTC)
+        cron.schedule('0 16 * * *', async () => {
+            if (this.isRunning) await this.sendToChannel("🟢 *WE ARE LIVE!* Today's session is OPEN.\\nFree code at avisignals.com/bot.html");
         });
     }
 
