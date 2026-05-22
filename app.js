@@ -115,7 +115,7 @@ try {
     console.warn('⚠️  Could not load activation_codes.json — starting fresh');
 }
 
-global.defaultSites             = ['SportyBet', '1xBet', 'Betika', 'Betway', 'Parimatch', 'BangBet', 'Bet365', 'OdiBets', 'Helabet', 'MozzartBet', 'Aviator', 'Other'];
+global.defaultSites             = ['SportyBet', '1xBet', 'Betika', 'Betway', 'Parimatch', 'BangBet', 'Bet365', 'OdiBets', 'Helabet', 'MozzartBet', 'Aviator', 'Other', 'Betano', 'Stoiximan', 'Pin-Up', 'Melbet', 'Linebet', 'YYY Casino', 'Rabona', 'Leon', 'Stake', 'Unibet', 'Toto Casino', 'LeoVegas', '888casino', 'Casino777', 'Napoleon Sports and Casino', 'Lottomatica', 'Casino Gran Madrid', 'Novibet', 'Vlad Cazino', 'BetVictor', 'Betsson', 'Roobet', 'Rushbet', 'Coolbet', 'BC.Game', 'Supabets'];
 global.freeTrialWhitelistedSites = ['classybet', 'jetbet'];
 global.activationCodes          = persistedCodes;
 
