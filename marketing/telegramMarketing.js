@@ -16,6 +16,19 @@ class TelegramMarketingBot {
         this.lastSignalTarget = null;
         this.lastSignalEntry = null;
 
+        // Channel template rotation index (cycles through 0, 1, 2)
+        this.channelTemplateIndex = 0;
+        this.channelTemplates = [
+            // Template 1: Global Reach & Available Countries
+            `🚀 *AVIATOR PREDICTOR - NOW AVAILABLE GLOBALLY!* 🌍\n\nDid you know our AI-powered signals work across multiple countries with localized payment support? Stop losing and start winning today!\n\n✅ *Supported Regions & Currencies:*\n🇪🇺 Europe: Euro (€), GBP (£), PLN (zł), RON (lei), SEK (kr), TRY (₺)\n🌍 Middle East: AED, SAR, QAR\n🌎 Americas: USD ($), CAD (C$), BRL (R$), MXN ($), COP ($), CLP ($)\n🌍 Africa: KES (KSh), NGN (₦), ZAR (R), GHS (GH₵), TZS (TSh) ...and more!\n\n🎯 We sync directly with the Aviator algorithms in your region.\n🔒 Secure payments. 100% automated activation.\n\n👉 *Get your 24H Activation Code Now:* avisignals.com\n💬 Need help? Contact Admin: https://t.me/Aadmin4cnc`,
+
+            // Template 2: Supported Betting Sites
+            `🎰 *PLAY AVIATOR? WE SUPPORT YOUR FAVORITE SITE!* 🎰\n\nOur bot connects to the exact game environment of your betting platform to give you precise cash-out signals.\n\n✅ *Works Perfectly On:*\n🔸 Betano • Stake • 1xBet • SportyBet\n🔸 Unibet • LeoVegas • 888casino\n🔸 Pin-Up • Melbet • Betway • Roobet\n🔸 MozzartBet • Betika • BetWinner\n🔸 ...and over 30+ other global platforms!\n\nDon't bet blind. Let our AI do the heavy lifting. Pick your site, enter your activation code, and wait for the signal! 📈💸\n\n👉 *Choose your site & start winning:* avisignals.com\n🔥 Join thousands of profitable players today.`,
+
+            // Template 3: Proof of Win / Urgency
+            `💥 *BOOM!* Another massive 15x multiplier accurately predicted! 🎯\n\nUsers who activated their bot today are already swimming in profits. What are you waiting for?\n\n✅ Global Support (Europe, Middle East, Africa, Americas)\n✅ Works on Stake, Betano, 1xBet, Unibet & more!\n✅ Pay easily with Crypto (USDT), Card, or Mobile Money\n\nStop guessing. Start predicting.\n👉 *Activate your bot here:* avisignals.com`
+        ];
+
         // Image and video queues for fair rotation (no repeats until all used)
         this.imageQueues = {}; // Per-category image queues
         this.videoQueue = [];
@@ -201,6 +214,17 @@ class TelegramMarketingBot {
                 categories: ['tips', 'hype', 'promos', 'betting_sites', 'classy_promos', 'free_trial', 'payment_promo', 'plans_promo', 'social_proof'],
                 emoji: "💎"
             }
+        };
+
+        // Weekly Site & Video Rotation (EAT Timezone)
+        this.weeklyRotation = {
+            1: { site: 'Betika', video: 'betikaworks.mp4' },       // Monday
+            2: { site: '1Win', video: '1winworks.mp4' },           // Tuesday
+            3: { site: 'Betway', video: 'betwayworks.mp4' },         // Wednesday
+            4: { site: 'SportyBet', video: 'sportybetworks.mp4' },   // Thursday
+            5: { site: 'Stake', video: 'stakeworks.mp4' },           // Friday
+            6: { site: 'MozzartBet', video: 'mozzartworks.mp4' },   // Saturday
+            0: { site: 'Hollywoodbets', video: 'hollywoodworks.mp4' } // Sunday
         };
     }
 
@@ -742,6 +766,211 @@ class TelegramMarketingBot {
         return 0;
     }
 
+    async sendChatAction(action) {
+        try {
+            const url = `https://api.telegram.org/bot${this.botToken}/sendChatAction`;
+            const payload = {
+                chat_id: this.channelId,
+                action: action
+            };
+            await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+        } catch (error) {
+            console.error('❌ Error sending chat action:', error);
+        }
+    }
+
+    async executeSequentialQueue(queue) {
+        for (const step of queue) {
+            if (step.delay) {
+                console.log(`⏳ Waiting ${step.delay / 1000}s for human-mimicking delay...`);
+                await new Promise(resolve => setTimeout(resolve, step.delay));
+            }
+            if (!this.isRunning) return;
+
+            if (step.type === 'text') {
+                await this.sendChatAction('typing');
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                await this.sendToChannel(step.content);
+            } else if (step.type === 'image') {
+                await this.sendChatAction('upload_photo');
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                await this.sendImageToChannel(step.path, step.caption);
+            } else if (step.type === 'video') {
+                await this.sendChatAction('upload_video');
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                await this.sendVideoToChannel(step.path, step.caption);
+            }
+        }
+    }
+
+    async runMorningSession() {
+        console.log('🌅 Executing scheduled Morning Session...');
+        let imagePath = path.join(__dirname, 'images', 'gettheedge.jpeg');
+        if (!fs.existsSync(imagePath)) {
+            imagePath = path.join(__dirname, 'images', 'avisignalsmainhome.jpg');
+        }
+
+        const queue = [
+            {
+                type: 'text',
+                content: `🌅 *Good Morning Family!* Today is a fresh opportunity to dominate the Aviator charts.\n\n🎯 *Daily Target:* We are aiming for a consistent +200% growth on our stakes today. Discipline is key — do not get greedy!\n\n💡 *Basic Rule:* Split your bets, cash out the first at 1.5x to secure your stake, and let the second ride to our predicted multipliers.`
+            }
+        ];
+
+        if (fs.existsSync(imagePath)) {
+            queue.push({
+                type: 'image',
+                delay: 5000,
+                path: imagePath,
+                caption: `🤖 *Make sure your bot dashboard is ready.* Get daily codes or activate premium to lock in your predictions.\n\n👉 Start now: avisignals.com/bot.html`
+            });
+        }
+
+        // Append channel template (supported countries/currencies/sites)
+        queue.push({
+            type: 'text',
+            delay: 15000,
+            content: this.getNextChannelTemplate()
+        });
+
+        await this.executeSequentialQueue(queue);
+    }
+
+    async runNoonSession() {
+        console.log('🎰 Executing scheduled Noon Session...');
+        const today = new Date().getDay(); // 0 is Sunday, 1 is Monday, etc.
+        const rotation = this.weeklyRotation[today] || this.weeklyRotation[1];
+        
+        const siteName = rotation.site;
+        const videoFile = rotation.video;
+        const videoPath = path.join(__dirname, videoFile);
+
+        const queue = [
+            {
+                type: 'text',
+                content: `🎰 *Noon Session: Focus on ${siteName}!* 📈\n\nWe are targeting ${siteName}'s Aviator server for the next few hours. Our algorithms are fully synced and ready.`
+            }
+        ];
+
+        if (fs.existsSync(videoPath)) {
+            queue.push({
+                type: 'video',
+                delay: 5000,
+                path: videoPath,
+                caption: `🎥 *Watch this quick tutorial on how to use AviSignals on ${siteName}.* Follow the entry points exactly!`
+            });
+        }
+
+        const codesPath = path.join(__dirname, '..', 'activation_codes.json');
+        let dailyCode = 'DAILYCODE';
+        if (fs.existsSync(codesPath)) {
+            try {
+                const codes = JSON.parse(fs.readFileSync(codesPath, 'utf8'));
+                if (codes[siteName] && codes[siteName].daily) {
+                    dailyCode = codes[siteName].daily;
+                } else {
+                    for (const site in codes) {
+                        if (codes[site].daily) {
+                            dailyCode = codes[site].daily;
+                            break;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Error reading activation codes for Noon Session:', e);
+            }
+        }
+
+        queue.push({
+            type: 'text',
+            delay: 10000,
+            content: `🎁 *GIVEAWAY - FREE ACCESS CODE REVEALED!* 🏆\n\nWe have released today's free code for *${siteName}*:\n\n🔑 Code: \`${dailyCode}\`\n\nFirst 10 players to use it get free bot predictions!\n👉 Enter it here: avisignals.com/bot.html`
+        });
+
+        // Append channel template (supported countries/currencies/sites)
+        queue.push({
+            type: 'text',
+            delay: 15000,
+            content: this.getNextChannelTemplate()
+        });
+
+        await this.executeSequentialQueue(queue);
+    }
+
+    async runEveningSession() {
+        console.log('💥 Executing scheduled Evening Session...');
+        
+        const winProofCategory = this.imageLibrary.win_proof || [];
+        let winProofImage = winProofCategory[Math.floor(Math.random() * winProofCategory.length)] || 'withdrawalwinshot.jpg';
+        let winProofPath = path.join(__dirname, 'images', winProofImage);
+        if (!fs.existsSync(winProofPath)) {
+            winProofPath = path.join(__dirname, 'images', 'withdrawalwinshot.jpg');
+        }
+
+        const featuresCategory = this.imageLibrary.features || [];
+        let testimonialImage = featuresCategory[Math.floor(Math.random() * featuresCategory.length)] || 'reviewexamples.jpg';
+        let testimonialPath = path.join(__dirname, 'images', testimonialImage);
+        if (!fs.existsSync(testimonialPath)) {
+            testimonialPath = path.join(__dirname, 'images', 'reviewexamples.jpg');
+        }
+
+        const queue = [
+            {
+                type: 'text',
+                content: `💥 *WHAT A DAY!* Another highly profitable session in the books. Our members absolutely crushed it today! 💰`
+            }
+        ];
+
+        if (fs.existsSync(winProofPath)) {
+            queue.push({
+                type: 'image',
+                delay: 5000,
+                path: winProofPath,
+                caption: `📊 *Proof of profits.* One of our members just shared their results from today's session!`
+            });
+        }
+
+        if (fs.existsSync(testimonialPath)) {
+            queue.push({
+                type: 'image',
+                delay: 5000,
+                path: testimonialPath,
+                caption: `💬 *Real feedback from the chat.* Consistency is what separates the winners from the gamblers.`
+            });
+        }
+
+        queue.push({
+            type: 'text',
+            delay: 5000,
+            content: `⏰ *Don't sleep on tomorrow's profits.* Premium codes are selling fast. Buy your 24H or Weekly pass tonight to be ready for the morning session!\n\n👉 Upgrade here: avisignals.com/bot.html`
+        });
+
+        // Append channel template (supported countries/currencies/sites)
+        queue.push({
+            type: 'text',
+            delay: 15000,
+            content: this.getNextChannelTemplate()
+        });
+
+        await this.executeSequentialQueue(queue);
+    }
+
+    /**
+     * Returns the next channel template message (rotates through all 3).
+     * Ensures every session closes with info about supported currencies,
+     * countries, and betting sites.
+     */
+    getNextChannelTemplate() {
+        const template = this.channelTemplates[this.channelTemplateIndex];
+        this.channelTemplateIndex = (this.channelTemplateIndex + 1) % this.channelTemplates.length;
+        console.log(`📢 Channel template #${this.channelTemplateIndex} queued (global reach / supported sites)`);
+        return template;
+    }
+
     async start() {
         if (this.isRunning) {
             console.log('🤖 Marketing bot is already running');
@@ -777,9 +1006,19 @@ class TelegramMarketingBot {
 
         // ── NEW: Scheduled Marketing Events (EAT timezone = UTC+3) ──
 
-        // 🎁 Code Giveaway: 1:00 PM EAT (10:00 UTC)
+        // Morning Session: 8:00 AM EAT (05:00 UTC)
+        cron.schedule('0 5 * * *', async () => {
+            if (this.isRunning) await this.runMorningSession();
+        });
+
+        // Noon Session (Site Rotation & Daily Code Giveaway): 1:00 PM EAT (10:00 UTC)
         cron.schedule('0 10 * * *', async () => {
-            if (this.isRunning) await this.runCodeGiveaway();
+            if (this.isRunning) await this.runNoonSession();
+        });
+
+        // Evening Session (Recap & Testimonials): 8:00 PM EAT (17:00 UTC)
+        cron.schedule('0 17 * * *', async () => {
+            if (this.isRunning) await this.runEveningSession();
         });
 
         // 🔴 Live Session Countdown Series
