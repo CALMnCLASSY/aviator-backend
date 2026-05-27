@@ -36,10 +36,10 @@ class TelegramMarketingBot {
 
         // ====== ALL 18 VIDEOS with context-aware categories ======
         this.videoLibrary = [
-            { file: 'howitworks.mp4', category: 'tutorial', caption_type: 'tutorial_video' },
-            { file: 'botrunning.mp4', category: 'demo', caption_type: 'bot_demo_video' },
-            { file: 'botworking.mp4', category: 'demo', caption_type: 'bot_demo_video' },
-            { file: 'botworking2.mp4', category: 'demo', caption_type: 'bot_demo_video' },
+            { file: '1winworks.mp4', category: 'tutorial', caption_type: 'tutorial_video' },
+            { file: 'betwayworks.mp4', category: 'demo', caption_type: 'bot_demo_video' },
+            { file: 'sportybetworks.mp4', category: 'demo', caption_type: 'bot_demo_video' },
+            { file: 'stakeworks.mp4', category: 'demo', caption_type: 'bot_demo_video' },
             { file: 'marketingluckno.mp4', category: 'motivational', caption_type: 'motivational_video' },
             { file: 'marketingvid2.mp4', category: 'marketing', caption_type: 'marketing_video' },
             { file: 'marketingvid3.mp4', category: 'marketing', caption_type: 'marketing_video' },
@@ -60,20 +60,19 @@ class TelegramMarketingBot {
         this.imageLibrary = {
             // Win proof screenshots (for win_results, celebration)
             win_proof: [
-                'chatwinshot1.jpg', 'chatwinshot2.jpg', 'chatwinshot3.jpg', 'chatwinshot4.jpg',
-                'chatwinshot5.jpg', 'chatwinshot6.jpg', 'chatwinshot7.jpg', 'chatwinshot8.jpg',
-                'betikawinshot1.jpg', 'withdrawalwinshot.jpg',
-                'win16.jpeg', 'win19.jpeg', 'win21.jpeg'
+                '1xbetshot1.jpg', '1wintzshot.jpg', 'betikawinshot1.jpg', 'betwaywinshot.jpg', 'betikawinshot1.jpg', 'withdrawalwinshot.jpg',
+                'hollywithdraw1.jpg', 'popesshot.jpg', 'stakewithdr1.jpg', 'stakeusshot1.jpg'
             ],
             // Bot/site screenshots (for promos, classy_promos)
             site_promo: [
                 'avisignalsmainhome.jpg', 'avisignalsbotpage.jpg',
-                'bothomepage.jpg', 'botshot.jpg'
+                'screenshot1.jpg', 'marketing.jpg', 'selectbsite.jpg'
             ],
             // Signal/prediction related (for signals, analysis_updates, signal_confirmations)
             signal_related: [
-                'dailypredictions.jpg', 'roundnumber.jpg',
-                'roundnumberbot.jpg', 'roundnumbergame.jpg'
+                'dailypredictions.jpg', 'stakeusshot1.jpg',
+                'withdrawalwinshot.jpg', '1wintzshot.jpg',
+                '1xbetshot1.jpg', 'hollywoodshot1.jpg'
             ],
             // Free trial promo (for free trial messaging)
             free_trial: [
@@ -81,11 +80,13 @@ class TelegramMarketingBot {
             ],
             // Payment related (for payment promos)
             payment: [
-                'payment.jpg', 'paymentmethods.jpg'
+                '1xbetshot1.jpg', 'popesshot.jpg',
+                '1wintzshot.jpg'
             ],
             // Hype / motivational (for hype, celebration)
             hype: [
-                'gettheedge.jpeg', 'PROMOCODE.jpeg'
+                'withdrawalwinshot.jpg', 'hollywithdraw1.jpg',
+                'popesshot.jpg', '1wintzshot.jpg', 'stakewithdr1.jpg'
             ],
             // Feature showcase (for tips, promos)
             features: [
@@ -96,7 +97,8 @@ class TelegramMarketingBot {
             // General marketing (fallback)
             general: [
                 'marketing.jpg', 'marketingpic.jpg',
-                'marketingpic2.jpg', 'marketingpic3.jpg'
+                'marketingpic2.jpg', 'stakeusshot1.jpg',
+                '1xbetshot1.jpg', '1wintzshot.jpg', 'hollywoodshot1.jpg'
             ]
         };
 
@@ -218,7 +220,7 @@ class TelegramMarketingBot {
 
         // Weekly Site & Video Rotation (EAT Timezone)
         this.weeklyRotation = {
-            1: { site: 'Betika', video: 'betikaworks.mp4' },       // Monday
+            1: { site: 'Betika', video: 'howitworks.mp4' },       // Monday
             2: { site: '1Win', video: '1winworks.mp4' },           // Tuesday
             3: { site: 'Betway', video: 'betwayworks.mp4' },         // Wednesday
             4: { site: 'SportyBet', video: 'sportybetworks.mp4' },   // Thursday
@@ -238,7 +240,7 @@ class TelegramMarketingBot {
             return {
                 signals: ["🚀 Free Signal: Next round looking hot at x3.2 ✅"],
                 tips: ["📊 Pro Tip: Always split stake between low (x2) and high (x10) odds."],
-                promos: ["💜 Visit classybetaviator.com for premium predictions ✅"]
+                promos: ["💜 Visit avisignals.com for premium predictions ✅"]
             };
         }
     }
@@ -248,8 +250,8 @@ class TelegramMarketingBot {
     }
 
     processMessage(message, category = null) {
-        const sites = ['Betika', 'OdiBets', 'SportPesa', '1Win', 'Bet365', '1xBet', '22Bet', 'Betway', 'Melbet', 'Hollywoodbets', 'Parimatch', 'Stake'];
-        const preferredSites = ['Betika', 'OdiBets', 'SportPesa', '1Win'];
+        const sites = ['Betika', 'Betsson', 'SportyBet', '1Win', 'Bet365', '1xBet', '22Bet', 'Betway', 'Melbet', 'Hollywoodbets', 'Parimatch', 'Stake'];
+        const preferredSites = ['Betika', 'Betway', 'SportyBet', '1Win', 'Stake'];
 
         const siteList = Math.random() < 0.8 ? preferredSites : sites;
         const randomSite = this.randomFromArray(siteList);
@@ -714,7 +716,7 @@ class TelegramMarketingBot {
         try {
             console.log('🎁 Starting code giveaway sequence...');
             // Announce giveaway
-            const announceMsg = "🎁 *GIVEAWAY in 30 seconds!*\\n\\nFirst 10 to comment get a free code! Be ready! 🚀";
+            const announceMsg = "🎁 *GIVEAWAY in 30 seconds!*\\n\\nFirst person to comment get a free code! Be ready! 🚀";
             await this.sendToChannel(announceMsg);
 
             // Wait 30 seconds
@@ -734,8 +736,8 @@ class TelegramMarketingBot {
             }
 
             const codeMsg = '🏆 *CODE REVEALED:* `' + dailyCode + '`\n\n' +
-                'First 10 to use it win free access!\n' +
-                '👉 Enter it here: avisignals.com/bot.html';
+                'First person to use it win free access!\n' +
+                '👉 Enter it here: avisignals.com/bot';
 
             await this.sendToChannel(codeMsg);
             console.log('✅ Giveaway code revealed.');
@@ -844,7 +846,7 @@ class TelegramMarketingBot {
         console.log('🎰 Executing scheduled Noon Session...');
         const today = new Date().getDay(); // 0 is Sunday, 1 is Monday, etc.
         const rotation = this.weeklyRotation[today] || this.weeklyRotation[1];
-        
+
         const siteName = rotation.site;
         const videoFile = rotation.video;
         const videoPath = path.join(__dirname, videoFile);
@@ -888,7 +890,7 @@ class TelegramMarketingBot {
         queue.push({
             type: 'text',
             delay: 10000,
-            content: `🎁 *GIVEAWAY - FREE ACCESS CODE REVEALED!* 🏆\n\nWe have released today's free code for *${siteName}*:\n\n🔑 Code: \`${dailyCode}\`\n\nFirst 10 players to use it get free bot predictions!\n👉 Enter it here: avisignals.com/bot.html`
+            content: `🎁 *GIVEAWAY - FREE ACCESS CODE REVEALED!* 🏆\n\nWe have released today's free code for *${siteName}*:\n\n🔑 Code: \`${dailyCode}\`\n\nFirst person to use it get free bot predictions!\n👉 Enter it on the app here: avisignals.com/bot`
         });
 
         // Append channel template (supported countries/currencies/sites)
@@ -903,7 +905,7 @@ class TelegramMarketingBot {
 
     async runEveningSession() {
         console.log('💥 Executing scheduled Evening Session...');
-        
+
         const winProofCategory = this.imageLibrary.win_proof || [];
         let winProofImage = winProofCategory[Math.floor(Math.random() * winProofCategory.length)] || 'withdrawalwinshot.jpg';
         let winProofPath = path.join(__dirname, 'images', winProofImage);
@@ -915,7 +917,7 @@ class TelegramMarketingBot {
         let testimonialImage = featuresCategory[Math.floor(Math.random() * featuresCategory.length)] || 'reviewexamples.jpg';
         let testimonialPath = path.join(__dirname, 'images', testimonialImage);
         if (!fs.existsSync(testimonialPath)) {
-            testimonialPath = path.join(__dirname, 'images', 'reviewexamples.jpg');
+            testimonialPath = path.join(__dirname, 'images', 'stakewithdr1.jpg');
         }
 
         const queue = [
