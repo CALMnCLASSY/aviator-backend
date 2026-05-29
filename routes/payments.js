@@ -354,7 +354,8 @@ router.post('/bot/activate-code', async (req, res) => {
 
     // Determine actual plan based on what matched
     const actualIsFree = isFreeCode || fallbackFree;
-    const planName = actualIsFree ? '30 minutes' : '24 hours';
+    const is1win = siteKey.toLowerCase() === '1win';
+    const planName = actualIsFree ? (is1win ? '3 minutes' : '30 minutes') : '24 hours';
     const planType = actualIsFree ? 'freeTrial' : 'daily';
 
     // Find or create profile for this user
