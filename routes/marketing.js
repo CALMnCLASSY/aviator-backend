@@ -113,6 +113,33 @@ router.post('/test', async (req, res) => {
     }
 });
 
+// Send free code tutorial
+router.post('/tutorial', async (req, res) => {
+    try {
+        const marketingBot = req.app.locals.marketingBot;
+        
+        if (!marketingBot) {
+            return res.status(404).json({
+                success: false,
+                message: 'Marketing bot not initialized'
+            });
+        }
+        
+        await marketingBot.sendFreeCodeTutorial();
+        
+        res.json({
+            success: true,
+            message: 'Free code tutorial sent successfully'
+        });
+    } catch (error) {
+        console.error('Error sending free code tutorial:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+});
+
 // Debug endpoint to check bot state
 router.get('/debug', (req, res) => {
     try {

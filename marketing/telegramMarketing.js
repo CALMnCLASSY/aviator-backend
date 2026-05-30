@@ -40,6 +40,9 @@ class TelegramMarketingBot {
             { file: 'betwayworks.mp4', category: 'demo', caption_type: 'bot_demo_video' },
             { file: 'sportybetworks.mp4', category: 'demo', caption_type: 'bot_demo_video' },
             { file: 'stakeworks.mp4', category: 'demo', caption_type: 'bot_demo_video' },
+            { file: 'aviator-works.mp4', category: 'demo', caption_type: 'bot_demo_video' },
+            { file: 'hollywoodworks.mp4', category: 'demo', caption_type: 'bot_demo_video' },
+            { file: 'getfreecode.mp4', category: 'demo', caption_type: 'bot_demo_video' },
             { file: 'marketingluckno.mp4', category: 'motivational', caption_type: 'motivational_video' },
             { file: 'marketingvid2.mp4', category: 'marketing', caption_type: 'marketing_video' },
             { file: 'marketingvid3.mp4', category: 'marketing', caption_type: 'marketing_video' },
@@ -61,11 +64,11 @@ class TelegramMarketingBot {
             // Win proof screenshots (for win_results, celebration)
             win_proof: [
                 '1xbetshot1.jpg', '1wintzshot.jpg', 'betikawinshot1.jpg', 'betwaywinshot.jpg', 'betikawinshot1.jpg', 'withdrawalwinshot.jpg',
-                'hollywithdraw1.jpg', 'popesshot.jpg', 'stakewithdr1.jpg', 'stakeusshot1.jpg'
+                'hollywithdraw1.jpg', 'popesshot.jpg', 'stakewithdr1.jpg', 'stakeusshot1.jpg', 'hollywoodshot2.jpg', 'hollywithdraw2.jpg'
             ],
             // Bot/site screenshots (for promos, classy_promos)
             site_promo: [
-                'avisignalsmainhome.jpg', 'avisignalsbotpage.jpg',
+                'avisignalsmainhome.jpg', 'hollywoodshot2.jpg',
                 'screenshot1.jpg', 'marketing.jpg', 'selectbsite.jpg'
             ],
             // Signal/prediction related (for signals, analysis_updates, signal_confirmations)
@@ -76,28 +79,28 @@ class TelegramMarketingBot {
             ],
             // Free trial promo (for free trial messaging)
             free_trial: [
-                'getfreetrial.jpg', 'entercode.jpg'
+                'getfreetrial.jpg', 'entercode.jpg', 'hollywoodshot2.jpg', 'hollywithdraw2.jpg'
             ],
             // Payment related (for payment promos)
             payment: [
-                '1xbetshot1.jpg', 'popesshot.jpg',
-                '1wintzshot.jpg'
+                '1xbetshot1.jpg', 'popesshot.jpg', 'hollywoodshot1.jpg',
+                '1wintzshot.jpg', 'hollywoodshot2.jpg', 'hollywithdraw2.jpg'
             ],
             // Hype / motivational (for hype, celebration)
             hype: [
                 'withdrawalwinshot.jpg', 'hollywithdraw1.jpg',
-                'popesshot.jpg', '1wintzshot.jpg', 'stakewithdr1.jpg'
+                'popesshot.jpg', '1wintzshot.jpg', 'stakewithdr1.jpg', 'hollywoodshot1.jpg', 'hollywoodshot2.jpg', 'hollywithdraw2.jpg'
             ],
             // Feature showcase (for tips, promos)
             features: [
                 'profitcalculator.jpg', 'profitcalculatorbase.jpg',
-                'selectbsite.jpg', 'selectbettingsite.jpg',
-                'securesiteentry.jpg', 'reviewexamples.jpg'
+                'selectbsite.jpg', 'selectbettingsite.jpg', '1xbetshot1.jpg', 'betikawinshot1.jpg', 'popesshot.jpg', '1wintzshot.jpg', 'stakewithdr1.jpg',
+                'securesiteentry.jpg', 'reviewexamples.jpg', 'hollywoodshot1.jpg', 'hollywoodshot2.jpg', 'hollywithdraw2.jpg'
             ],
             // General marketing (fallback)
             general: [
-                'marketing.jpg', 'marketingpic.jpg',
-                'marketingpic2.jpg', 'stakeusshot1.jpg',
+                'marketing.jpg', 'marketingpic.jpg', 'hollywoodshot2.jpg', 'hollywithdraw2.jpg',
+                'marketingpic2.jpg', 'stakeusshot1.jpg', 'betikawinshot1.jpg', 'popesshot.jpg',
                 '1xbetshot1.jpg', '1wintzshot.jpg', 'hollywoodshot1.jpg'
             ]
         };
@@ -961,6 +964,31 @@ class TelegramMarketingBot {
         await this.executeSequentialQueue(queue);
     }
 
+    async sendFreeCodeTutorial() {
+        console.log('📚 Executing Free Code Tutorial...');
+        const videoPath = path.join(__dirname, 'getfreecode.mp4');
+
+        const queue = [
+            {
+                type: 'text',
+                content: `📚 *Free Code Tutorial!* Learn how to get your daily free activation code.`
+            }
+        ];
+
+        if (fs.existsSync(videoPath)) {
+            queue.push({
+                type: 'video',
+                delay: 2000,
+                path: videoPath,
+                caption: `🎥 *Tutorial: How to get your FREE activation code daily.* Follow the steps carefully!`
+            });
+        } else {
+            console.warn('⚠️ getfreecode.mp4 not found in', __dirname);
+        }
+
+        await this.executeSequentialQueue(queue);
+    }
+
     /**
      * Returns the next channel template message (rotates through all 3).
      * Ensures every session closes with info about supported currencies,
@@ -1011,6 +1039,11 @@ class TelegramMarketingBot {
         // Morning Session: 8:00 AM EAT (05:00 UTC)
         cron.schedule('0 5 * * *', async () => {
             if (this.isRunning) await this.runMorningSession();
+        });
+
+        // Free Code Tutorial: 9:00 AM EAT (06:00 UTC) - Every Morning
+        cron.schedule('0 6 * * *', async () => {
+            if (this.isRunning) await this.sendFreeCodeTutorial();
         });
 
         // Noon Session (Site Rotation & Daily Code Giveaway): 1:00 PM EAT (10:00 UTC)
