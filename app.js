@@ -242,17 +242,19 @@ app.use(helmet({
         directives: {
             defaultSrc:    ["'self'"],
             styleSrc:      ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com"],
-            scriptSrc:     ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net", "https://js.paystack.co"],
+            scriptSrc:     ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net", "https://js.paystack.co", "https://checkout.flutterwave.com"],
             scriptSrcAttr: ["'unsafe-inline'"],
             fontSrc:       ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com"],
             imgSrc:        ["'self'", "data:", "https:"],
-            frameSrc:      ["'self'", "https://js.paystack.co", "https://checkout.paystack.com"],
+            frameSrc:      ["'self'", "https://js.paystack.co", "https://checkout.paystack.com", "https://checkout.flutterwave.com"],
             connectSrc:    [
                 "'self'",
                 "https://back.avisignals.com",
                 "https://*.supabase.co",
                 "https://api.paystack.co",
                 "https://checkout.paystack.com",
+                "https://api.flutterwave.com",
+                "https://checkout.flutterwave.com",
                 "https://api.safaricom.co.ke",
                 "wss://back.avisignals.com",
             ]
