@@ -246,7 +246,7 @@ app.use(helmet({
             scriptSrcAttr: ["'unsafe-inline'"],
             fontSrc:       ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com"],
             imgSrc:        ["'self'", "data:", "https:"],
-            frameSrc:      ["'self'", "https://js.paystack.co", "https://checkout.paystack.com", "https://checkout.flutterwave.com"],
+            frameSrc:      ["'self'", "https://js.paystack.co", "https://checkout.paystack.com", "https://checkout.flutterwave.com", "https://*.f4b-flutterwave.com"],
             connectSrc:    [
                 "'self'",
                 "https://back.avisignals.com",
@@ -255,6 +255,7 @@ app.use(helmet({
                 "https://checkout.paystack.com",
                 "https://api.flutterwave.com",
                 "https://checkout.flutterwave.com",
+                "https://api.ravepay.co",
                 "https://api.safaricom.co.ke",
                 "wss://back.avisignals.com",
             ]
