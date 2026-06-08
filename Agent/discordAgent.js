@@ -328,7 +328,7 @@ function sendPaymentEvent(type, details) {
  * Dedicated revenue alert — call this on every successful payment
  * for a richer, standalone payment notification
  */
-function sendRevenueAlert({ email, amount, currency = 'USD', method, plan, paystackRef }) {
+function sendRevenueAlert({ email, amount, currency = 'USD', method, plan, flutterwaveRef }) {
     revenueTracker.add(amount);
     const rev = revenueTracker.get();
 
@@ -340,11 +340,11 @@ function sendRevenueAlert({ email, amount, currency = 'USD', method, plan, payst
             { name: 'AMOUNT',           value: `$${Number(amount).toFixed(2)} ${currency}`,  inline: true },
             { name: 'METHOD',           value: safeValue(method),                            inline: true },
             { name: 'PLAN',             value: safeValue(plan || '24H Code'),                inline: true },
-            { name: 'REFERENCE',        value: safeValue(paystackRef),                       inline: true },
+            { name: 'REFERENCE',        value: safeValue(flutterwaveRef),                       inline: true },
             { name: "TODAY'S REVENUE",  value: `**$${rev.total}**`,                          inline: true },
             { name: 'PAYMENTS TODAY',   value: `**${rev.count}**`,                           inline: true },
         ],
-        footer: `${FOOTER_TAG} · Paystack`
+        footer: `${FOOTER_TAG} · Flutterwave`
     });
 
     dispatch('payments', embed);

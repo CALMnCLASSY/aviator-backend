@@ -321,7 +321,7 @@ BUSINESS OVERVIEW:
 - AviSignals: AI-powered Aviator game prediction platform
 - Free tier: 1 free daily prediction code (30-min session)
 - Paid tier: $75 = 24-hour continuous access code
-- Payments: Paystack (card/M-Pesa), USDT, Selar
+- Payments: Flutterwave (card/M-Pesa), USDT, Selar
 - Target market: Global — Africa, Europe, Asia, Americas
 - Key channels: Telegram channel, WhatsApp, website (avisignals.com)
 - Telegram channel posts 2x/hour (content broadcast) + 3 daily marketing events

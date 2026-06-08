@@ -242,17 +242,15 @@ app.use(helmet({
         directives: {
             defaultSrc:    ["'self'"],
             styleSrc:      ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com"],
-            scriptSrc:     ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net", "https://js.paystack.co", "https://checkout.flutterwave.com"],
+            scriptSrc:     ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net", "https://checkout.flutterwave.com"],
             scriptSrcAttr: ["'unsafe-inline'"],
             fontSrc:       ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com"],
             imgSrc:        ["'self'", "data:", "https:"],
-            frameSrc:      ["'self'", "https://js.paystack.co", "https://checkout.paystack.com", "https://checkout.flutterwave.com", "https://*.f4b-flutterwave.com"],
+            frameSrc:      ["'self'", "https://checkout.flutterwave.com", "https://*.f4b-flutterwave.com"],
             connectSrc:    [
                 "'self'",
                 "https://back.avisignals.com",
                 "https://*.supabase.co",
-                "https://api.paystack.co",
-                "https://checkout.paystack.com",
                 "https://api.flutterwave.com",
                 "https://checkout.flutterwave.com",
                 "https://api.ravepay.co",
@@ -269,7 +267,7 @@ app.use(helmet({
 // bodyParser removed — express.json() is built-in since Express 4.16
 // 50mb limit was dangerous. Real limits per endpoint type:
 //   - API endpoints: 10kb (more than enough for JSON payloads)
-//   - Webhook endpoints: 1mb (Paystack sends small JSON)
+//   - Webhook endpoints: 1mb (Flutterwave sends small JSON)
 // ============================================================
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ limit: '10kb', extended: true }));

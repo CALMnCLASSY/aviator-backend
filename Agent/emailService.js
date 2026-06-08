@@ -518,7 +518,7 @@ async function sendHotLeadEmail(to, firstName = '') {
       ${[
         ['💰', 'Price', '$75 USD (one-time for 24 hours)'],
         ['⚡', 'Activation', 'Instant — works immediately after payment'],
-        ['📱', 'Payment', 'Mobile money or Card via Paystack (safe & secure)'],
+        ['📱', 'Payment', 'Mobile money or Card via Flutterwave (safe & secure)'],
         ['🎯', 'What you get', 'Unlimited predictions for 24 hours on any betting site'],
         ['🔄', 'Reset', 'Each new purchase gives you a fresh 24-hour window'],
       ].map(([icon, label, val]) => `

@@ -170,7 +170,7 @@ router.post('/admin-verify/:reference', async (req, res) => {
             currency: payment.currency || 'USD',
             method: payment.method || 'Unknown',
             plan: payment.package || '24H Code',
-            paystackRef: payment.reference
+            flutterwaveRef: payment.reference
         });
     } else {
         discordAgent.sendPaymentEvent(verified ? 'PAYMENT_VERIFIED' : 'PAYMENT_REJECTED', { 
@@ -187,7 +187,7 @@ router.post('/admin-verify/:reference', async (req, res) => {
 
 /**
  * CREATE BOT PAYMENT RECORD
- * Insert a pending record to track the start of a Paystack transaction
+ * Insert a pending record to track the start of a Flutterwave transaction
  */
 router.post('/bot/create-payment/:reference', async (req, res) => {
   try {
@@ -240,7 +240,7 @@ router.post('/bot/create-payment/:reference', async (req, res) => {
               user_id: profileId,
               amount: 75,
               currency: 'USD',
-              method: 'Paystack',
+              method: 'Flutterwave',
               status: 'pending',
               reference: reference,
               created_at: new Date().toISOString()
@@ -258,7 +258,7 @@ router.post('/bot/create-payment/:reference', async (req, res) => {
     }
 
     // Discord Alert
-    discordAgent.sendPaymentEvent('PAYSTACK_INITIATED', {
+    discordAgent.sendPaymentEvent('FLUTTERWAVE_INITIATED', {
       user: customerInfo.contact,
       package: customerInfo.packageName || 'Daily Activation',
       site: customerInfo.bettingSite || 'Unknown',

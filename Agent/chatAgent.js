@@ -113,7 +113,7 @@ PAID TIERS (3 plans available):
 - **Weekly Plan — $250 USD** = 7 full days of predictor access (save 52% vs buying daily!)
 - **Monthly Plan — $1,500 USD** = 30 days of premium predictor access (best value for serious players)
 - All plans: user selects whatever betting site they want to play on
-- Payment via **Mobile Money**, **Card** (Paystack), or **Crypto** (USDT TRC20) — safe & instant
+- Payment via **Mobile Money**, **Card** (Flutterwave), or **Crypto** (USDT TRC20) — safe & instant
 - After payment, activation code is delivered immediately — no waiting
 - The code lasts the full duration of the purchased plan
 
