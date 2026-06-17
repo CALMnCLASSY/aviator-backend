@@ -25,6 +25,26 @@
 
 require('dotenv').config();
 
+// ─── Clean up common copy-paste errors in Env Vars ────────────
+if (process.env.SUPABASE_URL) {
+    process.env.SUPABASE_URL = process.env.SUPABASE_URL.trim().replace(/\/+$/, '');
+}
+if (process.env.SUPABASE_KEY) {
+    process.env.SUPABASE_KEY = process.env.SUPABASE_KEY.trim();
+}
+if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY.trim();
+}
+if (process.env.TELEGRAM_BOT_TOKEN) {
+    process.env.TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN.trim();
+}
+if (process.env.TELEGRAM_CHAT_ID) {
+    process.env.TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID.trim();
+}
+if (process.env.TELEGRAM_CHANNEL_ID) {
+    process.env.TELEGRAM_CHANNEL_ID = process.env.TELEGRAM_CHANNEL_ID.trim();
+}
+
 // ─── Validate required env vars at boot ──────────────────────
 const REQUIRED_ENV = ['SUPABASE_URL', 'SUPABASE_KEY'];
 const missingEnv   = REQUIRED_ENV.filter(k => !process.env[k]);
