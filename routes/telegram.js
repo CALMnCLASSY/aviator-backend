@@ -207,8 +207,23 @@ router.post('/send', async (req, res) => {
     }
 });
 
+// ── Agent webhook — receives admin bot messages from Telegram ──────────────
+// This endpoint is registered by telegramAgent.js on startup.
+// It handles all admin /commands and AI chat routed through the agent bot.
+router.post('/agent-webhook', async (req, res) => {
+    // Acknowledge immediately — Telegram retries if we don't respond in 60s
+    res.status(200).json({ ok: true });
+    try {
+        const { processWebhookUpdate } = require('../Agent/telegramAgent');
+        await processWebhookUpdate(req.body);
+    } catch (err) {
+        console.error('❌ agent-webhook error:', err.message);
+    }
+});
+
 // Webhook endpoint for Telegram bot callbacks
 router.post('/webhook', async (req, res) => {
+
     try {
         const update = req.body;
 

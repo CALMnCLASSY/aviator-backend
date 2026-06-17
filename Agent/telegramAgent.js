@@ -29,8 +29,8 @@ const groq = require('./groqClient');
 const { createClient } = require('@supabase/supabase-js');
 
 const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
+    (process.env.SUPABASE_URL || '').trim().replace(/\/+$/, ''),
+    (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()
 );
 
 // ─── Config ───────────────────────────────────────────────────
@@ -539,48 +539,58 @@ async function handleAdminMessage(message) {
     }
 }
 
-// ─── Long polling loop ────────────────────────────────────────
-let pollingActive = false;
+// ============================================================
+// WEBHOOK MODE — replaces long-polling
+// Telegram pushes updates to POST /api/telegram/agent-webhook
+// This eliminates the "Conflict" error that occurs when Render
+// briefly runs two instances during zero-downtime deployments.
+// ============================================================
 
-async function pollForAdminMessages() {
-    if (!BOT_TOKEN || !ADMIN_CHAT) return;
-    if (pollingActive) return;
-    pollingActive = true;
-
-    console.log('👂 Admin bot polling started...');
-
-    const poll = async () => {
-        try {
-            const res = await telegramRequest('getUpdates', {
-                offset: lastUpdateId + 1,
-                timeout: 30,   // long poll — waits up to 30s for a message
-                allowed_updates: ['message']
-            });
-
-            if (res?.ok && res.result?.length) {
-                for (const update of res.result) {
-                    lastUpdateId = update.update_id;
-                    if (update.message) {
-                        await handleAdminMessage(update.message);
-                    }
-                }
-            }
-        } catch (err) {
-            console.error('❌ Polling error:', err.message);
-            await new Promise(r => setTimeout(r, 5000)); // back off on error
+/**
+ * Called by the Express route in app.js (or routes/telegram.js)
+ * whenever Telegram sends a POST to the agent webhook endpoint.
+ */
+async function processWebhookUpdate(update) {
+    try {
+        if (update.message) {
+            await handleAdminMessage(update.message);
         }
-
-        if (pollingActive) {
-            setImmediate(poll); // tight loop — processes messages as fast as they arrive
-        }
-    };
-
-    poll();
+        // callback_query handling is done by routes/telegram.js webhook
+    } catch (err) {
+        console.error('❌ Webhook update error:', err.message);
+    }
 }
 
+/**
+ * Registers the webhook with Telegram once on startup.
+ * Safe to call multiple times — Telegram is idempotent if URL is the same.
+ */
+async function registerWebhook() {
+    if (!BOT_TOKEN) {
+        console.warn('⚠️  TELEGRAM_BOT_TOKEN not set — skipping webhook registration.');
+        return;
+    }
+    const baseUrl = (process.env.BASE_URL || '').trim().replace(/\/+$/, '');
+    if (!baseUrl) {
+        console.warn('⚠️  BASE_URL not set — cannot register Telegram webhook. Set BASE_URL=https://back.avisignals.com in Render.');
+        return;
+    }
+    const webhookUrl = `${baseUrl}/api/telegram/agent-webhook`;
+    console.log(`🔗 Registering Telegram webhook → ${webhookUrl}`);
+    const res = await telegramRequest('setWebhook', {
+        url: webhookUrl,
+        allowed_updates: ['message', 'callback_query']
+    });
+    if (res?.ok) {
+        console.log('✅ Telegram webhook registered successfully.');
+    } else {
+        console.error('❌ Failed to register Telegram webhook:', res?.description);
+    }
+}
+
+// Legacy stub — no-op now that we use webhooks
 function stopPolling() {
-    pollingActive = false;
-    console.log('🛑 Admin bot polling stopped.');
+    console.log('ℹ️  Polling is disabled — using webhooks.');
 }
 
 // ============================================================
@@ -600,8 +610,9 @@ function startTelegramAgent() {
     // 🌙 Night briefing:    9:00 PM EAT = 18:00 UTC
     cron.schedule('0 18 * * *', () => sendAdminBriefing('🌙 Night'));
 
-    // ── Start admin bot polling ────────────────────────────────────────
-    pollForAdminMessages();
+    // ── Register webhook with Telegram (replaces polling) ─────────────
+    // Delay slightly so the HTTP server is definitely up before we call Telegram
+    setTimeout(registerWebhook, 5000);
 
     // ── Initialize Marketing Bot (countdowns + giveaways) ─────────────
     const TelegramMarketingBot = require('../marketing/telegramMarketing');
@@ -624,5 +635,7 @@ module.exports = {
     runChannelPost,
     sendToAdmin,
     sendToChannel,
-    stopPolling
+    stopPolling,
+    processWebhookUpdate,   // consumed by the Express webhook route
+    registerWebhook
 };
