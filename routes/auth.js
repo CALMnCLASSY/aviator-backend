@@ -8,10 +8,13 @@ const emailService = require('../Agent/emailService');
 const { createClient } = require('@supabase/supabase-js');
 
 // Supabase Admin for syncing profiles
-const supabaseAdmin = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+let supabaseAdmin = null;
+if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    supabaseAdmin = createClient(
+        process.env.SUPABASE_URL,
+        process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+}
 
 /**
  * LOG SUPERBASE AUTH EVENT (Login/Register/FreeCode)

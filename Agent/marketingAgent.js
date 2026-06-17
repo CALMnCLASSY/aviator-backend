@@ -22,8 +22,9 @@ const emailService = require('./emailService');
 const discordAgent = require('./discordAgent');
 
 // Initialize Supabase Client with Service Role (bypasses RLS)
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Trim env vars here to guard against trailing spaces/newlines from Render's env dashboard
+const supabaseUrl = (process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '');
+const supabaseKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 const supabase    = createClient(supabaseUrl, supabaseKey);
 
 /**

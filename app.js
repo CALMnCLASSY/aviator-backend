@@ -45,6 +45,10 @@ if (process.env.TELEGRAM_CHANNEL_ID) {
     process.env.TELEGRAM_CHANNEL_ID = process.env.TELEGRAM_CHANNEL_ID.trim();
 }
 
+// ─── Boot diagnostic: expose hidden env var issues ────────────
+console.log(`🔍 SUPABASE_URL raw length: ${(process.env.SUPABASE_URL || '').length} chars | starts with: "${(process.env.SUPABASE_URL || '').slice(0, 30)}"`);
+console.log(`🔍 SUPABASE_KEY set: ${!!process.env.SUPABASE_KEY} | SUPABASE_SERVICE_ROLE_KEY set: ${!!process.env.SUPABASE_SERVICE_ROLE_KEY}`);
+
 // ─── Validate required env vars at boot ──────────────────────
 const REQUIRED_ENV = ['SUPABASE_URL', 'SUPABASE_KEY'];
 const missingEnv   = REQUIRED_ENV.filter(k => !process.env[k]);

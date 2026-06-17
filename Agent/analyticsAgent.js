@@ -16,8 +16,8 @@ const { createClient } = require('@supabase/supabase-js');
 
 // ─── Supabase (using Service Role for full analytics access) ──
 const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
+    (process.env.SUPABASE_URL || '').trim().replace(/\/+$/, ''),
+    (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()
 );
 
 // ─── Telegram ────────────────────────────────────────────────
