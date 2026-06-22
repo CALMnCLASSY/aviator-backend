@@ -299,6 +299,65 @@ Flag as HOT LEAD if the user expressed any interest in buying any plan ($39 dail
     }
 }
 
+function getStaticFAQResponse(message) {
+    const text = message.toLowerCase().trim();
+
+    // 1. Price / Cost / Buy Plans
+    if (/\b(price|cost|how much|subscription|subscribe|plans|daily|weekly|monthly|pay|payment|buy|purchase|usd|dollar|\$)\b/i.test(text)) {
+        return `We offer 3 premium plans to fit your gaming style:
+• 👑 **Daily Plan — $39 USD**: 24 hours of continuous multiplier predictions.
+• 👑 **Weekly Plan — $149 USD**: 7 full days of access (*Saves 45%* — our most popular option!).
+• 👑 **Monthly Plan — $499 USD**: 30 days of VIP predictor access.
+
+We accept payments via **Mobile Money**, **Card** (Flutterwave), or **Crypto (USDT TRC20)**.
+To purchase a plan, select your betting site on the **Bot Dashboard** ([avisignals.com/bot](https://avisignals.com/bot.html)) and click **Buy Code**.`;
+    }
+
+    // 2. Free Trial / Free Code / Demo
+    if (/\b(free|trial|demo|test|free code|free session|try)\b/i.test(text)) {
+        return `Yes, we offer a **60-Minute Free Session** every single day!
+To claim your free daily activation:
+1. Open the **Bot Dashboard** ([avisignals.com/bot](https://avisignals.com/bot.html)).
+2. Click the **FREE CODE** button.
+3. Select your betting site.
+4. Your free code will be generated instantly. Click **Use Bot** and activate it to start playing!`;
+    }
+
+    // 3. How to use / Instructions
+    if (/\b(how to use|how it works|guide|tutorial|steps|instructions|explain|what is this)\b/i.test(text)) {
+        return `Here is how to win using the AviSignals Predictor:
+1. Open [avisignals.com/bot](https://avisignals.com/bot.html) and your Aviator game simultaneously.
+2. Watch the bot — it displays the predicted multiplier for the **NEXT** round.
+3. Place your bet, and cash out **just before** the predicted multiplier.
+4. Start with a **FREE CODE** (60 minutes daily) or click **Buy Code** for 24/7 access!`;
+    }
+
+    // 4. Supported Betting Sites
+    if (/\b(supported sites|which site|does it work|platforms|1win|sportybet|1xbet|betika|betway|odibets|mozzart|premierbet|hollywood|stake|betano|unibet|pin-up|roobet|bc\.game)\b/i.test(text)) {
+        return `AviSignals is fully compatible with **all major betting sites**!
+Supported sites include: **1win, SportyBet, 1xBet, Betika, Betway, OdiBets, MozzartBet, HollywoodBets, Stake, Betano, Pin-Up, Roobet, BC.Game**, and more.
+Simply select your platform on the bot dashboard, register/login, and sync the signals.`;
+    }
+
+    // 5. Help / Contact Support / Admin
+    if (/\b(help|support|contact|admin|owner|whatsapp|telegram|phone|chat|number|reach|representative|agent)\b/i.test(text)) {
+        return `For direct deposit assistance or account help, contact our support team:
+• 📱 **WhatsApp Support**: [+44 7400 756162](https://wa.me/447400756162)
+• 💬 **Telegram Support**: [@Aadmin4cnc](https://t.me/Aadmin4cnc)
+• 📣 **Official Telegram Channel**: [AviSignals Channel](https://t.me/AviSignalsAviatorPredictorBot)
+
+Our team is available 24/7.`;
+    }
+
+    // 6. Winrate / Accuracy
+    if (/\b(accuracy|win rate|percentage|legit|real|scam|trust|work)\b/i.test(text)) {
+        return `AviSignals features a **100% average accuracy rate** by scanning real-time live round variables.
+We recommend starting with our **60-Minute Free Daily Session** (click **FREE CODE** on the bot dashboard) to test the accuracy for yourself before purchasing a paid plan.`;
+    }
+
+    return null;
+}
+
 // ============================================================
 // MAIN HANDLER
 // ============================================================
@@ -329,6 +388,48 @@ async function handleChat(req, res) {
         if (isRateLimited(userKey)) {
             return res.status(429).json({
                 reply: "You're sending messages very fast! Give me a second to catch up. 😄"
+            });
+        }
+
+        // ── FAQ Interceptor ──────────────────────────────────
+        const faqReply = getStaticFAQResponse(message);
+        if (faqReply) {
+            if (!chatSessions.has(userKey)) {
+                chatSessions.set(userKey, {
+                    history: [],
+                    intent: 'browsing',
+                    userContext,
+                    contact,
+                    pageLocation,
+                    userId,
+                    timer: null
+                });
+            }
+            const session = chatSessions.get(userKey);
+            session.userContext = userContext;
+            session.contact = contact;
+            session.pageLocation = pageLocation;
+            session.userId = userId;
+
+            const recentHistory = Array.isArray(history) ? history.slice(-10) : [];
+            const intent = detectIntent(message, recentHistory);
+            if (intent !== 'browsing') session.intent = intent;
+
+            if (session.timer) clearTimeout(session.timer);
+
+            session.history.push({ role: 'user', content: message });
+            session.history.push({ role: 'assistant', content: faqReply });
+
+            if (session.history.length > 20) {
+                session.history = session.history.slice(-20);
+            }
+
+            session.timer = setTimeout(() => triggerSessionSummary(userKey), SESSION_TIMEOUT);
+            chatSessions.set(userKey, session);
+
+            return res.json({
+                reply: faqReply,
+                intent
             });
         }
 
