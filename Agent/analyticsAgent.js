@@ -9,9 +9,9 @@
 
 'use strict';
 
-const cron      = require('node-cron');
-const https     = require('https');
-const groq      = require('./groqClient');
+const cron = require('node-cron');
+const https = require('https');
+const groq = require('./groqClient');
 const { createClient } = require('@supabase/supabase-js');
 
 // ─── Supabase (using Service Role for full analytics access) ──
@@ -22,20 +22,20 @@ const supabase = createClient(
 
 // ─── Telegram ────────────────────────────────────────────────
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const CHAT_ID   = process.env.TELEGRAM_CHAT_ID;
+const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
 // ─── Business constants (Nairobi Time / UTC+3) ───────────────
 const BUSINESS_CONTEXT = {
-    name:            'AviSignals',
-    product:         'Aviator game prediction bot',
-    market:          'Global',
-    freeCodePrice:   0,
-    paidCodePrice:   75,      // USD — 24-hour activation
-    currency:        'User Specific',
-    conversionGoal:  0.15,    // target: 15% of signups convert to paid
+    name: 'AviSignals',
+    product: 'Aviator game prediction bot',
+    market: 'Global',
+    freeCodePrice: 0,
+    paidCodePrice: 39,      // USD — 24-hour activation
+    currency: 'User Specific',
+    conversionGoal: 0.15,    // target: 15% of signups convert to paid
     dailySignupGoal: 20,
     monthlyRevenueGoal: 5000, // USD
-    primaryChannel:  'Telegram + WhatsApp',
+    primaryChannel: 'Telegram + WhatsApp',
 };
 
 // ─── Telegram sender with retry ──────────────────────────────
@@ -54,17 +54,17 @@ function sendToTelegram(message, retries = 3) {
             if (index >= chunks.length) return resolve();
 
             const data = JSON.stringify({
-                chat_id:    CHAT_ID,
-                text:       chunks[index],
+                chat_id: CHAT_ID,
+                text: chunks[index],
                 parse_mode: 'Markdown'
             });
 
             const options = {
                 hostname: 'api.telegram.org',
-                path:     `/bot${BOT_TOKEN}/sendMessage`,
-                method:   'POST',
-                headers:  {
-                    'Content-Type':   'application/json',
+                path: `/bot${BOT_TOKEN}/sendMessage`,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
                     'Content-Length': Buffer.byteLength(data)
                 }
             };
@@ -92,7 +92,7 @@ function sendToTelegram(message, retries = 3) {
                         plainReq.end();
                     } else {
                         console.error(`❌ Telegram error ${res.statusCode}:`, body);
-                        resolve(); 
+                        resolve();
                     }
                 });
             });
@@ -125,10 +125,10 @@ function splitMessage(text, maxLen) {
 // ============================================================
 
 async function fetchMetrics() {
-    const now       = new Date();
-    const hourAgo   = new Date(now - 60 * 60 * 1000).toISOString();
-    const todayStart = new Date(now.setHours(0,0,0,0)).toISOString();
-    const weekAgo   = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const now = new Date();
+    const hourAgo = new Date(now - 60 * 60 * 1000).toISOString();
+    const todayStart = new Date(now.setHours(0, 0, 0, 0)).toISOString();
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
     // Run parallel queries
     const [
@@ -195,30 +195,30 @@ async function fetchMetrics() {
     const val = (r) => r.status === 'fulfilled' ? r.value : { data: null, count: 0, error: r.reason };
 
     // ── Process payments ───────────────────────────────────────
-    const todayPaymentRows  = val(paymentsToday).data  ?? [];
-    const weekPaymentRows   = val(paymentsThisWeek).data ?? [];
-    const todayRevenue      = todayPaymentRows.reduce((s, p) => s + Number(p.amount ?? 0), 0);
-    const weekRevenue       = weekPaymentRows.reduce((s, p) => s + Number(p.amount ?? 0), 0);
-    const mpesaPayments     = todayPaymentRows.filter(p => p.method === 'mobile_money').length;
-    const cardPayments      = todayPaymentRows.filter(p => p.method === 'card').length;
+    const todayPaymentRows = val(paymentsToday).data ?? [];
+    const weekPaymentRows = val(paymentsThisWeek).data ?? [];
+    const todayRevenue = todayPaymentRows.reduce((s, p) => s + Number(p.amount ?? 0), 0);
+    const weekRevenue = weekPaymentRows.reduce((s, p) => s + Number(p.amount ?? 0), 0);
+    const mpesaPayments = todayPaymentRows.filter(p => p.method === 'mobile_money').length;
+    const cardPayments = todayPaymentRows.filter(p => p.method === 'card').length;
 
     // ── Process activations ──────────────────────────────────
-    const activationsRows   = val(activeSubscriptions).data ?? [];
-    const planBreakdown     = activationsRows.reduce((acc, s) => {
+    const activationsRows = val(activeSubscriptions).data ?? [];
+    const planBreakdown = activationsRows.reduce((acc, s) => {
         const type = s.code_type === 'FREE_TRIAL' ? 'Free Trial' : 'Paid 24H';
         acc[type] = (acc[type] || 0) + 1;
         return acc;
     }, {});
 
     // ── Process chats ──────────────────────────────────────────
-    const chatRows          = val(recentChats).data ?? [];
+    const chatRows = val(recentChats).data ?? [];
     const uniqueChatSessions = new Set(chatRows.map(c => c.session_id)).size;
 
     // ── Active online sessions ────────────────────────────────
     const onlineNow = global.activeSessions
         ? [...global.activeSessions.values()].filter(
             s => Date.now() - s.lastSeen < 5 * 60 * 1000
-          ).length
+        ).length
         : 0;
 
     // ── Conversion rate ────────────────────────────────────────
@@ -229,9 +229,9 @@ async function fetchMetrics() {
         : '0.0';
 
     return {
-        signupsToday:      signupsTodayCount,
-        signupsLastHour:   val(signupsLastHour).count ?? 0,
-        signupsThisWeek:   val(signupsThisWeek).count ?? 0,
+        signupsToday: signupsTodayCount,
+        signupsLastHour: val(signupsLastHour).count ?? 0,
+        signupsThisWeek: val(signupsThisWeek).count ?? 0,
         recentSignupEmails: (val(signupsToday).data ?? []).slice(-3).map(u => u.email),
         todayRevenue,
         weekRevenue,
@@ -240,13 +240,13 @@ async function fetchMetrics() {
         cardPayments,
         activeSubscriptions: activationsRows.length,
         planBreakdown,
-        expiringSoon:        val(expiringSoon).count ?? 0,
+        expiringSoon: val(expiringSoon).count ?? 0,
         conversionRate,
-        abandonedThisWeek:   val(abandonedUsers).count ?? 0,
+        abandonedThisWeek: val(abandonedUsers).count ?? 0,
         onlineNow,
         chatSessionsLastHour: uniqueChatSessions,
         timestamp: new Date().toLocaleString('en-KE', { timeZone: 'Africa/Nairobi' }),
-        hour:      new Date().getHours()
+        hour: new Date().getHours()
     };
 }
 
@@ -264,11 +264,11 @@ async function runHourlyPulse() {
     }
 
     // Build structured report — no AI tokens used
-    const signupBar  = metrics.signupsToday >= BUSINESS_CONTEXT.dailySignupGoal ? '✅' : metrics.signupsToday >= BUSINESS_CONTEXT.dailySignupGoal * 0.5 ? '🟡' : '🔴';
-    const convBar    = parseFloat(metrics.conversionRate) >= 15 ? '✅' : parseFloat(metrics.conversionRate) >= 8 ? '🟡' : '🔴';
+    const signupBar = metrics.signupsToday >= BUSINESS_CONTEXT.dailySignupGoal ? '✅' : metrics.signupsToday >= BUSINESS_CONTEXT.dailySignupGoal * 0.5 ? '🟡' : '🔴';
+    const convBar = parseFloat(metrics.conversionRate) >= 15 ? '✅' : parseFloat(metrics.conversionRate) >= 8 ? '🟡' : '🔴';
 
     const report = [
-        `⚡ *AviSignals Hourly Pulse — ${metrics.timestamp}*`,
+        `⚡ *AviSignals Metrics Hourly Pulse — ${metrics.timestamp}*`,
         ``,
         `📊 *Signups:* ${metrics.signupsLastHour} this hr | ${metrics.signupsToday}/${BUSINESS_CONTEXT.dailySignupGoal} today ${signupBar}`,
         `💰 *Revenue:* $${metrics.todayRevenue?.toFixed(2)} today | $${metrics.weekRevenue?.toFixed(2)} this week`,

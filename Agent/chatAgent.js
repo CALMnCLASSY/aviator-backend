@@ -99,7 +99,7 @@ PERSONA
 PRODUCT KNOWLEDGE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 WHAT WE OFFER:
-- An AI-powered Aviator game predictor bot on our website (avisignals.com/bot.html)
+- An AI-powered Aviator game predictor bot on our website (avisignals.com/bot)
 - The bot predicts the exact round multiplier so users know when to cash out
 - We claim 100% accuracy — our AI analyses real-time round patterns
 
@@ -126,7 +126,7 @@ HOW TO USE THE BOT:
 SUPPORTED SITES: All major betting platforms — 1win, SportyBet, 1xBet, Betika, Betway, Parimatch, BangBet, Bet365, OdiBets, Helabet, MozzartBet, ClassyBet, 22bet, Hollywoodbet and more.
 
 REGISTRATION:
-- Go to avisignals.com → click **Register** → enter email & password → confirm email → log in → go to Bot page → click **FREE CODE** to start
+- Go to avisignals.com/bot → click **Register** → enter email & password → confirm email → log in → go to Bot page → click **FREE CODE** to start
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SUPPORT CONTACTS
@@ -304,32 +304,32 @@ function getStaticFAQResponse(message) {
 
     // 1. Price / Cost / Buy Plans
     if (/\b(price|cost|how much|subscription|subscribe|plans|daily|weekly|monthly|pay|payment|buy|purchase|usd|dollar|\$)\b/i.test(text)) {
-        return `We offer 3 premium plans to fit your gaming style:
+        return `After the Free 1 hour code, We offer 3 premium plans to fit your gaming style:
 • 👑 **Daily Plan — $39 USD**: 24 hours of continuous multiplier predictions.
 • 👑 **Weekly Plan — $149 USD**: 7 full days of access (*Saves 45%* — our most popular option!).
 • 👑 **Monthly Plan — $499 USD**: 30 days of VIP predictor access.
 
-We accept payments via **Mobile Money**, **Card** (Flutterwave), or **Crypto (USDT TRC20)**.
-To purchase a plan, select your betting site on the **Bot Dashboard** ([avisignals.com/bot](https://avisignals.com/bot.html)) and click **Buy Code**.`;
+We accept payments via **Mobile Money**, **Card**, or **Crypto (USDT TRC20)**.
+To purchase a plan, select your betting site on the **Bot Dashboard** ([avisignals.com/bot](https://avisignals.com/bot)) and click **Buy Code**.`;
     }
 
     // 2. Free Trial / Free Code / Demo
     if (/\b(free|trial|demo|test|free code|free session|try)\b/i.test(text)) {
         return `Yes, we offer a **60-Minute Free Session** every single day!
 To claim your free daily activation:
-1. Open the **Bot Dashboard** ([avisignals.com/bot](https://avisignals.com/bot.html)).
+1. Open the **Bot Dashboard** ([avisignals.com/bot](https://avisignals.com/bot)).
 2. Click the **FREE CODE** button.
-3. Select your betting site.
+3. Select your betting site(RANDOMLY ASSIGNE).
 4. Your free code will be generated instantly. Click **Use Bot** and activate it to start playing!`;
     }
 
     // 3. How to use / Instructions
     if (/\b(how to use|how it works|guide|tutorial|steps|instructions|explain|what is this)\b/i.test(text)) {
         return `Here is how to win using the AviSignals Predictor:
-1. Open [avisignals.com/bot](https://avisignals.com/bot.html) and your Aviator game simultaneously.
+1. Open [avisignals.com/bot](https://avisignals.com/bot) and your Aviator game simultaneously.
 2. Watch the bot — it displays the predicted multiplier for the **NEXT** round.
 3. Place your bet, and cash out **just before** the predicted multiplier.
-4. Start with a **FREE CODE** (60 minutes daily) or click **Buy Code** for 24/7 access!`;
+4. Start with a **FREE CODE** (60 minutes daily) or click **Buy Code** for 24/7 access and select your own site!`;
     }
 
     // 4. Supported Betting Sites
@@ -341,7 +341,7 @@ Simply select your platform on the bot dashboard, register/login, and sync the s
 
     // 5. Help / Contact Support / Admin
     if (/\b(help|support|contact|admin|owner|whatsapp|telegram|phone|chat|number|reach|representative|agent)\b/i.test(text)) {
-        return `For direct deposit assistance or account help, contact our support team:
+        return `For direct deposit assistance or account help, contact the admin:
 • 📱 **WhatsApp Support**: [+44 7400 756162](https://wa.me/447400756162)
 • 💬 **Telegram Support**: [@Aadmin4cnc](https://t.me/Aadmin4cnc)
 • 📣 **Official Telegram Channel**: [AviSignals Channel](https://t.me/AviSignalsAviatorPredictorBot)
@@ -517,11 +517,11 @@ async function handleChat(req, res) {
         } catch (groqErr) {
             console.error('❌ Groq API error:', groqErr.message);
             // Graceful fallback — don't show a blank error to the user
-            reply = `I'm having a brief technical issue. For immediate help, reach our admin on WhatsApp: [+44 7400 756162](https://wa.me/447400756162) or Telegram: [@Aadmin4cnc](https://t.me/Aadmin4cnc).`;
+            reply = `I'm having trouble understanding that. If its something you can't understand from the videos and tutorials provided on the app, reach out to our admin for immediate help on WhatsApp: [+44 7400 756162](https://wa.me/447400756162) or Telegram: [@Aadmin4cnc](https://t.me/Aadmin4cnc).`;
         }
 
         if (!reply) {
-            reply = "Something went wrong on my end. Please try again or contact our admin on WhatsApp.";
+            reply = "Something went wrong on my end. Please try again later on in the day.";
         }
 
         // ── Update session store ───────────────────────────────
@@ -552,7 +552,7 @@ async function handleChat(req, res) {
     } catch (err) {
         console.error('❌ handleChat error:', err);
         return res.status(500).json({
-            reply: "I'm having trouble right now. Please contact our admin: [WhatsApp](https://wa.me/447400756162)"
+            reply: "I'm very busy with multiple chats right now. Please contact our admin: [WhatsApp](https://wa.me/447400756162)"
         });
     }
 }

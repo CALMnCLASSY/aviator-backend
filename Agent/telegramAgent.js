@@ -91,6 +91,8 @@ const SUCCESS_STORIES = [
     { name: 'Amara K.', city: 'Kampala', start: 'UGX 50,000', end: 'UGX 1,900,000', site: 'Bangbet', days: 3 },
     { name: 'David N.', city: 'London', start: 'GBP 1,000', end: 'GBP 75,000', site: '1win', days: 2 },
     { name: 'Fatima H.', city: 'Dar es Salaam', start: 'TZS 20,000', end: 'TZS 880,000', site: 'Parimatch', days: 1 },
+    { name: 'Collin P.', city: 'Romania', start: 'EUR 200', end: 'EUR 32,000', site: '1win', days: 2 },
+    { name: 'Jefar A.', city: 'Dubai', start: 'AED 8,000', end: 'AED 150,000', site: '1xBet', days: 2 },
 ];
 let storyIndex = 0;
 
@@ -106,7 +108,7 @@ function generateSuccessStory() {
 }
 
 function generateSignalTease() {
-    const multipliers = ['7.4x', '12.1x', '3.8x', '18.6x', '5.2x', '9.9x', '22.4x'];
+    const multipliers = ['7.4x', '12.1x', '3.8x', '18.6x', '5.2x', '9.9x', '22.4x', '35.2x', '16.1x'];
     const multi = pickRandom(multipliers);
     const text = `📡 *Signal confirmed: ${multi}*\n\nOur bot called it. Members who followed the signal cashed out at exactly the right moment. 🎯\n\n🆓 Get your free daily code and see it for yourself:\n👉 ${BOT_URL}`;
     return { choices: [{ message: { content: text } }] };
@@ -123,7 +125,7 @@ function generateEducationalPost() {
     const tips = [
         `📌 *Pro Tip: Cash out early on high-volatility rounds.*\n\nWhen the AviSignals bot shows a low confidence score, take your profit at 1.5x or 2x instead of pushing for 10x. Consistency beats luck.\n\n💡 Get the bot: ${BOT_URL}`,
         `📌 *Free vs Premium Code — what's the difference?*\n\n🆓 Free code: 60-minute trial session, assigned site.\n💎 Premium code: Full 24H access, any site worldwide.\n\nBoth give you real-time AI signals. Try free first.\n👉 ${BOT_URL}`,
-        `📌 *Timing your bet matters more than bet size.*\n\nA KES 100 bet at the right moment beats a KES 1,000 bet at the wrong one. AviSignals tells you exactly when to enter and when to hold off.\n\n🔗 ${BOT_URL}`,
+        `📌 *Timing your bet matters more than bet size.*\n\nA $10 bet at the right moment beats a $100 bet at the wrong one. AviSignals tells you exactly when to enter and when to hold off.\n\n🔗 ${BOT_URL}`,
         `💡 *How to use AviSignals and play at the same time:*\n\n1. Open the bot on your phone\n2. Open your betting site on the same device or another\n3. Follow the signal — cash out when the bot says GO\n\n🆓 Get your free code: ${BOT_URL}`,
         `📌 *The most common mistake new Aviator players make:*\n\nWaiting too long. The game is designed to test your nerves. Our bot removes the guesswork — it tells you the optimal cash-out window.\n\n🚀 Try it free: ${BOT_URL}`,
     ];
@@ -137,6 +139,13 @@ function generateTestimonialPost() {
         { text: "Finally an Aviator tool that actually works. Been using it for 2 weeks. The predictions are consistently on point.", name: "Chidi O.", city: "Lagos" },
         { text: "My friend told me about AviSignals. I tried the free daily code and I was impressed. Got the paid code the same day.", name: "Susan W.", city: "Johannesburg" },
         { text: "Best $39 I've spent. Used it for a full 24 hours on SportyBet. More than covered the cost in the first hour.", name: "Tom K.", city: "Madrid" },
+        { text: "I've tried other Aviator bots and they were useless. AviSignals actually works. The predictions are very accurate.", name: "James M.", city: "Sydney" },
+        { text: "I was skeptical but tried the free code on Betika. The accuracy shocked me. Bought the 24H code immediately.", name: "Grace W.", city: "Mombasa" },
+        { text: "Used it on 1xBet for the first time yesterday. My free code nailed 4 rounds in a row. I'm sold.", name: "Brian O.", city: "Cape Town" },
+        { text: "Finally an Aviator tool that actually works. Been using it for 2 weeks. The predictions are consistently on point.", name: "Amara K.", city: "Kampala" },
+        { text: "My friend told me about AviSignals. I tried the free daily code and I was impressed. Got the paid code the same day.", name: "David N.", city: "London" },
+        { text: "Best $39 I've spent. Used it for a full 24 hours on SportyBet. More than covered the cost in the first hour.", name: "Fatima H.", city: "Dar es Salaam" },
+        { text: "I've tried other Aviator bots and they were useless. AviSignals actually works. The predictions are very accurate.", name: "Collin P.", city: "Romania" },
     ];
     const t = pickRandom(testimonials);
     const text = `💬 _"${t.text}"_\n— *${t.name}*, ${t.city}\n\n✅ The free daily code is available right now — no payment needed to start.\n👉 ${BOT_URL}`;
@@ -297,7 +306,7 @@ async function fetchLiveContext() {
         const planBreakdown = (subsData || []).reduce((acc, s) => {
             acc[s.code_type] = (acc[s.code_type] || 0) + 1; return acc;
         }, {});
-        
+
         const planStr = Object.entries(planBreakdown).map(([k, v]) => `${(k || 'UNKNOWN').replace(/_/g, ' ')}: ${v}`).join(', ') || 'None';
 
         return {
@@ -321,7 +330,7 @@ BUSINESS OVERVIEW:
 - AviSignals: AI-powered Aviator game prediction platform
 - Free tier: 1 free daily prediction code (60-min session)
 - Paid tier: $39 = 24-hour continuous access code (weekly $149, monthly $499)
-- Payments: Flutterwave (card/M-Pesa), USDT, Selar
+- Payments: (card/Mobile money), USDT
 - Target market: Global — Africa, Europe, Asia, Americas
 - Key channels: Telegram channel, WhatsApp, website (avisignals.com)
 - Telegram channel posts 2x/hour (content broadcast) + 3 daily marketing events
@@ -423,7 +432,7 @@ async function handleAdminMessage(message) {
     if (text.startsWith('/users')) {
         const ctx = await fetchLiveContext();
         // Count today's signups
-        const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+        const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
         const { count: newToday } = await supabase
             .from('profiles').select('id', { count: 'exact', head: true })
             .gte('created_at', todayStart.toISOString()).catch(() => ({ count: '?' }));

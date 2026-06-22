@@ -57,6 +57,10 @@ class TelegramMarketingBot {
             { file: 'marketingvid12.mp4', category: 'marketing', caption_type: 'marketing_video' },
             { file: 'marketingvid13.mp4', category: 'marketing', caption_type: 'marketing_video' },
             { file: 'marketingvid14.mp4', category: 'marketing', caption_type: 'marketing_video' },
+            { file: 'marketingvid15.mp4', category: 'marketing', caption_type: 'marketing_video' },
+            { file: 'marketingvid16.mp4', category: 'marketing', caption_type: 'marketing_video' },
+            { file: 'marketingvid17.mp4', category: 'marketing', caption_type: 'marketing_video' },
+            { file: 'marketingvid18.mp4', category: 'marketing', caption_type: 'marketing_video' },
         ];
 
         // ====== ALL 36 IMAGES mapped to context categories ======

@@ -65,12 +65,12 @@ const DAILY_THEMES = [
 // ─── Success stories pool ─────────────────────────────────────
 const STORIES = [
     { name: 'James M.', city: 'Nairobi', from: 'KES 8,000', to: 'KES 150,000', site: 'Betika' },
-    { name: 'Grace W.', city: 'Cape Town', from: 'KES 5,000', to: 'KES 62,000', site: 'Betway' },
-    { name: 'Brian O.', city: 'Accra', from: 'KES 3,000', to: 'KES 41,000', site: '1xBet' },
+    { name: 'Grace W.', city: 'Cape Town', from: 'ZAR 500', to: 'ZAR 62,000', site: 'Betway' },
+    { name: 'Brian O.', city: 'Accra', from: 'GHS 400', to: 'GHS 42,100', site: '1xBet' },
     { name: 'Amara K.', city: 'Kampala', from: 'UGX 50,000', to: 'UGX 900,000', site: 'Bangbet' },
     { name: 'David N.', city: 'Montreal', from: 'CAD 100', to: 'CAD 7,100', site: 'OdiBets' },
     { name: 'Fatima H.', city: 'Dar es Salaam', from: 'TZS 20,000', to: 'TZS 380,000', site: 'Parimatch' },
-    { name: 'Tom K.', city: 'London', from: 'GBP 750', to: 'GBP 28,000', site: '1win' },
+    { name: 'Tom K.', city: 'London', from: 'GBP 50', to: 'GBP 3,800', site: '1win' },
 ];
 let storyIdx = 0;
 const nextStory = () => { const s = STORIES[storyIdx++ % STORIES.length]; return s; };
@@ -78,10 +78,10 @@ const nextStory = () => { const s = STORIES[storyIdx++ % STORIES.length]; return
 // ─── Hashtag banks ────────────────────────────────────────────
 const HASHTAGS = {
     core: ['#AviSignals', '#AviatorPredictor', '#AviatorGame'],
-    kenyan: ['#Hustle', '#KenyanTwitter', '#SportyBetKe', '#BetikaKe', '#OdiBets', '#mzansi', '#london'],
-    gaming: ['#AviatorHack', '#AviatorTips', '#AviatorStrategy', '#AviatorCashout', '#mzansi', '#london'],
-    money: ['#MoneyMoves', '#HustleSmart', '#EarnOnline', '#SideHustle', '#mzansi', '#london'],
-    tiktok: ['#aviator', '#aviatorgame', '#foryou', '#foryoupage', '#viral', '#kenya', '#nairobi', '#mzansi', '#london'],
+    kenyan: ['#Hustle', '#Online', '#SportyBet', '#Betika', '#OdiBets', '#mzansi', '#LONDON', '#1win', '#1xbet', '#betpawa'],
+    gaming: ['#AviatorHack', '#AviatorTips', '#AviatorStrategy', '#AviatorCashout', '#mzansi', '#LONDON'],
+    money: ['#MoneyMoves', '#HustleSmart', '#EarnOnline', '#SideHustle', '#mzansi', '#LONDON'],
+    tiktok: ['#aviator', '#aviatorgame', '#foryou', '#foryoupage', '#viral', '#saudi', '#qatar', '#mzansi', '#LONDON'],
 };
 
 function hashtagSet(platforms, theme) {
@@ -115,9 +115,9 @@ HASHTAGS: Include ${spec.hashtagCount} hashtags. Use these: ${tags}
 ${storyBlock}
 
 BRAND RULES:
-- AviSignals is an AI Aviator predictor. Free daily code. Paid 24H code = $75.
+- AviSignals is an AI Aviator predictor. Free daily code. Paid 24H code = $39.
 - Works on all major betting sites: SportyBet, Betika, 1xBet, Betway, OdiBets, etc.
-- Target audience: Global world clients of players aged 18-35
+- Target audience: Global world clients of players aged 18+
 - NEVER use: "guaranteed", "100% win", "get rich quick", "risk-free"
 - ALWAYS focus on: AI-powered, data-driven, smart play, free trial available
 - CTA must link to: https://avisignals.com/bot
@@ -139,16 +139,16 @@ async function generateVideoIdea(theme) {
     const prompt = `You are the AviSignals TikTok/Reels content strategist. Write one short video idea for our Aviator predictor platform.
 
 Theme: ${theme.theme} — ${theme.description}
-Target: Kenyan + East African audience, 18-35, Aviator game players
+Target: Global audience, mostly Europe, Middle East, Aviator game players
 
 Format your response exactly like this:
 🎬 HOOK (first 3 seconds): [what viewer sees/hears immediately]
 📱 CONTENT: [what happens in the video, 15-30 seconds]
-🎵 AUDIO SUGGESTION: [trending sound type or description]
+🎵 AUDIO SUGGESTION: [voiceover to say during the video]
 💬 CAPTION: [caption text, max 150 chars, with hashtags]
 🎯 CTA: [what to say at the end]
 
-Be specific and creative. Make it something that would actually go viral in Kenya.`;
+Be specific and creative. Make it something that would actually go viral globally.`;
 
     const completion = await groq.chat.completions.create({
         messages: [{ role: 'user', content: prompt }],
@@ -244,13 +244,13 @@ async function generateWeeklyCalendar() {
 
     const prompt = `You are the AviSignals Social Media Strategist. Create a 7-day content calendar for the week ahead.
 
-Business: AviSignals — AI Aviator game predictor. Free daily code. $75 for 24H access. Kenya/East Africa market.
+Business: AviSignals — AI Aviator game predictor. Free daily code. $39 for 24H access. Global International market.
 
 For each day, specify:
 - Best platform to prioritise
 - Content theme and angle
 - One specific post idea (topic + hook)
-- Best posting time (EAT)
+- Best posting time (BST)
 
 Rules:
 - Vary themes: don't use same theme two days running
@@ -258,7 +258,7 @@ Rules:
 - Monday/Tuesday = high activity — use strong hooks
 - Friday/Saturday = peak Aviator playing time — use urgency/FOMO
 - Sunday = reflection/community — softer tone
-- Reference real Kenyan culture, betting culture, and local platforms
+- Reference real trending culture, betting culture, and global platforms
 
 Format as a clean, scannable list. Use bold for day names.`;
 
@@ -305,7 +305,7 @@ Rules:
 - Use Telegram HTML: <b>bold</b>, <i>italic</i>, <a href="url">link</a>
 - 5-8 lines maximum
 - Heavy emojis — this is Telegram
-- Kenyan/East African audience
+- Global international audience, mostly Europe
 - Include CTA linking to https://avisignals.com/bot
 - No "guaranteed" or "get rich" language
 - Make it feel fresh and relevant to right now
