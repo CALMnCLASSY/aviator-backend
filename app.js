@@ -270,7 +270,7 @@ app.use(helmet({
             scriptSrcAttr: ["'unsafe-inline'"],
             fontSrc:       ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com"],
             imgSrc:        ["'self'", "data:", "https:"],
-            frameSrc:      ["'self'", "https://checkout.flutterwave.com", "https://*.f4b-flutterwave.com"],
+            frameSrc:      ["'self'", "https://checkout.flutterwave.com", "https://checkout-v3.flutterwave.com", "https://*.flutterwave.com", "https://*.f4b-flutterwave.com"],
             connectSrc:    [
                 "'self'",
                 "https://back.avisignals.com",
