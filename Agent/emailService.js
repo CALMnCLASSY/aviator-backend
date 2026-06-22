@@ -303,7 +303,7 @@ async function sendWelcomeEmail(to, firstName = '') {
       </p>
     </div>
 
-    <p style="color:#ccc;">When you're ready for unlimited 24/7 access, our <strong style="color:#fff;">24-Hour Code</strong> is just <strong style="color:${BRAND_GOLD};">$75</strong> and activates instantly via Mobile money or card.</p>
+    <p style="color:#ccc;">When you're ready for unlimited 24/7 access, our <strong style="color:#fff;">24-Hour Code</strong> is just <strong style="color:${BRAND_GOLD};">$39</strong> and activates instantly via Mobile money or card.</p>
     <p style="color:#ccc;">We'll be in touch. Good luck out there. 🎯</p>`;
 
     const html = wrapInTemplate({
@@ -336,7 +336,7 @@ async function sendDay1Email(to, firstName = '') {
     <div style="background:rgba(46,204,113,0.08);border-left:3px solid ${BRAND_GREEN};padding:14px 18px;border-radius:0 8px 8px 0;margin:24px 0;">
       <p style="margin:0;color:#ccc;font-size:14px;">
         🔥 Want unlimited access with no daily reset? Our <strong style="color:#fff;">24-Hour Code</strong> is 
-        <strong style="color:${BRAND_GOLD};">$75</strong> — one payment, 24 hours of continuous predictions on any site.
+        <strong style="color:${BRAND_GOLD};">$39</strong> — one payment, 24 hours of continuous predictions on any site.
         Pay instantly via <strong>Mobile or card</strong>.
       </p>
     </div>
@@ -388,7 +388,7 @@ async function sendDay3Email(to, firstName = '') {
         </td>
         <td width="4%"></td>
         <td width="48%" style="background:rgba(46,204,113,0.06);border-radius:8px;padding:16px;text-align:center;border:1px solid rgba(46,204,113,0.15);">
-          <div style="font-size:24px;font-weight:800;color:${BRAND_GREEN};">$75</div>
+          <div style="font-size:24px;font-weight:800;color:${BRAND_GREEN};">$39</div>
           <div style="font-size:12px;color:#ccc;margin-top:4px;">24H Unlimited Access</div>
         </td>
       </tr>
@@ -424,12 +424,12 @@ async function sendDay7Email(to, firstName = '') {
         Use code <strong style="color:#fff;background:rgba(0,0,0,0.3);padding:3px 10px;border-radius:4px;font-family:monospace;">WELCOME20</strong> at checkout
       </div>
       <div style="margin-top:16px;font-size:28px;font-weight:800;">
-        <span style="text-decoration:line-through;color:rgba(255,255,255,0.3);font-size:18px;">$75</span>
-        &nbsp;<span style="color:${BRAND_GOLD};">$60</span>
+          <span style="text-decoration:line-through;color:rgba(255,255,255,0.3);font-size:18px;">$39</span>
+          &nbsp;<span style="color:${BRAND_GOLD};">$31</span>
+        </div>
       </div>
-    </div>
-
-    <p style="color:#ccc;">This offer expires at midnight tonight. After that, it's back to the standard $75.</p>
+  
+      <p style="color:#ccc;">This offer expires at midnight tonight. After that, it's back to the standard $39.</p>
     <p style="color:#ccc;">If you have any questions before buying, reply to this email or message our admin directly — we'll respond within the hour.</p>`;
 
     const html = wrapInTemplate({
@@ -498,7 +498,7 @@ async function sendRenewalWarningEmail(to, firstName = '', expiresAt) {
         previewText: 'Your AviSignals access expires in 24 hours — renew now to stay active',
         headline:    'Your access expires soon ⚠️',
         body,
-        ctaText: 'Renew My Access — $75',
+        ctaText: 'Renew My Access — $39',
         ctaUrl:  BOT_URL
     });
 
@@ -516,7 +516,7 @@ async function sendHotLeadEmail(to, firstName = '') {
 
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;">
       ${[
-        ['💰', 'Price', '$75 USD (one-time for 24 hours)'],
+        ['💰', 'Price', '$39 USD (one-time for 24 hours)'],
         ['⚡', 'Activation', 'Instant — works immediately after payment'],
         ['📱', 'Payment', 'Mobile money or Card via Flutterwave (safe & secure)'],
         ['🎯', 'What you get', 'Unlimited predictions for 24 hours on any betting site'],
@@ -538,7 +538,7 @@ async function sendHotLeadEmail(to, firstName = '') {
         previewText: 'Everything about the AviSignals 24H code — price, payment, and activation',
         headline:    'Ready to go unlimited? Here\'s how 🚀',
         body,
-        ctaText: 'Get My 24H Code — $75',
+        ctaText: 'Get My 24H Code — $39',
         ctaUrl:  BOT_URL
     });
 

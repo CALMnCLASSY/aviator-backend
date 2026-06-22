@@ -238,7 +238,7 @@ router.post('/bot/create-payment/:reference', async (req, res) => {
             .from('payments')
             .insert([{
               user_id: profileId,
-              amount: 75,
+              amount: 39,
               currency: 'USD',
               method: 'Flutterwave',
               status: 'pending',
@@ -354,7 +354,7 @@ router.post('/bot/activate-code', async (req, res) => {
 
     // Determine actual plan based on what matched
     const actualIsFree = isFreeCode || fallbackFree;
-    const planName = actualIsFree ? '30 minutes' : '24 hours';
+    const planName = actualIsFree ? '60 minutes' : '24 hours';
     const planType = actualIsFree ? 'freeTrial' : 'daily';
 
     // Find or create profile for this user

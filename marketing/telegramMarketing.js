@@ -20,13 +20,13 @@ class TelegramMarketingBot {
         this.channelTemplateIndex = 0;
         this.channelTemplates = [
             // Template 1: Global Reach & Available Countries
-            `🚀 *AVIATOR PREDICTOR - NOW AVAILABLE GLOBALLY!* 🌍\n\nDid you know our AI-powered signals work across multiple countries with localized payment support? Stop losing and start winning today!\n\n✅ *Supported Regions & Currencies:*\n🇪🇺 Europe: Euro (€), GBP (£), PLN (zł), RON (lei), SEK (kr), TRY (₺)\n🌍 Middle East: AED, SAR, QAR\n🌎 Americas: USD ($), CAD (C$), BRL (R$), MXN ($), COP ($), CLP ($)\n🌍 Africa: KES (KSh), NGN (₦), ZAR (R), GHS (GH₵), TZS (TSh) ...and more!\n\n🎯 We sync directly with the Aviator algorithms in your region.\n🔒 Secure payments. 100% automated activation.\n\n👉 *Get your 24H Activation Code Now:* avisignals.com\n💬 Need help? Contact Admin: https://t.me/Aadmin4cnc`,
+            `🚀 *AVIATOR PREDICTOR - NOW AVAILABLE GLOBALLY!* 🌍\n\nDid you know our AI-powered signals work across multiple countries with localized payment support? Stop losing and start winning today!\n\n✅ *Supported Regions & Currencies:*\n🇪🇺 Europe: Euro (€), GBP (£), PLN (zł), RON (lei), SEK (kr), TRY (₺)\n🌍 Middle East: AED, SAR, QAR\n🌎 Americas: USD ($), CAD (C$), BRL (R$), MXN ($), COP ($), CLP ($)\n🌍 Africa: KES (KSh), NGN (₦), ZAR (R), GHS (GH₵), TZS (TSh) ...and more!\n\n🎯 We sync directly with the Aviator algorithms in your region.\n🔒 Secure payments. 100% automated activation.\n\n👉 *Get your 24H Activation Code Now:* avisignals.com\n💬 Need help? Contact Admin: https://t.me/Aadmin4cnc\n\n#AviatorSignals #AviatorPredictor #MakeMoneyOnline #StakeAviator #1WinAviator`,
 
             // Template 2: Supported Betting Sites
-            `🎰 *PLAY AVIATOR? WE SUPPORT YOUR FAVORITE SITE!* 🎰\n\nOur bot connects to the exact game environment of your betting platform to give you precise cash-out signals.\n\n✅ *Works Perfectly On:*\n🔸 Betano • Stake • 1xBet • SportyBet\n🔸 Unibet • LeoVegas • 888casino\n🔸 Pin-Up • Melbet • Betway • Roobet\n🔸 MozzartBet • Betika • BetWinner\n🔸 ...and over 30+ other global platforms!\n\nDon't bet blind. Let our AI do the heavy lifting. Pick your site, enter your activation code, and wait for the signal! 📈💸\n\n👉 *Choose your site & start winning:* avisignals.com\n🔥 Join thousands of profitable players today.`,
+            `🎰 *PLAY AVIATOR? WE SUPPORT YOUR FAVORITE SITE!* 🎰\n\nOur bot connects to the exact game environment of your betting platform to give you precise cash-out signals.\n\n✅ *Works Perfectly On:*\n🔸 Betano • Stake • 1xBet • SportyBet\n🔸 Unibet • LeoVegas • 888casino\n🔸 Pin-Up • Melbet • Betway • Roobet\n🔸 MozzartBet • Betika • BetWinner\n🔸 ...and over 30+ other global platforms!\n\nDon't bet blind. Let our AI do the heavy lifting. Pick your site, enter your activation code, and wait for the signal! 📈💸\n\n👉 *Choose your site & start winning:* avisignals.com\n🔥 Join thousands of profitable players today.\n\n#AviatorSignals #AviatorPredictor #StakeAviator #1WinAviator #CrashGame`,
 
             // Template 3: Proof of Win / Urgency
-            `💥 *BOOM!* Another massive 15x multiplier accurately predicted! 🎯\n\nUsers who activated their bot today are already swimming in profits. What are you waiting for?\n\n✅ Global Support (Europe, Middle East, Africa, Americas)\n✅ Works on Stake, Betano, 1xBet, Unibet & more!\n✅ Pay easily with Crypto (USDT), Card, or Mobile Money\n\nStop guessing. Start predicting.\n👉 *Activate your bot here:* avisignals.com`
+            `💥 *BOOM!* Another massive 15x multiplier accurately predicted! 🎯\n\nUsers who activated their bot today are already swimming in profits. What are you waiting for?\n\n✅ Global Support (Europe, Middle East, Africa, Americas)\n✅ Works on Stake, Betano, 1xBet, Unibet & more!\n✅ Pay easily with Crypto (USDT), Card, or Mobile Money\n\nStop guessing. Start predicting.\n👉 *Activate your bot here:* avisignals.com\n\n#AviatorSignals #AviatorPredictor #WinBig #CrashGame`
         ];
 
         // Image and video queues for fair rotation (no repeats until all used)
@@ -545,25 +545,25 @@ class TelegramMarketingBot {
         // Flow selection weights — spread across all flow types
         // Ensure videos get sent frequently (target: 6-10 videos per day across ~96 posts)
         // That means ~8-10% of flows should be video flows
-        if (random < 0.10) {
+        if (random < 0.20) {
             selectedFlow = 'videoPost';
-        } else if (random < 0.22) {
-            selectedFlow = 'immediateSignal';
         } else if (random < 0.30) {
+            selectedFlow = 'immediateSignal';
+        } else if (random < 0.38) {
             selectedFlow = 'immediateCancellation';
-        } else if (random < 0.40) {
+        } else if (random < 0.46) {
             selectedFlow = 'premiumSignal';
-        } else if (random < 0.50) {
+        } else if (random < 0.54) {
             selectedFlow = 'freeSignal';
-        } else if (random < 0.57) {
+        } else if (random < 0.60) {
             selectedFlow = 'educational';
-        } else if (random < 0.64) {
+        } else if (random < 0.66) {
             selectedFlow = 'celebration';
-        } else if (random < 0.72) {
+        } else if (random < 0.73) {
             selectedFlow = 'marketing';
-        } else if (random < 0.79) {
+        } else if (random < 0.80) {
             selectedFlow = 'freeTrialPromo';
-        } else if (random < 0.86) {
+        } else if (random < 0.87) {
             selectedFlow = 'paymentPromo';
         } else if (random < 0.93) {
             selectedFlow = 'plansPromo';
