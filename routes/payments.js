@@ -238,7 +238,7 @@ router.post('/bot/create-payment/:reference', async (req, res) => {
             .from('payments')
             .insert([{
               user_id: profileId,
-              amount: 39,
+              amount: customerInfo.amount || 75,
               currency: 'USD',
               method: 'Flutterwave',
               status: 'pending',

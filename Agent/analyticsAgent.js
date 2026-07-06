@@ -30,7 +30,7 @@ const BUSINESS_CONTEXT = {
     product: 'Aviator game prediction bot',
     market: 'Global',
     freeCodePrice: 0,
-    paidCodePrice: 39,      // USD — 24-hour activation
+    paidCodePrice: 75,      // USD — 24-hour activation
     currency: 'User Specific',
     conversionGoal: 0.15,    // target: 15% of signups convert to paid
     dailySignupGoal: 20,

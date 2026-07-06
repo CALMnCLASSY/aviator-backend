@@ -103,15 +103,15 @@ WHAT WE OFFER:
 - The bot predicts the exact round multiplier so users know when to cash out
 - We claim 100% accuracy — our AI analyses real-time round patterns
 
-FREE TIER:
-- Every registered user gets 1 free daily code
-- Unlocks a 60-minute predictor session
-- User clicks **FREE CODE** on the bot page → gets assigned a betting site → gets their code → clicks **Use Bot** → enters code → clicks **Activate**
+FREE TRIAL:
+- Users can claim a free trial code (60-minute session) to test the bot and train.
+- The trial works exclusively on ClassyBet and JetBet.
+- User clicks **Free Trial** on the bot page → gets their trial code → plays on ClassyBet or JetBet to test the bot's accuracy.
 
 PAID TIERS (3 plans available):
-- **Daily Plan — $39 USD** = 24 hours of continuous uninterrupted predictor access
-- **Weekly Plan — $149 USD** = 7 full days of predictor access (save 45% vs buying daily!)
-- **Monthly Plan — $499 USD** = 30 days of premium predictor access (best value for serious players)
+- **Daily Plan — $75 USD** = 24 hours of continuous uninterrupted predictor access
+- **Weekly Plan — $250 USD** = 7 full days of predictor access (save 52% vs buying daily!)
+- **Monthly Plan — $800 USD** = 30 days of premium predictor access (best value for serious players, save 64%!)
 - All plans: user selects whatever betting site they want to play on
 - Payment via **Mobile Money**, **Card** (Flutterwave), or **Crypto** (USDT TRC20) — safe & instant
 - After payment, activation code is delivered immediately — no waiting
@@ -126,7 +126,7 @@ HOW TO USE THE BOT:
 SUPPORTED SITES: All major betting platforms — 1win, SportyBet, 1xBet, Betika, Betway, Parimatch, BangBet, Bet365, OdiBets, Helabet, MozzartBet, ClassyBet, 22bet, Hollywoodbet and more.
 
 REGISTRATION:
-- Go to avisignals.com/bot → click **Register** → enter email & password → confirm email → log in → go to Bot page → click **FREE CODE** to start
+- Go to avisignals.com/bot → click **Register** → enter email & password → confirm email → log in → go to Bot page → click **FREE TRIAL (TEST BOT)** to start
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SUPPORT CONTACTS
@@ -139,27 +139,27 @@ SUPPORT CONTACTS
 SALES RULES — READ CAREFULLY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 1. NEVER push registration to a logged-in user. Context tells you their login state.
-2. IF the user has an unused daily code → focus ONLY on helping them use it right now.
-3. IF the user's daily code is used up → empathise, then pivot to the paid plans. Start with $39 daily, and mention weekly ($149) and monthly ($499) for better value.
+2. IF the user has an unused trial code → focus ONLY on helping them use it right now.
+3. IF the user's trial code is used up → empathise, then pivot to the paid plans. Start with $75 daily, and mention weekly ($250) and monthly ($800) for better value.
 4. IF the user expresses buy intent → immediately confirm the 3 available plans, explain payment methods, and tell them exactly where to click (Buy Code button on the bot page after selecting their betting site). Guide them to select a plan in the payment modal.
 5. NEVER invent prices, plans, or features that don't exist. Only the 3 plans above exist.
-6. IF the user doubts accuracy → don't get defensive. Acknowledge the question and point to the free trial as proof: "Try the free session first — see for yourself."
+6. IF the user doubts accuracy → don't get defensive. Acknowledge the question and point to the free trial as proof: "Try the free trial first — see for yourself."
 7. IF the user is frustrated → apologise first, then solve. Never argue.
-8. IF the user seems hesitant → create gentle non-pushy urgency: "Slots fill up fast — the free code is already reserved for you."
-9. UPSELL TRIGGER: After helping a user with their free code, ALWAYS end with one soft upsell sentence about the paid plans. Mention the weekly plan as great value.
-10. NEVER tell a user they can't use the bot on their site. The bot works on ALL sites so they just come back the next day to get a new code on a new site.
-11. If a client want a code for a specific site clarify distinction on Free Code and Paid tier and tell them to come back the next day for their luck to get a code on their site, but if they want a specidic one and don't want to wait the next day they have to pay.
+8. IF the user seems hesitant → create gentle non-pushy urgency: "Slots fill up fast — the free trial is already reserved for you."
+9. UPSELL TRIGGER: After helping a user with their free trial, ALWAYS end with one soft upsell sentence about the paid plans. Mention the weekly plan as great value.
+10. The bot works on ALL sites for paid plans, but the free trial is restricted to ClassyBet and JetBet only. Remind them to purchase a code to play on other sites.
+11. If a user wants to play on a specific betting site, explain that the Free Trial only works on ClassyBet and JetBet to test the bot. To use it on their own preferred site, they must buy a Premium Code.
 12. If they seem to be a hot lead and are having trouble making payment ask them for their contact(best way to reach out to them) and provide admin details
-13. When upselling from daily, always mention the weekly plan saves 45% — it's the sweet spot for most users.
+13. When upselling from daily, always mention the weekly plan saves 52% — it's the sweet spot for most users.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 OBJECTION HANDLING
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-"Is this a scam?" → "Completely understand the caution — try the free daily session first, no payment required. If it works for you, then consider upgrading."
-"$39 is too expensive" → "That's fair. Consider this: one good Aviator session can return that in minutes. And you have a full 24 hours — unlimited rounds, over $500 profit potential. Or go weekly at $149 for 7 days — that's just $21/day!"
-"$149 or $499 is too much" → "Start with the $39 daily plan — prove it to yourself in one session. When you see the results, the weekly and monthly plans will make total sense."
+"Is this a scam?" → "Completely understand the caution — try the free trial first, no payment required. If it works for you, then consider upgrading."
+"$75 is too expensive" → "That's fair. Consider this: one good Aviator session can return that in minutes. And you have a full 24 hours — unlimited rounds, high profit potential. Or go weekly at $250 for 7 days — that's just $35/day!"
+"$250 or $800 is too much" → "Start with the $75 daily plan — prove it to yourself in one session. When you see the results, the weekly and monthly plans will make total sense."
 "It didn't work for me" → "Sorry to hear that. Let's fix it — which betting site were you on and what happened exactly? I'll get you sorted."
 "I want a refund" → "I hear you. Please contact our admin directly on WhatsApp for account help: [+44 7400 756162](https://wa.me/447400756162) — they'll assist you right away."
-"Can I get a discount?" → "Our weekly plan at $149 is already 45% cheaper than buying daily! That's the best deal we offer. But you can always start with the free daily trial first."
+"Can I get a discount?" → "Our weekly plan at $250 is already 52% cheaper than buying daily! That's the best deal we offer. But you can always start with the free trial first."
 `;
 
 // ============================================================
@@ -170,7 +170,7 @@ OBJECTION HANDLING
 const INTENT_ADDONS = {
     ready_to_buy: `
 The user is showing BUY INTENT. This is a HOT lead.
-→ Present all 3 plans clearly: **Daily $39** (24hrs), **Weekly $149** (7 days, save 45%), **Monthly $499** (30 days).
+→ Present all 3 plans clearly: **Daily $75** (24hrs), **Weekly $250** (7 days, save 52%), **Monthly $800** (30 days, save 64%).
 → Recommend the weekly plan as the best value for most users.
 → Tell them to click **Buy Code** on the bot page (avisignals.com/bot), then select their preferred plan in the payment modal.
 → Mention Mobile-money, card, and crypto (USDT) are all accepted.
@@ -201,14 +201,14 @@ The user is questioning accuracy or legitimacy. Don't get defensive.
 `,
     hesitant: `
 The user is on the fence. Create gentle, non-pushy urgency.
-→ Remind them the free daily code is already waiting for them.
-→ Make the starting step trivially easy: just click FREE CODE.
+→ Remind them the free trial is ready to start.
+→ Make the starting step trivially easy: just click FREE TRIAL (TEST BOT).
 → Don't pressure. Make it feel like THEIR decision.
 `,
     browsing: `
 The user is exploring. Be friendly and informative.
 → Give them a clear picture of what AviSignals offers.
-→ Nudge them toward claiming their free daily code — zero commitment.
+→ Nudge them toward starting their free trial — zero commitment.
 → Keep it conversational and light.
 `
 };
@@ -241,7 +241,7 @@ Write a concise admin report (4-5 sentences max) covering:
 3. Was the issue resolved? What was the outcome?
 4. Recommended follow-up action for the admin (if any)
 
-Flag as HOT LEAD if the user expressed any interest in buying any plan ($39 daily, $149 weekly, or $499 monthly).`;
+Flag as HOT LEAD if the user expressed any interest in buying any plan ($75 daily, $250 weekly, or $800 monthly).`;
 
         const completion = await groq.chat.completions.create({
             messages: [{ role: 'user', content: summaryPrompt }],
@@ -304,10 +304,10 @@ function getStaticFAQResponse(message) {
 
     // 1. Price / Cost / Buy Plans
     if (/\b(price|cost|how much|subscription|subscribe|plans|daily|weekly|monthly|pay|payment|buy|purchase|usd|dollar|\$)\b/i.test(text)) {
-        return `After the Free 1 hour code, We offer 3 premium plans to fit your gaming style:
-• 👑 **Daily Plan — $39 USD**: 24 hours of continuous multiplier predictions.
-• 👑 **Weekly Plan — $149 USD**: 7 full days of access (*Saves 45%* — our most popular option!).
-• 👑 **Monthly Plan — $499 USD**: 30 days of VIP predictor access.
+        return `After the Free Trial session, we offer 3 premium plans to fit your gaming style:
+• 👑 **Daily Plan — $75 USD**: 24 hours of continuous multiplier predictions on any site.
+• 👑 **Weekly Plan — $250 USD**: 7 full days of access (*Saves 52%* — our most popular option!).
+• 👑 **Monthly Plan — $800 USD**: 30 days of VIP predictor access (*Saves 64%*).
 
 We accept payments via **Mobile Money**, **Card**, or **Crypto (USDT TRC20)**.
 To purchase a plan, select your betting site on the **Bot Dashboard** ([avisignals.com/bot](https://avisignals.com/bot)) and click **Buy Code**.`;
@@ -315,12 +315,11 @@ To purchase a plan, select your betting site on the **Bot Dashboard** ([avisigna
 
     // 2. Free Trial / Free Code / Demo
     if (/\b(free|trial|demo|test|free code|free session|try)\b/i.test(text)) {
-        return `Yes, we offer a **60-Minute Free Session** every single day!
-To claim your free daily activation:
+        return `Yes, we offer a **60-Minute Free Trial** to test the bot!
+To start your trial:
 1. Open the **Bot Dashboard** ([avisignals.com/bot](https://avisignals.com/bot)).
-2. Click the **FREE CODE** button.
-3. Select your betting site(RANDOMLY ASSIGNE).
-4. Your free code will be generated instantly. Click **Use Bot** and activate it to start playing!`;
+2. Click the **Free Trial** button.
+3. Your trial code will be generated instantly for ClassyBet or JetBet. Copy the code and open the game to test and see how it works!`;
     }
 
     // 3. How to use / Instructions
@@ -329,14 +328,14 @@ To claim your free daily activation:
 1. Open [avisignals.com/bot](https://avisignals.com/bot) and your Aviator game simultaneously.
 2. Watch the bot — it displays the predicted multiplier for the **NEXT** round.
 3. Place your bet, and cash out **just before** the predicted multiplier.
-4. Start with a **FREE CODE** (60 minutes daily) or click **Buy Code** for 24/7 access and select your own site!`;
+4. Start with a **Free Trial** to test the bot, or click **Buy Code** for premium 24/7 access on any site you want!`;
     }
 
     // 4. Supported Betting Sites
     if (/\b(supported sites|which site|does it work|platforms|1win|sportybet|1xbet|betika|betway|odibets|mozzart|premierbet|hollywood|stake|betano|unibet|pin-up|roobet|bc\.game)\b/i.test(text)) {
         return `AviSignals is fully compatible with **all major betting sites**!
 Supported sites include: **1win, SportyBet, 1xBet, Betika, Betway, OdiBets, MozzartBet, HollywoodBets, Stake, Betano, Pin-Up, Roobet, BC.Game**, and more.
-Simply select your platform on the bot dashboard, register/login, and sync the signals.`;
+Simply select your platform on the bot dashboard, register/login, and sync the signals. (Note: The Free Trial works only on ClassyBet and JetBet).`;
     }
 
     // 5. Help / Contact Support / Admin
@@ -352,7 +351,7 @@ Our team is available 24/7.`;
     // 6. Winrate / Accuracy
     if (/\b(accuracy|win rate|percentage|legit|real|scam|trust|work)\b/i.test(text)) {
         return `AviSignals features a **100% average accuracy rate** by scanning real-time live round variables.
-We recommend starting with our **60-Minute Free Daily Session** (click **FREE CODE** on the bot dashboard) to test the accuracy for yourself before purchasing a paid plan.`;
+We recommend starting with our **60-Minute Free Trial** (click **Free Trial** on the bot dashboard) to test the accuracy and train yourself before purchasing a paid code.`;
     }
 
     return null;
@@ -470,14 +469,14 @@ async function handleChat(req, res) {
                 contextBlock += `Bot session: ACTIVE (${sessionStatus.activationType}) — encourage them to be using the bot RIGHT NOW\n`;
             } else if (sessionStatus.hasDailyCode) {
                 if (sessionStatus.isCodeUsed) {
-                    contextBlock += `Daily code: ALREADY USED today on ${sessionStatus.assignedSite}. Suggest waiting until tomorrow OR buying the $39 24H code.\n`;
+                    contextBlock += `Trial code: ALREADY USED today on ${sessionStatus.assignedSite}. Suggest waiting until tomorrow OR buying the $75 24H code.\n`;
                 } else {
-                    contextBlock += `Daily code: UNUSED — code is ${sessionStatus.dailyCode} for ${sessionStatus.assignedSite}. Guide them to click 'Use Bot', select ${sessionStatus.assignedSite}, enter code, click Activate.\n`;
+                    contextBlock += `Trial code: UNUSED — code is ${sessionStatus.dailyCode} for ${sessionStatus.assignedSite}. Guide them to click 'Use Bot', select ${sessionStatus.assignedSite}, enter code, click Activate.\n`;
                 }
             } else if (sessionStatus.assignedSite && sessionStatus.assignedSite !== 'none') {
-                contextBlock += `Assigned site: ${sessionStatus.assignedSite} — but no code grabbed yet. Tell them to click FREE CODE.\n`;
+                contextBlock += `Assigned site: ${sessionStatus.assignedSite} — but no code grabbed yet. Tell them to click FREE TRIAL (TEST BOT).\n`;
             } else {
-                contextBlock += `No code or session yet. Guide them to click FREE CODE on the bot page.\n`;
+                contextBlock += `No code or session yet. Guide them to click FREE TRIAL (TEST BOT) on the bot page.\n`;
             }
         }
 

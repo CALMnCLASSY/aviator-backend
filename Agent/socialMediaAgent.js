@@ -115,7 +115,7 @@ HASHTAGS: Include ${spec.hashtagCount} hashtags. Use these: ${tags}
 ${storyBlock}
 
 BRAND RULES:
-- AviSignals is an AI Aviator predictor. Free daily code. Paid 24H code = $39.
+- AviSignals is an AI Aviator predictor. Free trial session. Paid plans: Daily = $75, Weekly = $250, Monthly = $800.
 - Works on all major betting sites: SportyBet, Betika, 1xBet, Betway, OdiBets, etc.
 - Target audience: Global world clients of players aged 18+
 - NEVER use: "guaranteed", "100% win", "get rich quick", "risk-free"
@@ -244,7 +244,7 @@ async function generateWeeklyCalendar() {
 
     const prompt = `You are the AviSignals Social Media Strategist. Create a 7-day content calendar for the week ahead.
 
-Business: AviSignals — AI Aviator game predictor. Free daily code. $39 for 24H access. Global International market.
+Business: AviSignals — AI Aviator game predictor. Free trial session. Paid plans: Daily = $75, Weekly = $250, Monthly = $800. Global International market.
 
 For each day, specify:
 - Best platform to prioritise
