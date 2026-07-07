@@ -146,7 +146,7 @@ router.post('/admin-verify/:reference', async (req, res) => {
       .from('payments')
       .update({ status: verified ? 'verified' : 'rejected' })
       .eq('reference', reference)
-      .select('*, profiles(email, assigned_site)');
+      .select('*, profiles(email, phone, full_name, assigned_site)');
 
     if (error) throw error;
 
@@ -154,6 +154,8 @@ router.post('/admin-verify/:reference', async (req, res) => {
     if (verified && data[0]) {
         const payment = data[0];
         const userEmail = payment.profiles?.email;
+        const userPhone = payment.profiles?.phone;
+        const referrer = payment.profiles?.full_name;
         const siteName = payment.profiles?.assigned_site || 'your selected betting site';
 
         // Send Email
@@ -162,6 +164,37 @@ router.post('/admin-verify/:reference', async (req, res) => {
             const siteData = (global.activationCodes && global.activationCodes['Other']) || {};
             const codeToReturn = siteData.daily || global.MASTER_ADMIN_CODE || 'OJ204';
             emailService.sendActivationCodeEmail(userEmail, codeToReturn, siteName).catch(e => console.error("Email err", e));
+        }
+
+        // Referral System tracking
+        if (referrer) {
+            try {
+                await req.supabaseAdmin
+                    .from('logs')
+                    .insert([{
+                        event_type: 'referral_purchase',
+                        details: {
+                            email: userEmail || 'Unknown',
+                            phone: userPhone || 'N/A',
+                            referrer: referrer,
+                            amount: payment.amount,
+                            currency: payment.currency || 'USD',
+                            reference: payment.reference,
+                            timestamp: new Date().toISOString()
+                        }
+                    }]);
+            } catch (dbErr) {
+                console.warn('⚠️ Referral purchase log insert error:', dbErr.message);
+            }
+
+            discordAgent.sendReferralPurchaseEvent({
+                email: userEmail || 'Unknown',
+                phone: userPhone || 'N/A',
+                referrer: referrer,
+                amount: payment.amount,
+                currency: payment.currency || 'USD',
+                reference: payment.reference
+            });
         }
 
         discordAgent.sendRevenueAlert({

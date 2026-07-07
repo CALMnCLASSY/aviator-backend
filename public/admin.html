@@ -314,6 +314,46 @@
                 </table>
             </div>
         </div>
+
+        <!-- Referrals Section -->
+        <div class="section">
+            <div class="section-header">
+                <h2><i class="fas fa-users-cog" style="color: var(--accent);"></i> Referral System Tracking</h2>
+            </div>
+            <div class="table-wrap" style="margin-bottom: 25px;">
+                <table id="tableReferrals">
+                    <thead>
+                        <tr>
+                            <th>Referrer Code</th>
+                            <th>Clicks</th>
+                            <th>Submits</th>
+                            <th>Registered</th>
+                            <th>Purchases</th>
+                            <th>Revenue</th>
+                            <th>Click -> Signup</th>
+                            <th>Signup -> Sale</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <h3 style="margin-bottom: 15px; font-size: 1.1em; color: var(--text-dim);"><i class="fas fa-list-ol"></i> Recent Referral Activity Ledger</h3>
+            <div class="table-wrap">
+                <table id="tableReferralLedger">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Referrer</th>
+                            <th>Event</th>
+                            <th>User (Email/Phone)</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -373,6 +413,14 @@
                 const codesRes = await fetch(`${API_BASE}/activation-codes`);
                 const codesData = await codesRes.json();
                 renderCodes(codesData.codes || {});
+
+                // Fetch Referrals
+                const refRes = await fetch(`${API_BASE}/referrals`);
+                const refData = await refRes.json();
+                if (refData.success) {
+                    renderReferrals(refData.referrers || []);
+                    renderReferralLedger(refData.activities || []);
+                }
 
             } catch (err) {
                 console.error('Dash refresh failed:', err);
@@ -451,6 +499,53 @@
                 console.error(err);
                 alert('Connection error');
             }
+        }
+
+        function renderReferrals(list) {
+            const tbody = document.querySelector('#tableReferrals tbody');
+            if (!tbody) return;
+            tbody.innerHTML = list.length === 0 ? '<tr><td colspan="8" style="text-align:center; color: var(--text-dim);">No referrers active</td></tr>' : '';
+            list.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><b style="color: var(--accent);">${r.code}</b></td>
+                    <td>${r.clicks}</td>
+                    <td>${r.submits}</td>
+                    <td>${r.signups}</td>
+                    <td>${r.purchases}</td>
+                    <td style="color: var(--success); font-weight: 700;">$${r.revenue.toFixed(2)}</td>
+                    <td><code>${r.clickToSignupRate}%</code></td>
+                    <td><code>${r.signupToPurchaseRate}%</code></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderReferralLedger(list) {
+            const tbody = document.querySelector('#tableReferralLedger tbody');
+            if (!tbody) return;
+            tbody.innerHTML = list.length === 0 ? '<tr><td colspan="5" style="text-align:center; color: var(--text-dim);">No recent referral activity</td></tr>' : '';
+            list.forEach(a => {
+                const tr = document.createElement('tr');
+                let detailsStr = '—';
+                if (a.amount) detailsStr = `<span style="color: var(--success); font-weight: 700;">$${a.amount}</span>`;
+                else if (a.page) detailsStr = `<span style="color: var(--text-dim);">${a.page}</span>`;
+
+                let badgeColor = 'var(--text-dim)';
+                if (a.eventType === 'purchase') badgeColor = 'var(--success)';
+                else if (a.eventType === 'signup') badgeColor = 'var(--accent)';
+                else if (a.eventType === 'click') badgeColor = 'var(--text)';
+                else if (a.eventType === 'landing_submit') badgeColor = 'var(--accent)';
+
+                tr.innerHTML = `
+                    <td>${new Date(a.timestamp).toLocaleTimeString()}</td>
+                    <td><span style="color: var(--accent); font-weight:600;">${a.referrer}</span></td>
+                    <td><span style="background: rgba(255,255,255,0.05); border: 1px solid ${badgeColor}; padding: 3px 8px; border-radius: 6px; font-size: 0.8em; color: ${badgeColor}; text-transform: uppercase;">${a.eventType}</span></td>
+                    <td><b>${a.user}</b></td>
+                    <td>${detailsStr}</td>
+                `;
+                tbody.appendChild(tr);
+            });
         }
 
         // Session check on load

@@ -562,12 +562,53 @@ function sendSiteSelectionCreds({ email, site, ip }) {
     dispatch('creds', embed);
 }
 
+/**
+ * Referral registration event
+ */
+function sendReferralSignupEvent({ email, phone, referrer, ip }) {
+    const embed = baseEmbed({
+        title:  '🤝 NEW REFERRAL SIGNUP',
+        color:  COLOR.green,
+        fields: [
+            { name: 'REFERRER CODE', value: `**${referrer}**`, inline: false },
+            { name: 'USER EMAIL',    value: safeValue(email), inline: true },
+            { name: 'USER PHONE',    value: safeValue(phone), inline: true },
+            { name: 'IP ADDRESS',    value: safeValue(ip),    inline: true }
+        ],
+        footer: `${FOOTER_TAG} · Referral System`
+    });
+    dispatch('users', embed);
+}
+
+/**
+ * Referral purchase event
+ */
+function sendReferralPurchaseEvent({ email, phone, referrer, amount, currency = 'USD', reference }) {
+    const embed = baseEmbed({
+        title:  '🔥 REFERRAL PURCHASE CONVERTED',
+        color:  COLOR.gold,
+        description: `User referred by **${referrer}** made a successful purchase!`,
+        fields: [
+            { name: 'REFERRER CODE', value: `**${referrer}**`, inline: false },
+            { name: 'USER EMAIL',    value: safeValue(email), inline: true },
+            { name: 'AMOUNT',        value: `**$${amount} ${currency}**`, inline: true },
+            { name: 'REFERENCE',     value: safeValue(reference), inline: true }
+        ],
+        footer: `${FOOTER_TAG} · Referral Conversion`
+    });
+    dispatch('payments', embed);
+}
+
 // ============================================================
 // EXPORTS
 // ============================================================
 module.exports = {
     // Core
     sendEmbed,
+
+    // Referral events
+    sendReferralSignupEvent,
+    sendReferralPurchaseEvent,
 
     // User events
     sendRegistrationEvent,

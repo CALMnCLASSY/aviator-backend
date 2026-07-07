@@ -418,6 +418,7 @@ const telegramRoutes = require('./routes/telegram');
 const marketingRoutes = require('./routes/marketing');
 const roundRoutes    = require('./routes/rounds');
 const adminRoutes    = require('./routes/admin');
+const referralRoutes = require('./routes/referrals');
 const { handleChat } = require('./Agent/chatAgent');
 
 app.use('/api/users',     userRoutes);
@@ -427,6 +428,7 @@ app.use('/api/telegram',  telegramRoutes);
 app.use('/api/marketing', marketingRoutes);
 app.use('/api/rounds',    roundRoutes);
 app.use('/api/admin',     adminRoutes);
+app.use('/api/referrals', referralRoutes);
 
 // AI Chat — has its own tight rate limiter
 app.post('/api/ai/chat', chatLimiter, handleChat);

@@ -42,16 +42,27 @@ router.use((req, res, next) => {
  */
 router.post('/sync-profile', async (req, res) => {
   try {
-    const { id, email, phone } = req.body;
+    const { id, email, phone, referrer } = req.body;
     if (!id || !email) return res.status(400).json({ success: false, error: 'Missing req fields' });
 
     if (!req.supabaseAdmin) {
       return res.status(503).json({ success: false, error: 'Database admin client not available' });
     }
 
+    const upsertData = { 
+      id, 
+      email, 
+      phone, 
+      last_seen: new Date().toISOString() 
+    };
+
+    if (referrer) {
+      upsertData.full_name = referrer;
+    }
+
     const { data, error } = await req.supabaseAdmin
       .from('profiles')
-      .upsert({ id, email, phone, last_seen: new Date().toISOString() });
+      .upsert(upsertData);
 
     if (error) throw error;
 

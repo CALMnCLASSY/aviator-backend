@@ -37,11 +37,44 @@ router.post('/log-auth-event', async (req, res) => {
 
         // 1. Alert Discord
         if (event === 'REGISTER') {
-            discordAgent.sendRegistrationEvent({
-                email,
-                phone,
-                ip: extraDetails.ip
-            });
+            const refCode = extraDetails.referrer || req.body.referrer || null;
+            if (refCode) {
+                if (supabaseAdmin) {
+                    try {
+                        await supabaseAdmin
+                            .from('logs')
+                            .insert([{
+                                event_type: 'referral_signup',
+                                details: {
+                                    email,
+                                    phone,
+                                    referrer: refCode,
+                                    ip: extraDetails.ip,
+                                    timestamp: new Date().toISOString()
+                                }
+                            }]);
+                        
+                        await supabaseAdmin
+                            .from('profiles')
+                            .update({ full_name: refCode })
+                            .eq('email', email);
+                    } catch (dbErr) {
+                        console.warn('⚠️ Referral sync error:', dbErr.message);
+                    }
+                }
+                discordAgent.sendReferralSignupEvent({
+                    email,
+                    phone,
+                    referrer: refCode,
+                    ip: extraDetails.ip
+                });
+            } else {
+                discordAgent.sendRegistrationEvent({
+                    email,
+                    phone,
+                    ip: extraDetails.ip
+                });
+            }
         } else if (event === 'LOGIN') {
             discordAgent.sendLoginEvent({ 
                 email, 
@@ -288,7 +321,7 @@ router.post('/bot-login', async (req, res) => {
 // Index page session login endpoint
 router.post('/index-login', async (req, res) => {
   try {
-    const { contact, contactType, userAgent, timestamp } = req.body;
+    const { contact, contactType, userAgent, timestamp, referrer } = req.body;
 
     // Validate required fields
     if (!contact) {
@@ -310,9 +343,33 @@ router.post('/index-login', async (req, res) => {
     // Log authentication attempt
     logAuthData(authData);
 
+    // Log to Supabase if referrer is present
+    if (referrer && req.supabaseAdmin) {
+      try {
+        await req.supabaseAdmin
+          .from('logs')
+          .insert([{
+            event_type: 'referral_landing_submit',
+            details: {
+              contact,
+              contactType: authData.contactType,
+              referrer,
+              ip: authData.ip,
+              userAgent: authData.userAgent,
+              timestamp: authData.timestamp
+            }
+          }]);
+      } catch (dbErr) {
+        console.warn('⚠️ Referral landing log insert error:', dbErr.message);
+      }
+    }
+
     // Send to Discord
-    discordAgent.sendAlert('INDEX PAGE ACCESS', `User **${contact}** accessed index page.`, 'info');
-    journeyAgent.logEvent(contact, 'ARRIVED', { page: 'Index Page' });
+    const discordMsg = referrer 
+      ? `User **${contact}** accessed index page via referrer **${referrer}**.`
+      : `User **${contact}** accessed index page.`;
+    discordAgent.sendAlert('INDEX PAGE ACCESS', discordMsg, 'info');
+    journeyAgent.logEvent(contact, 'ARRIVED', { page: 'Index Page', referrer });
 
     // Return success with session info
     res.json({ 
@@ -342,6 +399,44 @@ router.post('/index-login', async (req, res) => {
       message: 'Access logged (fallback mode)',
       warning: 'Some features may be limited'
     });
+  }
+});
+
+/**
+ * LOG REFERRAL EVENT
+ * Logs events like clicks or navigations to the logs table
+ */
+router.post('/log-referral-event', async (req, res) => {
+  try {
+    const { referrer, eventType, page, details } = req.body;
+    if (!referrer || !eventType) {
+      return res.status(400).json({ success: false, error: 'Missing referrer or eventType' });
+    }
+
+    if (req.supabaseAdmin) {
+      const logDetails = {
+        referrer,
+        page: page || 'Unknown',
+        ip: req.ip || 'Unknown',
+        userAgent: req.headers['user-agent'] || 'Unknown',
+        timestamp: new Date().toISOString(),
+        ...details
+      };
+
+      const { error } = await req.supabaseAdmin
+        .from('logs')
+        .insert([{
+          event_type: `referral_${eventType}`, // e.g. referral_click, referral_nav
+          details: logDetails
+        }]);
+
+      if (error) console.error('⚠️ Supabase referral log insert error:', error.message);
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('❌ Log referral event error:', error);
+    res.json({ success: false, error: error.message });
   }
 });
 

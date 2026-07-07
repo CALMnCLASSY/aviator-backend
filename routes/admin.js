@@ -222,4 +222,130 @@ router.get('/chat-summaries', async (req, res) => {
     }
 });
 
+/**
+ * GET REFERRAL STATS
+ * Aggregates clicks, signups, and purchases from logs and profiles
+ */
+router.get('/referrals', async (req, res) => {
+    try {
+        if (!req.supabaseAdmin) {
+            return res.status(503).json({ success: false, error: 'Database admin client not available' });
+        }
+
+        // 1. Fetch all referral logs
+        const { data: logs, error: logsError } = await req.supabaseAdmin
+            .from('logs')
+            .select('*')
+            .like('event_type', 'referral_%')
+            .order('created_at', { ascending: false });
+
+        if (logsError) throw logsError;
+
+        // 2. Fetch all referred users
+        const { data: profiles, error: profilesError } = await req.supabaseAdmin
+            .from('profiles')
+            .select('id, email, phone, full_name, created_at, last_seen')
+            .not('full_name', 'is', null)
+            .order('created_at', { ascending: false });
+
+        if (profilesError) throw profilesError;
+
+        // 3. Process aggregations
+        const referrers = {}; // Key: referrer code
+
+        // Helper to initialize referrer object
+        const initReferrer = (code) => {
+            if (!referrers[code]) {
+                referrers[code] = {
+                    code,
+                    clicks: 0,
+                    submits: 0,
+                    signups: 0,
+                    purchases: 0,
+                    revenue: 0,
+                    users: []
+                };
+            }
+        };
+
+        // Populate from profiles (users)
+        profiles.forEach(p => {
+            const code = p.full_name.trim();
+            if (!code) return;
+            initReferrer(code);
+            referrers[code].users.push({
+                email: p.email || 'N/A',
+                phone: p.phone || 'N/A',
+                created_at: p.created_at,
+                last_seen: p.last_seen
+            });
+            referrers[code].signups++; // Profile count is signups count
+        });
+
+        // Populate from logs (clicks, submits, purchases)
+        logs.forEach(log => {
+            const details = log.details || {};
+            const code = (details.referrer || '').trim();
+            if (!code) return;
+            initReferrer(code);
+
+            if (log.event_type === 'referral_click') {
+                referrers[code].clicks++;
+            } else if (log.event_type === 'referral_landing_submit') {
+                referrers[code].submits++;
+            } else if (log.event_type === 'referral_signup') {
+                // Keep signups counts synchronized. If log says signup, but profile sync didn't complete, count it here.
+                // We'll use the max of profile signups or log signups to be robust.
+            } else if (log.event_type === 'referral_purchase') {
+                referrers[code].purchases++;
+                referrers[code].revenue += parseFloat(details.amount || 0);
+            }
+        });
+
+        // Format final list and calculate rates
+        const list = Object.values(referrers).map(r => {
+            // Recalculate signup count as max between profile users length and logs signup count
+            const logSignups = logs.filter(l => l.event_type === 'referral_signup' && (l.details?.referrer || '').trim() === r.code).length;
+            r.signups = Math.max(r.signups, logSignups);
+
+            const clickToSignup = r.clicks > 0 ? ((r.signups / r.clicks) * 100).toFixed(1) : '0.0';
+            const signupToPurchase = r.signups > 0 ? ((r.purchases / r.signups) * 100).toFixed(1) : '0.0';
+
+            return {
+                code: r.code,
+                clicks: r.clicks,
+                submits: r.submits,
+                signups: r.signups,
+                purchases: r.purchases,
+                revenue: parseFloat(r.revenue.toFixed(2)),
+                clickToSignupRate: parseFloat(clickToSignup),
+                signupToPurchaseRate: parseFloat(signupToPurchase),
+                usersCount: r.users.length,
+                recentUsers: r.users.slice(0, 10) // last 10 users
+            };
+        });
+
+        // 4. Extract recent referral activities for the ledger
+        const recentLogs = logs.slice(0, 20).map(log => ({
+            id: log.id,
+            eventType: log.event_type.replace('referral_', ''),
+            referrer: log.details?.referrer || 'Unknown',
+            user: log.details?.email || log.details?.contact || 'Anonymous',
+            timestamp: log.created_at,
+            amount: log.details?.amount || null,
+            page: log.details?.page || null
+        }));
+
+        res.json({
+            success: true,
+            referrers: list,
+            activities: recentLogs
+        });
+
+    } catch (err) {
+        console.error('❌ Get Referrals Error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 module.exports = router;
