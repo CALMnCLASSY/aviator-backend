@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AviSignals - Premium Signals Subscription</title>
+    
+    <!-- Security Headers (Matches index.html) -->
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://checkout.flutterwave.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https: https://api.qrserver.com https://chart.googleapis.com; connect-src 'self' https://back.avisignals.com https://api.exchangerate-api.com; frame-src 'self' https://checkout.flutterwave.com https://checkout-v3.flutterwave.com https://*.flutterwave.com https://*.f4b-flutterwave.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;">
+    
+    <!-- Fonts & Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #f1c40f;
+            --primary-hover: #f39c12;
+            --bg-dark: #0a0e18;
+            --card-bg: rgba(15, 20, 32, 0.92);
+            --border-color: rgba(241, 196, 15, 0.15);
+            --text-color: #c4c9d4;
+            --text-light: #ffffff;
+            --btn-grad: linear-gradient(45deg, #f1c40f, #f39c12);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at center, #11192e 0%, var(--bg-dark) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            color: var(--text-color);
+            overflow-x: hidden;
+        }
+
+        .header {
+            width: 100%;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-title span {
+            color: var(--primary);
+        }
+
+        .main-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .premium-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .premium-icon {
+            font-size: 3rem;
+            color: var(--primary);
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-light);
+            margin-bottom: 12px;
+        }
+
+        .pricing-tag {
+            background: rgba(241, 196, 15, 0.1);
+            border: 1px solid rgba(241, 196, 15, 0.2);
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--primary);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .description {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .benefits-list {
+            text-align: left;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .benefit-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            color: var(--text-light);
+        }
+
+        .benefit-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .benefit-item i {
+            color: #2ecc71;
+            font-size: 1.1rem;
+        }
+
+        .payment-methods {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .pay-btn {
+            width: 100%;
+            padding: 16px;
+            border-radius: 14px;
+            border: none;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .pay-btn-fiat {
+            background: var(--btn-grad);
+            color: #000;
+        }
+
+        .pay-btn-fiat:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(241, 196, 15, 0.2);
+        }
+
+        .pay-btn-crypto {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+        }
+
+        .pay-btn-crypto:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        /* Success State */
+        .success-container {
+            display: none;
+        }
+
+        .success-btn {
+            background: #2ecc71;
+            color: white;
+            text-decoration: none;
+            box-shadow: 0 10px 25px rgba(46, 204, 113, 0.3);
+        }
+
+        .success-btn:hover {
+            background: #27ae60;
+            transform: translateY(-2px);
+        }
+
+        /* Modal Overlays */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: #0f1420;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            width: 90%;
+            max-width: 440px;
+            padding: 30px;
+            position: relative;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 1.4rem;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .close-btn:hover {
+            color: var(--text-light);
+        }
+
+        .address-box {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 20px 0;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 0.95rem;
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .copy-btn {
+            background: rgba(241, 196, 15, 0.15);
+            border: none;
+            color: var(--primary);
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .copy-btn:hover {
+            background: var(--primary);
+            color: black;
+        }
+
+        .qr-code {
+            width: 160px;
+            height: 160px;
+            margin: 0 auto 20px;
+            border-radius: 12px;
+            border: 2px solid var(--primary);
+            padding: 5px;
+            background: white;
+        }
+
+        .qr-code img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.2);
+            color: white;
+            font-size: 1rem;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .footer {
+            width: 100%;
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="header-title">
+            <i class="fas fa-crown"></i> AviSignals <span>Premium</span>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <!-- Main Checkout Box -->
+        <div class="premium-card" id="mainCheckoutBox">
+            <div class="premium-icon">
+                <i class="fas fa-gem"></i>
+            </div>
+            <h1>VIP Signals Access</h1>
+            <div class="pricing-tag">
+                <span>$2.00</span> / week
+            </div>
+            
+            <p class="description">
+                Subscribe to our premium Telegram channel to get non-stop, continuous predictions for all betting sites.
+            </p>
+
+            <div class="benefits-list">
+                <div class="benefit-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Over 25 signals sent every hour</span>
+                </div>
+                <div class="benefit-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span>All priority betting sites supported</span>
+                </div>
+                <div class="benefit-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span>100% Automated bot confirmation loop</span>
+                </div>
+                <div class="benefit-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Direct customer support access</span>
+                </div>
+            </div>
+
+            <!-- Email Capture before payment -->
+            <div class="input-group">
+                <label for="userEmail">Enter your Email or Phone to subscribe:</label>
+                <input type="text" id="userEmail" placeholder="e.g. player@example.com" value="">
+            </div>
+
+            <div class="payment-methods">
+                <button class="pay-btn pay-btn-fiat" onclick="initiateFiatPayment()">
+                    <i class="fas fa-credit-card"></i> Pay via Card / Mobile Money
+                </button>
+                <button class="pay-btn pay-btn-crypto" onclick="openCryptoModal()">
+                    <i class="fa-brands fa-ethereum"></i> Pay via USDT / Crypto
+                </button>
+            </div>
+        </div>
+
+        <!-- Success Join Channel Box -->
+        <div class="premium-card success-container" id="successBox">
+            <div class="premium-icon" style="color: #2ecc71;">
+                <i class="fas fa-circle-check"></i>
+            </div>
+            <h1>Payment Confirmed!</h1>
+            <p class="description" style="margin-bottom: 25px;">
+                Thank you for subscribing to AviSignals Premium. Click below to join the VIP Predictions channel.
+            </p>
+
+            <!-- Dynamically generated channel join link -->
+            <a href="https://t.me/avisignalspremium" target="_blank" class="pay-btn success-btn" id="joinChannelBtn">
+                <i class="fa-brands fa-telegram"></i> Join Premium Channel
+            </a>
+        </div>
+    </main>
+
+    <!-- Crypto Checkout Modal -->
+    <div class="modal" id="cryptoModal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeCryptoModal()">&times;</button>
+            <h2 style="color: white; margin-bottom: 10px;">Pay with USDT (TRC-20)</h2>
+            <p style="font-size: 0.9rem; margin-bottom: 20px;">Scan or copy address below to send exactly <b>2 USDT</b></p>
+            
+            <div class="qr-code">
+                <!-- Google charts QR code generator for USDT TRC20 address -->
+                <img src="https://chart.googleapis.com/chart?chs=160x160&cht=qr&chl=TCRwpXHYvcXY3y4FJThLHCc9hHbs9H4ExH&choe=UTF-8" alt="QR Code">
+            </div>
+
+            <div class="address-box">
+                <span id="cryptoAddress">TCRwpXHYvcXY3y4FJThLHCc9hHbs9H4ExH</span>
+                <button class="copy-btn" onclick="copyAddress()">Copy</button>
+            </div>
+
+            <button class="pay-btn pay-btn-fiat" style="margin-top: 15px;" onclick="confirmCryptoOrder()">
+                <i class="fas fa-check"></i> I have made the payment
+            </button>
+        </div>
+    </div>
+
+    <!-- Verification / Waiting Modal -->
+    <div class="modal" id="waitingModal">
+        <div class="modal-content">
+            <div class="premium-icon">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+            <h2 style="color: white; margin-bottom: 10px;">Verifying Payment</h2>
+            <p id="verificationStatusText" style="font-size: 0.9rem; line-height: 1.6;">
+                We are checking the payment gateway for confirmation. This usually takes less than a minute. Please keep this window open.
+            </p>
+        </div>
+    </div>
+
+    <footer class="footer">
+        © 2026 Aviator Signals · Clasnet Lab. All rights reserved. Play responsibly.
+    </footer>
+
+    <!-- Flutterwave checkout SDK -->
+    <script src="https://checkout.flutterwave.com/v3.js"></script>
+
+    <script>
+        const API_BASE_URL = 'https://back.avisignals.com';
+        const USDT_ADDRESS = 'TCRwpXHYvcXY3y4FJThLHCc9hHbs9H4ExH';
+        let currentReference = '';
+        let checkingInterval = null;
+
+        // Auto fill contact if already saved
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedContact = localStorage.getItem('aviator_contact');
+            if (savedContact) {
+                document.getElementById('userEmail').value = savedContact;
+            }
+        });
+
+        function copyAddress() {
+            const address = document.getElementById('cryptoAddress').innerText;
+            navigator.clipboard.writeText(address).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                btn.innerText = 'Copied!';
+                setTimeout(() => btn.innerText = 'Copy', 2000);
+            });
+        }
+
+        function openCryptoModal() {
+            const contact = document.getElementById('userEmail').value.trim();
+            if (!contact) {
+                alert('Please enter your email or phone number first.');
+                return;
+            }
+            document.getElementById('cryptoModal').classList.add('active');
+        }
+
+        function closeCryptoModal() {
+            document.getElementById('cryptoModal').classList.remove('active');
+        }
+
+        function showSuccessState(channelLink) {
+            // Set link
+            if (channelLink) {
+                document.getElementById('joinChannelBtn').href = channelLink;
+            }
+            // Hide checkout, show success
+            document.getElementById('mainCheckoutBox').style.display = 'none';
+            document.getElementById('successBox').style.display = 'block';
+        }
+
+        async function startStatusChecking(orderId) {
+            let attempts = 0;
+            const maxAttempts = 30; // 3 minutes total
+
+            // Show waiting modal
+            document.getElementById('waitingModal').classList.add('active');
+            document.getElementById('verificationStatusText').innerText = "Connecting to the blockchain/gateway. Checking transaction status...";
+
+            checkingInterval = setInterval(async () => {
+                attempts++;
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/payments/bot/status/${orderId}`);
+                    const data = await response.json();
+
+                    if (data.success && data.status === 'verified') {
+                        clearInterval(checkingInterval);
+                        document.getElementById('waitingModal').classList.remove('active');
+                        
+                        // Premium Channel Join Link (dynamic reveal)
+                        const premiumLink = 'https://t.me/avisignalspremium'; 
+                        showSuccessState(premiumLink);
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(checkingInterval);
+                        document.getElementById('waitingModal').classList.remove('active');
+                        alert("Verification is taking longer than expected. If you've already paid, please contact support with reference: " + orderId);
+                    }
+                } catch (e) {
+                    console.error('Error status check:', e);
+                }
+            }, 6000);
+        }
+
+        async function confirmCryptoOrder() {
+            closeCryptoModal();
+            const contact = document.getElementById('userEmail').value.trim();
+            const orderId = `CNL_CRYPTO_${Date.now()}_${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+
+            try {
+                // Initialize payment tracking on backend
+                const response = await fetch(`${API_BASE_URL}/api/payments/bot/create-payment/${orderId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        customerInfo: {
+                            email: contact,
+                            contact: contact,
+                            packageName: 'Weekly Premium Subscription',
+                            amount: 2.00,
+                            bettingSite: 'Premium VIP Channel'
+                        }
+                    })
+                });
+
+                if (!response.ok) throw new Error('Initialization failed');
+                
+                // Start polling
+                startStatusChecking(orderId);
+            } catch (err) {
+                console.error(err);
+                alert('Could not submit crypto transaction verification. Please contact support.');
+            }
+        }
+
+        async function initiateFiatPayment() {
+            const contact = document.getElementById('userEmail').value.trim();
+            if (!contact) {
+                alert('Please enter your email or phone number.');
+                return;
+            }
+
+            const email = contact.includes('@') ? contact : 'customer@avisignals.com';
+            const reference = 'CNL_FW_PREM_' + Math.floor((Math.random() * 1000000000) + 1);
+
+            try {
+                // Register transaction record on backend
+                const regResponse = await fetch(`${API_BASE_URL}/api/payments/bot/create-payment/${reference}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        customerInfo: {
+                            email: email,
+                            contact: contact,
+                            packageName: 'Weekly Premium Subscription',
+                            amount: 2.00,
+                            bettingSite: 'Premium VIP Channel'
+                        }
+                    })
+                });
+
+                if (!regResponse.ok) throw new Error('Failed to register checkout');
+
+                FlutterwaveCheckout({
+                    public_key: "FLWPUBK-2e4373dda23b34dd487aa3e6b2444c3f-X",
+                    tx_ref: reference,
+                    amount: 2.00,
+                    currency: "USD",
+                    payment_options: "card,mobilemoney",
+                    customer: {
+                        email: email,
+                        phone_number: contact.includes('@') ? '' : contact,
+                        name: 'User',
+                    },
+                    customizations: {
+                        title: 'Clasnet Lab',
+                        description: 'Premium VIP Channel Weekly Pass',
+                    },
+                    callback: function (data) {
+                        console.log('✅ Flutterwave Premium Checkout Complete Ref:', data.tx_ref);
+                        // Start polling backend status verification
+                        startStatusChecking(data.tx_ref);
+                    },
+                    onclose: function () {
+                        console.log('Payment modal closed');
+                    }
+                });
+
+            } catch (err) {
+                console.error('Fiat initiation failed:', err);
+                alert('Payment could not be started. Please try again.');
+            }
+        }
+    </script>
+</body>
+</html>
