@@ -42,7 +42,13 @@ if (process.env.TELEGRAM_CHAT_ID) {
     process.env.TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID.trim();
 }
 if (process.env.TELEGRAM_CHANNEL_ID) {
-    process.env.TELEGRAM_CHANNEL_ID = process.env.TELEGRAM_CHANNEL_ID.trim();
+    process.env.TELEGRAM_CHANNEL_ID = process.env.TELEGRAM_CHANNEL_ID.trim().replace(/^["']|["']$/g, '');
+}
+if (process.env.AGENT_TELEGRAM_CHANNEL_ID) {
+    process.env.AGENT_TELEGRAM_CHANNEL_ID = process.env.AGENT_TELEGRAM_CHANNEL_ID.trim().replace(/^["']|["']$/g, '');
+}
+if (process.env.SIGNALS_TELEGRAM_CHANNEL_ID) {
+    process.env.SIGNALS_TELEGRAM_CHANNEL_ID = process.env.SIGNALS_TELEGRAM_CHANNEL_ID.trim().replace(/^["']|["']$/g, '');
 }
 
 // ─── Boot diagnostic: expose hidden env var issues ────────────

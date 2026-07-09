@@ -17,7 +17,8 @@ class TelegramAgentMarketingBot extends TelegramMarketingBot {
 
     async sendToChannel(messageData) {
         // If it's an object with persona signatures, extract the main message to prevent signatures
-        const messageText = typeof messageData === 'string' ? messageData : messageData.message;
+        let messageText = typeof messageData === 'string' ? messageData : messageData.message;
+        messageText = translateToAgent(messageText);
         return super.sendToChannel(messageText);
     }
 

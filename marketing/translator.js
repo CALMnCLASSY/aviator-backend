@@ -63,6 +63,9 @@ function translateToAgent(text) {
     t = t.replace(/Congrats to everyone who followed today's signals!/g, 'Congrats to everyone who played today!');
     t = t.replace(/Don't sleep on tomorrow's profits. Premium codes are selling fast. Buy your 24H or Weekly pass tonight/g, 'Don\'t sleep on tomorrow\'s profits. Grab your 24H or Weekly pass tonight like I did');
 
+    t = t.replace(/https:\/\/t\.me\/Aadmin4cnc/g, 'https://t.me/ufomedz');
+    t = t.replace(/t\.me\/Aadmin4cnc/g, 't.me/ufomedz');
+
     // 2. Generic word/phrase replacements for user persona (case-insensitive where appropriate)
     t = t.replace(/\bour bot\b/gi, 'the bot I use');
     t = t.replace(/\bOur bot\b/gi, 'The bot I use');
@@ -84,10 +87,16 @@ function translateToAgent(text) {
     t = t.replace(/\buser\b/gi, 'player');
     t = t.replace(/\busers\b/gi, 'players');
     t = t.replace(/\bStop guessing\. Start predicting\./gi, 'Stop guessing and start winning like me.');
-    t = t.replace(/\bVisit avisignals\.com\b/gi, 'Check out avisignals.com');
+    t = t.replace(/\bVisit avisignals\.com\b/gi, 'Check out avisignals.com/?ref=PREDICTOR');
     t = t.replace(/\bUpgrade here:\b/gi, 'Get your code here:');
     t = t.replace(/\bBuy your 24H\b/gi, 'Grab your 24H');
     t = t.replace(/\bWho's ready for a big win\?\b/gi, 'Who\'s playing with me today?');
+
+    // Replace all other instances of domain links to redirect to referral link
+    t = t.replace(/avisignals\.com\/bot\.html/g, 'avisignals.com/?ref=PREDICTOR');
+    t = t.replace(/avisignals\.com\/bot/g, 'avisignals.com/?ref=PREDICTOR');
+    t = t.replace(/avisignals\.com(?!(\/)?\?ref=PREDICTOR)/g, 'avisignals.com/?ref=PREDICTOR');
+    t = t.replace(/classybetaviator\.com/g, 'avisignals.com/?ref=PREDICTOR');
 
     return t;
 }

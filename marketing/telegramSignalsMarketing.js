@@ -23,6 +23,11 @@ class TelegramSignalsMarketingBot extends TelegramMarketingBot {
         return super.processMessage(messageWithSite, category);
     }
 
+    getImageForCategory(messageType) {
+        // Disable images for premium signals channel as requested
+        return null;
+    }
+
     async runPremiumSignalsLoop() {
         console.log('📡 [Premium Signals] Starting loop...');
         while (this.isRunning) {
