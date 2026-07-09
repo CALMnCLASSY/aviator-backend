@@ -27,6 +27,7 @@ const cron = require('node-cron');
 const https = require('https');
 const groq = require('./groqClient');
 const { createClient } = require('@supabase/supabase-js');
+const { translateToAgent } = require('../marketing/translator');
 
 const supabase = createClient(
     (process.env.SUPABASE_URL || '').trim().replace(/\/+$/, ''),
@@ -222,9 +223,9 @@ function telegramRequest(method, payload, retries = 3) {
     });
 }
 
-function sendToChannel(text) {
+function sendToChannel(text, targetChannelId = CHANNEL_ID) {
     return telegramRequest('sendMessage', {
-        chat_id: CHANNEL_ID,
+        chat_id: targetChannelId,
         text,
         parse_mode: 'Markdown',
         link_preview_options: { is_disabled: true }
@@ -273,6 +274,19 @@ async function runChannelPost() {
             console.log(`✅ Channel post sent [${type}]`);
         } else {
             console.error(`❌ Channel post failed [${type}]:`, result?.description);
+        }
+
+        // Also post to agent channel if configured
+        const AGENT_CHANNEL_ID = process.env.AGENT_TELEGRAM_CHANNEL_ID;
+        if (AGENT_CHANNEL_ID) {
+            const translatedText = translateToAgent(text);
+            console.log(`📢 Broadcasting translated [${type}] to Agent Telegram channel...`);
+            const agentResult = await sendToChannel(translatedText, AGENT_CHANNEL_ID);
+            if (agentResult?.ok) {
+                console.log(`✅ Agent Channel post sent [${type}]`);
+            } else {
+                console.error(`❌ Agent Channel post failed [${type}]:`, agentResult?.description);
+            }
         }
 
     } catch (err) {
@@ -626,6 +640,18 @@ function startTelegramAgent() {
     const marketingBot = new TelegramMarketingBot();
     global.marketingBotInstance = marketingBot; // expose for admin commands
     marketingBot.start();
+
+    // ── Initialize Referral Agent Marketing Bot ──────────────────
+    const TelegramAgentMarketingBot = require('../marketing/telegramAgentMarketing');
+    const agentMarketingBot = new TelegramAgentMarketingBot();
+    global.agentMarketingBotInstance = agentMarketingBot;
+    agentMarketingBot.start();
+
+    // ── Initialize Premium Signals Bot ────────────────────────────
+    const TelegramSignalsMarketingBot = require('../marketing/telegramSignalsMarketing');
+    const signalsMarketingBot = new TelegramSignalsMarketingBot();
+    global.signalsMarketingBotInstance = signalsMarketingBot;
+    signalsMarketingBot.start();
 
     console.log('✅ Telegram Agent v3 ready:');
     console.log('   📢 Channel broadcast  — 2x/hour (:15, :45) 6am–11pm EAT');

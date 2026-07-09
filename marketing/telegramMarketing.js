@@ -7,7 +7,7 @@ const cron = require('node-cron');
 class TelegramMarketingBot {
     constructor() {
         this.botToken = process.env.TELEGRAM_BOT_TOKEN;
-        this.channelId = '-1002107223172';
+        this.channelId = process.env.TELEGRAM_CHANNEL_ID || '-1002107223172';
         this.isRunning = false;
         this.messagePool = this.loadMessagePool();
         this.lastPostTime = 0;
@@ -693,6 +693,7 @@ class TelegramMarketingBot {
             ];
             const shouldSendImage = Math.random() < 0.50 && visualTypes.includes(messageType);
 
+            let success = false;
             if (shouldSendImage) {
                 const imagePath = this.getImageForCategory(messageType);
                 if (imagePath) {
@@ -701,21 +702,57 @@ class TelegramMarketingBot {
                         caption += `\n\n${persona.emoji} ${persona.name}`;
                     }
                     console.log('📸 Sending with context-matched image');
-                    return await this.sendImageToChannel(imagePath, caption);
+                    success = await this.sendImageToChannel(imagePath, caption);
                 }
             }
 
-            // Send regular text message
-            const messageData = {
-                message: processedMessage,
-                persona: persona,
-                category: messageType
-            };
+            if (!success) {
+                // Send regular text message
+                const messageData = {
+                    message: processedMessage,
+                    persona: persona,
+                    category: messageType
+                };
+                success = await this.sendToChannel(messageData);
+            }
 
-            return await this.sendToChannel(messageData);
+            // If successfully sent a signal to the main channel, promote premium channel
+            if (success && (messageType === 'signals' || messageType === 'signal_confirmations') && this.channelId === (process.env.TELEGRAM_CHANNEL_ID || '-1002107223172')) {
+                setTimeout(() => {
+                    this.sendPremiumPromotion();
+                }, 15000);
+            }
+
+            return success;
         } catch (error) {
             console.error(`❌ Error sending ${messageType} message:`, error);
             return false;
+        }
+    }
+
+    async sendPremiumPromotion() {
+        try {
+            const promoImagePath = path.join(__dirname, 'images', 'premium_screenshot.jpg');
+            // If the placeholder file does not exist, copy one of the screenshots
+            if (!fs.existsSync(promoImagePath)) {
+                const srcPath = path.join(__dirname, 'images', 'avisignalsbotpage.jpg');
+                if (fs.existsSync(srcPath)) {
+                    fs.copyFileSync(srcPath, promoImagePath);
+                    console.log('📸 Created premium screenshot placeholder by copying avisignalsbotpage.jpg');
+                }
+            }
+
+            const caption = `🔥 *AviSignals Premium Channel is LIVE!* 🚀\n\nGet continuous, non-stop signals for *every betting site* sent straight to you! Over 25 signals every hour for your favorite sites.\n\n👑 *Subscribe now for only $2 a week!*\n👉 Get access here: avisignals.com/premium`;
+
+            if (fs.existsSync(promoImagePath)) {
+                console.log('📢 Sending premium promo with screenshot to main channel...');
+                await this.sendImageToChannel(promoImagePath, caption);
+            } else {
+                console.log('📢 Sending text-only premium promo to main channel...');
+                await this.sendToChannel(caption);
+            }
+        } catch (error) {
+            console.error('❌ Error sending premium promotion to main channel:', error);
         }
     }
 
