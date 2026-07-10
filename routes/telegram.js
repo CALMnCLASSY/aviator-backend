@@ -214,8 +214,17 @@ router.post('/agent-webhook', async (req, res) => {
     // Acknowledge immediately — Telegram retries if we don't respond in 60s
     res.status(200).json({ ok: true });
     try {
+        const update = req.body;
+        
+        // Handle chat_member updates for channel join linking
+        if (update.chat_member) {
+            const { handleChatMemberUpdate } = require('../Agent/evictionManager');
+            await handleChatMemberUpdate(update);
+            return;
+        }
+
         const { processWebhookUpdate } = require('../Agent/telegramAgent');
-        await processWebhookUpdate(req.body);
+        await processWebhookUpdate(update);
     } catch (err) {
         console.error('❌ agent-webhook error:', err.message);
     }

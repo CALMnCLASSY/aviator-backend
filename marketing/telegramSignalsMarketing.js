@@ -11,13 +11,13 @@ class TelegramSignalsMarketingBot extends TelegramMarketingBot {
             "1Win", "Betika", "OdiBets", "SportPesa", "Bet365", "1xBet",
             "22Bet", "Betway", "Melbet", "Hollywoodbets", "Parimatch", "Stake"
         ];
+        this.siteIndex = 0;
     }
 
     processMessage(message, category = null) {
-        const currentHour = new Date().getHours();
-        const activeSite = this.prioritySites[currentHour % this.prioritySites.length];
+        const activeSite = this.prioritySites[this.siteIndex % this.prioritySites.length];
         
-        // Pre-replace {{site}} with the active site of the hour so parent processMessage leaves it intact
+        // Pre-replace {{site}} with the active site so parent processMessage leaves it intact
         const messageWithSite = message.replace(/{{site}}/g, activeSite);
         
         return super.processMessage(messageWithSite, category);
@@ -32,8 +32,7 @@ class TelegramSignalsMarketingBot extends TelegramMarketingBot {
         console.log('📡 [Premium Signals] Starting loop...');
         while (this.isRunning) {
             try {
-                const currentHour = new Date().getHours();
-                const activeSite = this.prioritySites[currentHour % this.prioritySites.length];
+                const activeSite = this.prioritySites[this.siteIndex % this.prioritySites.length];
                 console.log(`📡 [Premium Signals] Starting signal cycle for site: ${activeSite}`);
 
                 // Step 1: Send Signal Confirmation
@@ -50,6 +49,9 @@ class TelegramSignalsMarketingBot extends TelegramMarketingBot {
                 } else {
                     await this.sendMessageForType('cancelled_signals');
                 }
+
+                // Increment site pointer so next cycle uses a different betting site
+                this.siteIndex++;
 
                 // Wait 50 seconds
                 await new Promise(resolve => setTimeout(resolve, 50 * 1000));

@@ -535,16 +535,19 @@ const server = app.listen(PORT, () => {
         const { startMarketingAgent }   = require('./Agent/marketingAgent');
         const { startTelegramAgent }    = require('./Agent/telegramAgent');
         const { startSocialMediaAgent } = require('./Agent/socialMediaAgent');
+        const { startEvictionManager }  = require('./Agent/evictionManager');
 
         // Start order matters:
         // 1. Telegram first — other agents send notifications through it
         // 2. Analytics — needs Supabase and Telegram both ready
         // 3. Marketing — needs email service and Supabase
         // 4. Social — depends on telegramAgent's sendToAdmin
+        // 5. Eviction — subscription cleanups
         startAgent('Telegram Agent',     startTelegramAgent);
         startAgent('Analytics Agent',    startAnalyticsAgent);
         startAgent('Marketing Agent',    startMarketingAgent);
         startAgent('Social Media Agent', startSocialMediaAgent);
+        startAgent('Eviction Manager',   startEvictionManager);
 
         console.log('\n✅ All agents initialised.\n');
     }, 3000);
