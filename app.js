@@ -430,6 +430,8 @@ const { handleChat } = require('./Agent/chatAgent');
 app.use('/api/users',     userRoutes);
 app.use('/api/auth',      strictLimiter, authRoutes);
 app.use('/api/payments',  strictLimiter, paymentRoutes);
+app.use('/api/webhooks',  paymentRoutes);
+app.use('/webhooks',      paymentRoutes);
 app.use('/api/telegram',  telegramRoutes);
 app.use('/api/marketing', marketingRoutes);
 app.use('/api/rounds',    roundRoutes);

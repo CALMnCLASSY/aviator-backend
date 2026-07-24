@@ -125,7 +125,7 @@ function generateUrgencyPost() {
 function generateEducationalPost() {
     const tips = [
         `📌 *Pro Tip: Cash out early on high-volatility rounds.*\n\nWhen the AviSignals bot shows a low confidence score, take your profit at 1.5x or 2x instead of pushing for 10x. Consistency beats luck.\n\n💡 Get the bot: ${BOT_URL}`,
-        `📌 *Free Trial vs Premium Code — what's the difference?*\n\n🆓 Free trial: 60-minute test session on ClassyBet/JetBet.\n💎 Premium code: Full 24H access, any site worldwide.\n\nTest and see how it works, then buy a code for the site you want!\n👉 ${BOT_URL}`,
+        `📌 *Free Trial vs Premium Code — what's the difference?*\n\n🆓 Free trial: 60-minute test session on assigned random trial site.\n💎 Premium code: Full 24H access, any site worldwide.\n\nTest and see how it works, then buy a code for the site you want!\n👉 ${BOT_URL}`,
         `📌 *Timing your bet matters more than bet size.*\n\nA $10 bet at the right moment beats a $100 bet at the wrong one. AviSignals tells you exactly when to enter and when to hold off.\n\n🔗 ${BOT_URL}`,
         `💡 *How to use AviSignals and play at the same time:*\n\n1. Open the bot on your phone\n2. Open your betting site on the same device or another\n3. Follow the signal — cash out when the bot says GO\n\n🆓 Start your free trial: ${BOT_URL}`,
         `📌 *The most common mistake new Aviator players make:*\n\nWaiting too long. The game is designed to test your nerves. Our bot removes the guesswork — it tells you the optimal cash-out window.\n\n🚀 Try the free trial: ${BOT_URL}`,

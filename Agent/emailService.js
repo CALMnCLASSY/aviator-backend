@@ -290,7 +290,7 @@ async function sendWelcomeEmail(to, firstName = '') {
     <ol style="color:#ccc;padding-left:20px;">
       <li style="margin-bottom:8px;">Go to the <a href="${BOT_URL}" style="color:${BRAND_GOLD};">Bot Page</a></li>
       <li style="margin-bottom:8px;">Click <strong style="color:${BRAND_GOLD};">FREE TRIAL (TEST BOT)</strong></li>
-      <li style="margin-bottom:8px;">Start the trial session on ClassyBet or JetBet</li>
+      <li style="margin-bottom:8px;">Start the trial session on your assigned trial site</li>
       <li style="margin-bottom:8px;">Copy the code and activate it to test accuracy</li>
       <li>Open your Aviator game alongside the bot and follow the predictions</li>
     </ol>

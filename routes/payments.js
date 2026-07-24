@@ -67,17 +67,185 @@ router.post('/usdt/create-order', async (req, res) => {
 });
 
 /**
+ * Helper function to handle full payment verification & activation dispatch
+ */
+async function fulfillVerifiedPayment(supabaseAdmin, reference, flwData = {}) {
+  if (!supabaseAdmin || !reference) return null;
+
+  try {
+    const { data: existing, error: findErr } = await supabaseAdmin
+      .from('payments')
+      .select('*, profiles(email, phone, full_name, assigned_site)')
+      .eq('reference', reference)
+      .single();
+
+    if (findErr || !existing) {
+      console.warn(`⚠️ Payment record for ${reference} not found in DB during fulfillment.`);
+      return null;
+    }
+
+    if (existing.status === 'verified') {
+      return existing;
+    }
+
+    const { data: updated, error: updateErr } = await supabaseAdmin
+      .from('payments')
+      .update({ 
+        status: 'verified',
+        updated_at: new Date().toISOString()
+      })
+      .eq('reference', reference)
+      .select('*, profiles(email, phone, full_name, assigned_site)');
+
+    if (updateErr) {
+      console.error(`❌ Failed to update payment ${reference} status:`, updateErr.message);
+      return null;
+    }
+
+    const payment = (updated && updated[0]) || existing;
+    const userEmail = payment.profiles?.email || flwData.customer?.email;
+    const userPhone = payment.profiles?.phone || flwData.customer?.phone_number;
+    const referrer = payment.profiles?.full_name;
+    const siteName = payment.profiles?.assigned_site || 'your selected betting site';
+
+    // Dispatch Email Activation Code
+    if (userEmail) {
+      try {
+        const emailService = require('../Agent/emailService');
+        const siteData = (global.activationCodes && global.activationCodes['Other']) || {};
+        const codeToReturn = siteData.daily || global.MASTER_ADMIN_CODE || 'OJ204';
+        emailService.sendActivationCodeEmail(userEmail, codeToReturn, siteName).catch(e => console.error("Email send err:", e.message));
+      } catch (e) {
+        console.error("Email service error:", e.message);
+      }
+    }
+
+    // Referral tracking log & alert
+    if (referrer) {
+      try {
+        await supabaseAdmin
+          .from('logs')
+          .insert([{
+            event_type: 'referral_purchase',
+            details: {
+              email: userEmail || 'Unknown',
+              phone: userPhone || 'N/A',
+              referrer: referrer,
+              amount: payment.amount,
+              currency: payment.currency || 'USD',
+              reference: payment.reference,
+              timestamp: new Date().toISOString()
+            }
+          }]);
+      } catch (dbErr) {
+        console.warn('⚠️ Referral purchase log insert error:', dbErr.message);
+      }
+
+      discordAgent.sendReferralPurchaseEvent({
+        email: userEmail || 'Unknown',
+        phone: userPhone || 'N/A',
+        referrer: referrer,
+        amount: payment.amount,
+        currency: payment.currency || 'USD',
+        reference: payment.reference
+      });
+    }
+
+    // Revenue alert to Discord
+    discordAgent.sendRevenueAlert({
+      email: userEmail || 'Unknown',
+      amount: payment.amount,
+      currency: payment.currency || 'USD',
+      method: payment.method || 'Flutterwave',
+      plan: payment.package || '24H Code',
+      flutterwaveRef: payment.reference
+    });
+
+    journeyAgent.logEvent(userEmail || reference, 'PAYMENT_VERIFIED', { ref: reference, method: 'Flutterwave' });
+
+    console.log(`✅ Payment ${reference} successfully verified & fulfilled!`);
+    return payment;
+  } catch (err) {
+    console.error(`❌ Error in fulfillVerifiedPayment for ${reference}:`, err.message);
+    return null;
+  }
+}
+
+/**
+ * FLUTTERWAVE WEBHOOK HANDLER
+ * Handles charge.completed events from Flutterwave IPNs
+ */
+const handleFlutterwaveWebhook = async (req, res) => {
+  try {
+    const secretHash = process.env.FLUTTERWAVE_SECRET_HASH;
+    const signature = req.headers['verif-hash'] || req.headers['Verif-Hash'] || req.headers['x-verif-hash'];
+
+    if (secretHash && signature && signature !== secretHash) {
+      console.warn(`⚠️ Flutterwave Webhook signature mismatch: got ${signature}, expected ${secretHash}`);
+      return res.status(401).json({ success: false, message: 'Invalid webhook signature' });
+    }
+
+    const payload = req.body || {};
+    const event = payload.event;
+    const data = payload.data || payload;
+    const isSuccessful = (event === 'charge.completed' || data.status === 'successful');
+    const reference = data.tx_ref || data.reference;
+
+    console.log(`📩 Flutterwave Webhook Received - Event: ${event || 'N/A'}, Status: ${data.status || 'N/A'}, Ref: ${reference || 'N/A'}`);
+
+    if (isSuccessful && reference) {
+      await fulfillVerifiedPayment(req.supabaseAdmin, reference, data);
+    } else {
+      console.log(`ℹ️ Webhook ignored - Event: ${event}, status: ${data.status}`);
+    }
+
+    res.status(200).json({ success: true, message: 'Webhook processed' });
+  } catch (err) {
+    console.error('❌ Flutterwave Webhook Error:', err.message);
+    res.status(200).json({ success: false, error: err.message });
+  }
+};
+
+router.post('/webhooks/flutterwave', handleFlutterwaveWebhook);
+router.post('/webhook/flutterwave', handleFlutterwaveWebhook);
+router.post('/flutterwave/webhook', handleFlutterwaveWebhook);
+router.post('/flutterwave', handleFlutterwaveWebhook);
+
+/**
  * VERIFY PAYMENT (Status Check)
  */
 router.get('/status/:reference', async (req, res) => {
   try {
-    const { data, error } = await req.supabaseAdmin
+    const { reference } = req.params;
+    let { data, error } = await req.supabaseAdmin
       .from('payments')
       .select('status, amount, reference')
-      .eq('reference', req.params.reference)
+      .eq('reference', reference)
       .single();
 
     if (error) throw error;
+
+    if (data.status === 'pending' && process.env.FLUTTERWAVE_SECRET_KEY) {
+      try {
+        const flwRes = await axios.get(
+          `https://api.flutterwave.com/v3/transactions/verify_by_reference?tx_ref=${encodeURIComponent(reference)}`,
+          {
+            headers: { Authorization: `Bearer ${process.env.FLUTTERWAVE_SECRET_KEY}` },
+            timeout: 7000
+          }
+        );
+        if (flwRes.data && flwRes.data.status === 'success' && flwRes.data.data) {
+          const txData = flwRes.data.data;
+          if (txData.status === 'successful') {
+            const fulfilled = await fulfillVerifiedPayment(req.supabaseAdmin, reference, txData);
+            if (fulfilled) data.status = 'verified';
+          }
+        }
+      } catch (flwErr) {
+        console.warn(`⚠️ Flutterwave status check fallback warning for ${reference}:`, flwErr.message);
+      }
+    }
+
     res.json({ success: true, status: data.status, payment: data });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -96,21 +264,44 @@ router.get('/bot/status/:reference', async (req, res) => {
       return res.json({ success: true, status: 'pending', message: 'Payment verification in progress' });
     }
 
-    const { data, error } = await req.supabaseAdmin
+    let { data, error } = await req.supabaseAdmin
       .from('payments')
       .select('status, amount, reference, created_at')
       .eq('reference', reference)
       .single();
 
-    if (error) {
-      // Payment record not found yet - still pending
+    if (error || !data) {
       return res.json({ success: true, status: 'pending', message: 'Waiting for payment verification' });
+    }
+
+    // ACTIVE FALLBACK VERIFICATION IF STILL PENDING
+    if (data.status === 'pending' && process.env.FLUTTERWAVE_SECRET_KEY) {
+      try {
+        const flwRes = await axios.get(
+          `https://api.flutterwave.com/v3/transactions/verify_by_reference?tx_ref=${encodeURIComponent(reference)}`,
+          {
+            headers: { Authorization: `Bearer ${process.env.FLUTTERWAVE_SECRET_KEY}` },
+            timeout: 7000
+          }
+        );
+
+        if (flwRes.data && flwRes.data.status === 'success' && flwRes.data.data) {
+          const txData = flwRes.data.data;
+          if (txData.status === 'successful') {
+            console.log(`⚡ Active polling verified Flutterwave tx_ref: ${reference}`);
+            const fulfilled = await fulfillVerifiedPayment(req.supabaseAdmin, reference, txData);
+            if (fulfilled) {
+              data.status = 'verified';
+            }
+          }
+        }
+      } catch (flwErr) {
+        console.warn(`⚠️ Flutterwave status check fallback warning for ${reference}:`, flwErr.message);
+      }
     }
 
     let codeToReturn = undefined;
     if (data.status === 'verified') {
-        // We use the fallback 'Other' daily code because site isn't tracked in payments DB,
-        // and 'Other' code is configured to work on any site.
         const siteData = (global.activationCodes && global.activationCodes['Other']) || {};
         codeToReturn = siteData.daily || global.MASTER_ADMIN_CODE || 'OJ204';
     }
