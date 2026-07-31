@@ -64,7 +64,6 @@ const REPLY_TO     = 'avisignalscnc@gmail.com';
 const SITE_URL     = 'https://avisignals.com';
 const BOT_URL      = `${SITE_URL}/bot.html`;
 const TELEGRAM_URL = 'https://t.me/AviSignalsAviatorPredictorBot';
-const ADMIN_WA     = 'https://wa.me/447400756162';
 const ADMIN_TG     = 'https://t.me/Aadmin4cnc';
 const BRAND_GOLD   = '#f1c40f';
 const BRAND_DARK   = '#10152b';
@@ -141,11 +140,8 @@ function wrapInTemplate({ previewText = '', headline, body, ctaText, ctaUrl, foo
       <p style="color:rgba(255,255,255,0.5);font-size:13px;margin:0 0 10px;">Need help? Reach us directly:</p>
       <table cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td style="padding-right:16px;">
-            <a href="${ADMIN_WA}" style="color:${BRAND_GREEN};font-size:13px;font-weight:600;text-decoration:none;">💬 WhatsApp Admin</a>
-          </td>
           <td>
-            <a href="${ADMIN_TG}" style="color:#229ED9;font-size:13px;font-weight:600;text-decoration:none;">✈️ Telegram Admin</a>
+            <a href="${ADMIN_TG}" style="color:#229ED9;font-size:13px;font-weight:600;text-decoration:none;">✈️ Telegram Admin (@Aadmin4cnc)</a>
           </td>
         </tr>
       </table>
@@ -532,7 +528,7 @@ async function sendHotLeadEmail(to, firstName = '') {
     </table>
 
     <p style="color:#ccc;margin-top:20px;">Ready? Click below and select <strong style="color:#fff;">Buy Code</strong> on the bot page. You'll be predicting within minutes.</p>
-    <p style="color:#ccc;">Any questions? Our admin replies fast on <a href="${ADMIN_WA}" style="color:${BRAND_GREEN};">WhatsApp</a> or <a href="${ADMIN_TG}" style="color:#229ED9;">Telegram</a>.</p>`;
+    <p style="color:#ccc;">Any questions? Our admin replies fast on <a href="${ADMIN_TG}" style="color:#229ED9;">Telegram</a>.</p>`;
 
     const html = wrapInTemplate({
         previewText: 'Everything about the AviSignals 24H code — price, payment, and activation',

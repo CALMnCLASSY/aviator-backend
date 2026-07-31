@@ -132,7 +132,6 @@ REGISTRATION:
 SUPPORT CONTACTS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 - Telegram admin (direct): [@Aadmin4cnc](https://t.me/Aadmin4cnc)
-- WhatsApp admin: [+44 7400 756162](https://wa.me/447400756162)  
 - Free signals Telegram channel: [AviSignals Channel](https://t.me/AviSignalsAviatorPredictorBot)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -158,7 +157,7 @@ OBJECTION HANDLING
 "$75 is too expensive" → "That's fair. Consider this: one good Aviator session can return that in minutes. And you have a full 24 hours — unlimited rounds, high profit potential. Or go weekly at $250 for 7 days — that's just $35/day!"
 "$250 or $800 is too much" → "Start with the $75 daily plan — prove it to yourself in one session. When you see the results, the weekly and monthly plans will make total sense."
 "It didn't work for me" → "Sorry to hear that. Let's fix it — which betting site were you on and what happened exactly? I'll get you sorted."
-"I want a refund" → "I hear you. Please contact our admin directly on WhatsApp for account help: [+44 7400 756162](https://wa.me/447400756162) — they'll assist you right away."
+"I want a refund" → "I hear you. Please contact our admin directly on Telegram for account help: [@Aadmin4cnc](https://t.me/Aadmin4cnc) — they'll assist you right away."
 "Can I get a discount?" → "Our weekly plan at $250 is already 52% cheaper than buying daily! That's the best deal we offer. But you can always start with the free trial first."
 `;
 
@@ -182,7 +181,7 @@ The user is showing BUY INTENT. This is a HOT lead.
 The user is frustrated or unhappy. Your job is to de-escalate first.
 → Start with a genuine apology. Don't be defensive.
 → Ask one specific question to understand the problem.
-→ Offer the admin WhatsApp as the fastest human resolution path.
+→ Offer the admin Telegram (@Aadmin4cnc) as the fastest human resolution path.
 → Do NOT try to upsell a frustrated user.
 `,
     needs_guidance: `
@@ -339,9 +338,8 @@ Simply select your platform on the bot dashboard, register/login, and sync the s
     }
 
     // 5. Help / Contact Support / Admin
-    if (/\b(help|support|contact|admin|owner|whatsapp|telegram|phone|chat|number|reach|representative|agent)\b/i.test(text)) {
+    if (/\b(help|support|contact|admin|owner|telegram|chat|reach|representative|agent)\b/i.test(text)) {
         return `For direct deposit assistance or account help, contact the admin:
-• 📱 **WhatsApp Support**: [+44 7400 756162](https://wa.me/447400756162)
 • 💬 **Telegram Support**: [@Aadmin4cnc](https://t.me/Aadmin4cnc)
 • 📣 **Official Telegram Channel**: [AviSignals Channel](https://t.me/AviSignalsAviatorPredictorBot)
 
@@ -516,7 +514,7 @@ async function handleChat(req, res) {
         } catch (groqErr) {
             console.error('❌ Groq API error:', groqErr.message);
             // Graceful fallback — don't show a blank error to the user
-            reply = `I'm having trouble understanding that. If its something you can't understand from the videos and tutorials provided on the app, reach out to our admin for immediate help on WhatsApp: [+44 7400 756162](https://wa.me/447400756162) or Telegram: [@Aadmin4cnc](https://t.me/Aadmin4cnc).`;
+            reply = `I'm having trouble understanding that. If its something you can't understand from the videos and tutorials provided on the app, reach out to our admin for immediate help on Telegram: [@Aadmin4cnc](https://t.me/Aadmin4cnc).`;
         }
 
         if (!reply) {
@@ -551,7 +549,7 @@ async function handleChat(req, res) {
     } catch (err) {
         console.error('❌ handleChat error:', err);
         return res.status(500).json({
-            reply: "I'm very busy with multiple chats right now. Please contact our admin: [WhatsApp](https://wa.me/447400756162)"
+            reply: "I'm very busy with multiple chats right now. Please contact our admin on Telegram: [@Aadmin4cnc](https://t.me/Aadmin4cnc)"
         });
     }
 }

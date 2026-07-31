@@ -344,7 +344,7 @@ BUSINESS OVERVIEW:
 - Paid tier: $75 = 24-hour continuous access code (weekly $250, monthly $800)
 - Payments: (card/Mobile money), USDT
 - Target market: Global — Africa, Europe, Asia, Americas
-- Key channels: Telegram channel, WhatsApp, website (avisignals.com)
+- Key channels: Telegram channel, website (avisignals.com)
 - Telegram channel posts 2x/hour (content broadcast) + 3 daily marketing events
 
 MARKETING EVENTS (scheduled daily):

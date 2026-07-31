@@ -35,7 +35,7 @@ const BUSINESS_CONTEXT = {
     conversionGoal: 0.15,    // target: 15% of signups convert to paid
     dailySignupGoal: 20,
     monthlyRevenueGoal: 5000, // USD
-    primaryChannel: 'Telegram + WhatsApp',
+    primaryChannel: 'Telegram',
 };
 
 // ─── Telegram sender with retry ──────────────────────────────
