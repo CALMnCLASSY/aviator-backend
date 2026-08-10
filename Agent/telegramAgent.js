@@ -78,11 +78,11 @@ function pickRandom(arr) {
 }
 
 const SALES_PITCH_POOL = [
-    `🚀 *Don't guess. Predict.*\n\nAviSignals uses real-time AI analysis to tell you when to cash out — before the round ends.\n\n🆓 Start your Free Trial session to see how it works: ${BOT_URL}\n💎 Want full 24H access? Just $75. No subscriptions.`,
-    `🎯 *Your edge in Aviator starts here.*\n\n3,200+ members are using AviSignals daily to time their cash-outs with precision.\n\n🆓 Test the bot with our Free Trial — no payment needed to start.\n👉 ${BOT_URL}`,
-    `⚡ *The smart way to play Aviator.*\n\nOur AI reads the game — follow the signal and cash out at the right moment.\n\n✅ Free trial available right now to test accuracy.\n🔗 ${BOT_URL}`,
-    `🔥 *Stop losing. Start predicting.*\n\nAviSignals gives you data-driven signals for every Aviator round.\n\n🆓 Try the free trial to train before buying a code:\n📲 ${BOT_URL}`,
-    `💡 *What if you knew when to cash out?*\n\nThat's exactly what AviSignals does. AI-powered round analysis. Real-time signals.\n\n🎁 Start your free trial session: ${BOT_URL}`,
+    `📡 *Get FREE Aviator predictions right now.*\n\nYou have 2 FREE options:\n1️⃣ Join our Telegram Signals Channel: https://t.me/avisignalspremium (Live signals 24/7)\n2️⃣ Try our 60-Min Bot Trial: ${BOT_URL} (Test live on today's trial site!)\n\n🔑 Want predictions for YOUR specific site? Get a Premium Code at ${BOT_URL}`,
+    `🎯 *Your edge in Aviator starts here.*\n\n3,200+ members are winning daily. Start for FREE:\n🟢 Free Signals Channel: https://t.me/avisignalspremium\n⚡ Free 60-Min Bot Trial: ${BOT_URL}\n\n💎 Want dedicated non-stop signals for YOUR platform? Buy a code at ${BOT_URL}`,
+    `⚡ *Free predictions. Real results.*\n\nTest our accuracy 100% free before spending a dime!\n📡 Telegram Channel: https://t.me/avisignalspremium\n🎮 Free Bot Trial on assigned trial site: ${BOT_URL}\n\n🔑 For platform-specific predictions on your favourite site: ${BOT_URL}`,
+    `🔥 *Stop guessing. Start winning on Aviator.*\n\nGet free signals on Telegram or test the bot live with a 60-minute Free Trial!\n\n🎁 Join Free Channel: https://t.me/avisignalspremium\n🚀 Start Free Trial: ${BOT_URL}\n💡 Want dedicated signals for SportyBet, 1Win or Betway? Get a code: ${BOT_URL}`,
+    `💡 *What if you got Aviator predictions for free?*\n\nTry both of our free options right now:\n1️⃣ Free Telegram Channel: https://t.me/avisignalspremium\n2️⃣ Free Bot Trial on today's trial site: ${BOT_URL}\n\n🎮 Ready for non-stop predictions on YOUR betting site? Get a Premium Code!`,
 ];
 
 const SUCCESS_STORIES = [
@@ -104,50 +104,45 @@ function generateSalesPitch() {
 function generateSuccessStory() {
     const s = SUCCESS_STORIES[storyIndex % SUCCESS_STORIES.length];
     storyIndex++;
-    const text = `🏆 *Real member. Real results.*\n\n_"I started with ${s.start} on ${s.site}. After ${s.days} day(s) using AviSignals, I walked away with ${s.end}."_\n— *${s.name}*, ${s.city}\n\n🚀 Start your own story — try the free trial to see it work: ${BOT_URL}`;
+    const text = `🏆 *Real member. Real results.*\n\n_"I started with ${s.start} on ${s.site}. After ${s.days} day(s) using AviSignals, I walked away with ${s.end}."_\n— *${s.name}*, ${s.city}\n\n🚀 Join the free channel for live signals: https://t.me/avisignalspremium\n🔑 Want dedicated signals for YOUR site? ${BOT_URL}`;
     return { choices: [{ message: { content: text } }] };
 }
 
 function generateSignalTease() {
     const multipliers = ['7.4x', '12.1x', '3.8x', '18.6x', '5.2x', '9.9x', '22.4x', '35.2x', '16.1x'];
     const multi = pickRandom(multipliers);
-    const text = `📡 *Signal confirmed: ${multi}*\n\nOur bot called it. Members who followed the signal cashed out at exactly the right moment. 🎯\n\n🆓 Try the free trial to see it in action:\n👉 ${BOT_URL}`;
+    const text = `📡 *Signal confirmed: ${multi}*\n\nOur channel called it. Members who followed the signal cashed out at exactly the right moment. 🎯\n\n🟢 Join the FREE Premium Signals Channel:\n👉 https://t.me/avisignalspremium\n🔑 Want YOUR site's dedicated signals? ${BOT_URL}`;
     return { choices: [{ message: { content: text } }] };
 }
 
 function generateUrgencyPost() {
     const hour = new Date().getHours();
     const session = hour < 12 ? 'morning session' : hour < 18 ? 'afternoon session' : "tonight's session";
-    const text = `⏰ *The ${session} is LIVE right now.*\n\nMembers are already using their codes. Don't miss today's rounds.\n\n🆓 Try the free trial session to test accuracy.\n💎 Want 24H access? Get a premium code for $75.\n\n👉 ${BOT_URL}`;
+    const text = `⏰ *The ${session} is LIVE right now.*\n\nMembers are winning on today's trial site and Telegram channel.\n\n🟢 Free Telegram Channel: https://t.me/avisignalspremium\n⚡ Free Bot Trial (Assigned Site): ${BOT_URL}\n🔑 Want signals for YOUR specific platform? Get a Premium Code at ${BOT_URL}`;
     return { choices: [{ message: { content: text } }] };
 }
 
 function generateEducationalPost() {
     const tips = [
-        `📌 *Pro Tip: Cash out early on high-volatility rounds.*\n\nWhen the AviSignals bot shows a low confidence score, take your profit at 1.5x or 2x instead of pushing for 10x. Consistency beats luck.\n\n💡 Get the bot: ${BOT_URL}`,
-        `📌 *Free Trial vs Premium Code — what's the difference?*\n\n🆓 Free trial: 60-minute test session on assigned random trial site.\n💎 Premium code: Full 24H access, any site worldwide.\n\nTest and see how it works, then buy a code for the site you want!\n👉 ${BOT_URL}`,
-        `📌 *Timing your bet matters more than bet size.*\n\nA $10 bet at the right moment beats a $100 bet at the wrong one. AviSignals tells you exactly when to enter and when to hold off.\n\n🔗 ${BOT_URL}`,
-        `💡 *How to use AviSignals and play at the same time:*\n\n1. Open the bot on your phone\n2. Open your betting site on the same device or another\n3. Follow the signal — cash out when the bot says GO\n\n🆓 Start your free trial: ${BOT_URL}`,
-        `📌 *The most common mistake new Aviator players make:*\n\nWaiting too long. The game is designed to test your nerves. Our bot removes the guesswork — it tells you the optimal cash-out window.\n\n🚀 Try the free trial: ${BOT_URL}`,
+        `📌 *Pro Tip: Cash out early on high-volatility rounds.*\n\nWhen the AviSignals bot shows a low confidence score, take your profit at 1.5x or 2x instead of pushing for 10x. Consistency beats luck.\n\n📡 Free channel: https://t.me/avisignalspremium | ⚡ Free Trial: ${BOT_URL}`,
+        `📌 *Free Trial vs Free Channel vs Premium Code — what's the difference?*\n\n🟢 Free Channel: Live Telegram signals rotating across all sites.\n⚡ Free Trial: 60-min bot access on today's assigned trial site.\n🔑 Premium Code: Non-stop predictions locked to YOUR specific betting site!\n\nTry the free options first, then get your code! ${BOT_URL}`,
+        `📌 *Timing your bet matters more than bet size.*\n\nA $10 bet at the right moment beats a $100 bet at the wrong one. AviSignals tells you exactly when to enter and cash out.\n\n📡 Free channel: https://t.me/avisignalspremium | 🚀 Free Trial: ${BOT_URL}`,
+        `💡 *How to test AviSignals 100% free:*\n\n1. Join our free Telegram channel: https://t.me/avisignalspremium\n2. Grab a free 60-min trial code on ${BOT_URL}\n3. Play rounds on the assigned trial site and watch your wins grow!\n4. Ready for your own site? Buy a Premium Code!`,
+        `📌 *The most common mistake new Aviator players make:*\n\nWaiting too long. The game tests your nerves. Our signals remove the guesswork.\n\n🟢 Free predictions channel: https://t.me/avisignalspremium\n⚡ Free bot trial: ${BOT_URL}`,
     ];
     return { choices: [{ message: { content: pickRandom(tips) } }] };
 }
 
 function generateTestimonialPost() {
     const testimonials = [
-        { text: "I was skeptical but tried the free trial. The accuracy shocked me. Bought the premium code immediately.", name: "Kevin R.", city: "Nairobi" },
-        { text: "Used the free trial to test accuracy yesterday. It nailed 4 rounds in a row. Bought a code for my site today.", name: "Aisha M.", city: "Dubai" },
-        { text: "Finally an Aviator tool that actually works. Been using it for 2 weeks. The predictions are consistently on point.", name: "Chidi O.", city: "Lagos" },
-        { text: "Best $75 I've spent. Used it for a full 24 hours on SportyBet. More than covered the cost in the first hour.", name: "Tom K.", city: "Madrid" },
-        { text: "I've tried other Aviator bots and they were useless. AviSignals actually works. The predictions are very accurate.", name: "James M.", city: "Sydney" },
-        { text: "I was skeptical but tried the free trial. The accuracy shocked me. Bought the premium code immediately.", name: "Grace W.", city: "Mombasa" },
-        { text: "Used the free trial to test accuracy yesterday. It nailed 4 rounds in a row. Bought a code for my site today.", name: "Brian O.", city: "Cape Town" },
-        { text: "Finally an Aviator tool that actually works. Been using it for 2 weeks. The predictions are consistently on point.", name: "Amara K.", city: "Kampala" },
-        { text: "My friend told me about AviSignals. I tried the free trial to see how the bot works. Got the paid code the same day.", name: "David N.", city: "London" },
-        { text: "Best $75 I've spent. Used it for a full 24 hours on SportyBet. More than covered the cost in the first hour.", name: "Fatima H.", city: "Dar es Salaam" },
+        { text: "I started with the free trial code on the assigned site. Made profit in 30 minutes! Then bought a code for SportyBet.", name: "Kevin R.", city: "Nairobi" },
+        { text: "Joined the free Telegram channel and tested the 60-minute trial code. Called 4 rounds straight. Got my platform code right after.", name: "Aisha M.", city: "Dubai" },
+        { text: "Free predictions are real. Used the free trial first to confirm accuracy, then bought a 7-day code for my site.", name: "Chidi O.", city: "Lagos" },
+        { text: "Best $75 spent. Tested on the free trial site first, saw it work live, then bought a code for my main site.", name: "Tom K.", city: "Madrid" },
+        { text: "I've tried other Aviator bots. AviSignals is the only one that actually predicts rounds correctly. The free trial proved it.", name: "James M.", city: "Sydney" },
     ];
     const t = pickRandom(testimonials);
-    const text = `💬 _"${t.text}"_\n— *${t.name}*, ${t.city}\n\n✅ The free trial is available right now — no payment needed to start.\n👉 ${BOT_URL}`;
+    const text = `💬 _"${t.text}"_\n— *${t.name}*, ${t.city}\n\n🟢 Free Channel: https://t.me/avisignalspremium\n⚡ Free Trial Code: ${BOT_URL}\n🔑 Platform Codes from $75: ${BOT_URL}`;
     return { choices: [{ message: { content: text } }] };
 }
 
