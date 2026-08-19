@@ -378,6 +378,11 @@ router.get('/bot/status/:reference', async (req, res) => {
       }
     }
 
+    // If in-memory state is verified, sync data status
+    if (global.botPayments && global.botPayments[reference]?.status === 'verified') {
+      data.status = 'verified';
+    }
+
     // ACTIVE FALLBACK VERIFICATION IF STILL PENDING
     if (data.status === 'pending' && process.env.FLUTTERWAVE_SECRET_KEY) {
       try {
