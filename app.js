@@ -27,7 +27,7 @@ require('dotenv').config();
 
 // ─── Clean up common copy-paste errors in Env Vars ────────────
 if (process.env.SUPABASE_URL) {
-    process.env.SUPABASE_URL = process.env.SUPABASE_URL.trim().replace(/\/+$/, '');
+    process.env.SUPABASE_URL = process.env.SUPABASE_URL.trim().replace(/\/+$/, '').replace(/\/rest\/v1$/, '');
 }
 if (process.env.SUPABASE_KEY) {
     process.env.SUPABASE_KEY = process.env.SUPABASE_KEY.trim();

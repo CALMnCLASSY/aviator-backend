@@ -69,40 +69,97 @@ router.post('/usdt/create-order', async (req, res) => {
 /**
  * Helper function to handle full payment verification & activation dispatch
  */
-async function fulfillVerifiedPayment(supabaseAdmin, reference, flwData = {}) {
-  if (!supabaseAdmin || !reference) return null;
+async function fulfillVerifiedPayment(dbClient, reference, flwData = {}) {
+  const db = dbClient || global.supabaseAdmin || global.supabase;
+  if (!db || !reference) return null;
 
   try {
-    const { data: existing, error: findErr } = await supabaseAdmin
+    const { data: existing, error: findErr } = await db
       .from('payments')
       .select('*, profiles(email, phone, full_name, assigned_site)')
       .eq('reference', reference)
       .single();
 
+    let payment = existing;
+
     if (findErr || !existing) {
-      console.warn(`⚠️ Payment record for ${reference} not found in DB during fulfillment.`);
-      return null;
+      console.warn(`⚠️ Payment record for ${reference} not found in DB during fulfillment. Creating record...`);
+      const userEmail = flwData.customer?.email;
+      const userPhone = flwData.customer?.phone_number;
+      const contact = userEmail || userPhone;
+      let profileId = null;
+
+      if (contact) {
+        try {
+          const { data: existingProf } = await db
+            .from('profiles')
+            .select('id')
+            .or(`email.eq.${contact},phone.eq.${contact}`)
+            .single();
+
+          if (existingProf) {
+            profileId = existingProf.id;
+          } else {
+            const { data: newProf } = await db
+              .from('profiles')
+              .insert([{
+                email: userEmail || null,
+                phone: userPhone || null,
+                created_at: new Date().toISOString()
+              }])
+              .select('id')
+              .single();
+            if (newProf) profileId = newProf.id;
+          }
+        } catch (profErr) {
+          console.warn('⚠️ Auto profile creation error:', profErr.message);
+        }
+      }
+
+      const { data: createdPay, error: insertPayErr } = await db
+        .from('payments')
+        .insert([{
+          user_id: profileId,
+          amount: flwData.amount || 75,
+          currency: flwData.currency || 'USD',
+          method: 'Flutterwave',
+          status: 'verified',
+          reference: reference,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }])
+        .select('*, profiles(email, phone, full_name, assigned_site)')
+        .single();
+
+      if (insertPayErr) {
+        console.error('❌ Failed to insert fallback payment record:', insertPayErr.message);
+      } else {
+        payment = createdPay;
+      }
+    } else {
+      if (existing.status === 'verified') {
+        return existing;
+      }
+
+      const { data: updated, error: updateErr } = await db
+        .from('payments')
+        .update({ 
+          status: 'verified',
+          updated_at: new Date().toISOString()
+        })
+        .eq('reference', reference)
+        .select('*, profiles(email, phone, full_name, assigned_site)');
+
+      if (updateErr) {
+        console.error(`❌ Failed to update payment ${reference} status:`, updateErr.message);
+        return null;
+      }
+
+      payment = (updated && updated[0]) || existing;
     }
 
-    if (existing.status === 'verified') {
-      return existing;
-    }
+    if (!payment) return null;
 
-    const { data: updated, error: updateErr } = await supabaseAdmin
-      .from('payments')
-      .update({ 
-        status: 'verified',
-        updated_at: new Date().toISOString()
-      })
-      .eq('reference', reference)
-      .select('*, profiles(email, phone, full_name, assigned_site)');
-
-    if (updateErr) {
-      console.error(`❌ Failed to update payment ${reference} status:`, updateErr.message);
-      return null;
-    }
-
-    const payment = (updated && updated[0]) || existing;
     const userEmail = payment.profiles?.email || flwData.customer?.email;
     const userPhone = payment.profiles?.phone || flwData.customer?.phone_number;
     const referrer = payment.profiles?.full_name;
@@ -123,7 +180,7 @@ async function fulfillVerifiedPayment(supabaseAdmin, reference, flwData = {}) {
     // Referral tracking log & alert
     if (referrer) {
       try {
-        await supabaseAdmin
+        await db
           .from('logs')
           .insert([{
             event_type: 'referral_purchase',
@@ -194,7 +251,8 @@ const handleFlutterwaveWebhook = async (req, res) => {
     console.log(`📩 Flutterwave Webhook Received - Event: ${event || 'N/A'}, Status: ${data.status || 'N/A'}, Ref: ${reference || 'N/A'}`);
 
     if (isSuccessful && reference) {
-      await fulfillVerifiedPayment(req.supabaseAdmin, reference, data);
+      const dbClient = req.supabaseAdmin || req.supabase;
+      await fulfillVerifiedPayment(dbClient, reference, data);
     } else {
       console.log(`ℹ️ Webhook ignored - Event: ${event}, status: ${data.status}`);
     }
@@ -217,15 +275,22 @@ router.post('/flutterwave', handleFlutterwaveWebhook);
 router.get('/status/:reference', async (req, res) => {
   try {
     const { reference } = req.params;
-    let { data, error } = await req.supabaseAdmin
+    const dbClient = req.supabaseAdmin || req.supabase;
+    if (!dbClient) {
+      return res.status(500).json({ success: false, error: 'Database not initialized' });
+    }
+
+    let { data, error } = await dbClient
       .from('payments')
       .select('status, amount, reference')
       .eq('reference', reference)
       .single();
 
-    if (error) throw error;
+    if (error && !data) {
+      return res.json({ success: true, status: 'pending', message: 'Payment in progress' });
+    }
 
-    if (data.status === 'pending' && process.env.FLUTTERWAVE_SECRET_KEY) {
+    if (data && data.status === 'pending' && process.env.FLUTTERWAVE_SECRET_KEY) {
       try {
         const flwRes = await axios.get(
           `https://api.flutterwave.com/v3/transactions/verify_by_reference?tx_ref=${encodeURIComponent(reference)}`,
@@ -237,7 +302,7 @@ router.get('/status/:reference', async (req, res) => {
         if (flwRes.data && flwRes.data.status === 'success' && flwRes.data.data) {
           const txData = flwRes.data.data;
           if (txData.status === 'successful') {
-            const fulfilled = await fulfillVerifiedPayment(req.supabaseAdmin, reference, txData);
+            const fulfilled = await fulfillVerifiedPayment(dbClient, reference, txData);
             if (fulfilled) data.status = 'verified';
           }
         }
@@ -246,7 +311,7 @@ router.get('/status/:reference', async (req, res) => {
       }
     }
 
-    res.json({ success: true, status: data.status, payment: data });
+    res.json({ success: true, status: data?.status || 'pending', payment: data });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -259,19 +324,30 @@ router.get('/status/:reference', async (req, res) => {
 router.get('/bot/status/:reference', async (req, res) => {
   try {
     const { reference } = req.params;
+    const dbClient = req.supabaseAdmin || req.supabase;
     
-    if (!req.supabaseAdmin) {
+    if (!dbClient) {
       return res.json({ success: true, status: 'pending', message: 'Payment verification in progress' });
     }
 
-    let { data, error } = await req.supabaseAdmin
+    let { data, error } = await dbClient
       .from('payments')
       .select('status, amount, reference, created_at')
       .eq('reference', reference)
       .single();
 
     if (error || !data) {
-      return res.json({ success: true, status: 'pending', message: 'Waiting for payment verification' });
+      // Check in-memory store as fallback
+      if (global.botPayments && global.botPayments[reference]) {
+        data = {
+          reference,
+          amount: global.botPayments[reference].amount || 75,
+          status: global.botPayments[reference].status || 'pending',
+          created_at: global.botPayments[reference].created_at || new Date().toISOString()
+        };
+      } else {
+        return res.json({ success: true, status: 'pending', message: 'Waiting for payment verification' });
+      }
     }
 
     // ACTIVE FALLBACK VERIFICATION IF STILL PENDING
@@ -289,7 +365,7 @@ router.get('/bot/status/:reference', async (req, res) => {
           const txData = flwRes.data.data;
           if (txData.status === 'successful') {
             console.log(`⚡ Active polling verified Flutterwave tx_ref: ${reference}`);
-            const fulfilled = await fulfillVerifiedPayment(req.supabaseAdmin, reference, txData);
+            const fulfilled = await fulfillVerifiedPayment(dbClient, reference, txData);
             if (fulfilled) {
               data.status = 'verified';
             }
@@ -325,42 +401,90 @@ router.get('/bot/status/:reference', async (req, res) => {
 });
 
 /**
- * ADMIN VERIFY
- * Updates Supabase status and sends alerts
+ * ADMIN VERIFICATION HANDLER
+ * Handles manual verification/rejection from Admin dashboard or Telegram bot
  */
-router.post('/admin-verify/:reference', async (req, res) => {
+const handleAdminVerify = async (req, res) => {
   try {
-    const { verified, reason } = req.body;
+    const { verified, status, reason } = req.body;
     const { reference } = req.params;
+    const dbClient = req.supabaseAdmin || req.supabase;
 
-    const { data, error } = await req.supabaseAdmin
+    const isVerified = (verified === true || verified === 'true' || verified === 'verified' || status === 'verified');
+    const targetStatus = isVerified ? 'verified' : 'rejected';
+
+    if (!dbClient) {
+      return res.status(500).json({ success: false, error: 'Database client not initialized' });
+    }
+
+    // Check if record exists
+    let { data: existing } = await dbClient
       .from('payments')
-      .update({ status: verified ? 'verified' : 'rejected' })
+      .select('*, profiles(email, phone, full_name, assigned_site)')
       .eq('reference', reference)
-      .select('*, profiles(email, phone, full_name, assigned_site)');
+      .single();
 
-    if (error) throw error;
+    let data = null;
 
-    // Discord Alert
-    if (verified && data[0]) {
-        const payment = data[0];
-        const userEmail = payment.profiles?.email;
-        const userPhone = payment.profiles?.phone;
+    if (existing) {
+      const { data: updated, error: updateErr } = await dbClient
+        .from('payments')
+        .update({ 
+          status: targetStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('reference', reference)
+        .select('*, profiles(email, phone, full_name, assigned_site)');
+
+      if (updateErr) throw updateErr;
+      data = updated;
+    } else {
+      // Record not found in DB - insert new verified payment record
+      const memPayment = (global.botPayments && global.botPayments[reference]) || 
+                         (global.selarPayments && global.selarPayments[reference]) || 
+                         (global.usdtPayments && global.usdtPayments[reference]) || {};
+
+      const { data: inserted, error: insertErr } = await dbClient
+        .from('payments')
+        .insert([{
+          amount: memPayment.amount || memPayment.priceUsd || 75,
+          currency: memPayment.currency || 'USD',
+          method: memPayment.paymentType || 'Manual Admin',
+          status: targetStatus,
+          reference: reference,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }])
+        .select('*, profiles(email, phone, full_name, assigned_site)');
+
+      if (insertErr) console.warn('⚠️ Fallback insert error on verify:', insertErr.message);
+      data = inserted;
+    }
+
+    // Discord Alert & Fulfillment
+    const payment = (data && data[0]) || existing;
+    if (isVerified && payment) {
+        const userEmail = payment.profiles?.email || payment.email;
+        const userPhone = payment.profiles?.phone || payment.phone;
         const referrer = payment.profiles?.full_name;
         const siteName = payment.profiles?.assigned_site || 'your selected betting site';
 
-        // Send Email
+        // Send Email Activation Code
         if (userEmail) {
-            const emailService = require('../Agent/emailService');
-            const siteData = (global.activationCodes && global.activationCodes['Other']) || {};
-            const codeToReturn = siteData.daily || global.MASTER_ADMIN_CODE || 'OJ204';
-            emailService.sendActivationCodeEmail(userEmail, codeToReturn, siteName).catch(e => console.error("Email err", e));
+            try {
+                const emailService = require('../Agent/emailService');
+                const siteData = (global.activationCodes && global.activationCodes['Other']) || {};
+                const codeToReturn = siteData.daily || global.MASTER_ADMIN_CODE || 'OJ204';
+                emailService.sendActivationCodeEmail(userEmail, codeToReturn, siteName).catch(e => console.error("Email err", e));
+            } catch (e) {
+                console.error("Email service error:", e.message);
+            }
         }
 
         // Referral System tracking
         if (referrer) {
             try {
-                await req.supabaseAdmin
+                await dbClient
                     .from('logs')
                     .insert([{
                         event_type: 'referral_purchase',
@@ -392,12 +516,12 @@ router.post('/admin-verify/:reference', async (req, res) => {
             email: userEmail || 'Unknown', 
             amount: payment.amount,
             currency: payment.currency || 'USD',
-            method: payment.method || 'Unknown',
+            method: payment.method || 'Manual Admin',
             plan: payment.package || '24H Code',
             flutterwaveRef: payment.reference
         });
     } else {
-        discordAgent.sendPaymentEvent(verified ? 'PAYMENT_VERIFIED' : 'PAYMENT_REJECTED', { 
+        discordAgent.sendPaymentEvent(isVerified ? 'PAYMENT_VERIFIED' : 'PAYMENT_REJECTED', { 
             ref: reference, 
             reason: reason || 'N/A' 
         });
@@ -405,9 +529,17 @@ router.post('/admin-verify/:reference', async (req, res) => {
 
     res.json({ success: true, data });
   } catch (err) {
+    console.error('❌ Admin verify error:', err.message);
     res.status(500).json({ success: false, error: err.message });
   }
-});
+};
+
+router.post('/admin-verify/:reference', handleAdminVerify);
+router.post('/bot/verify/:reference', handleAdminVerify);
+router.post('/bot/admin-verify/:reference', handleAdminVerify);
+router.post('/selar/admin-verify/:reference', handleAdminVerify);
+router.post('/usdt/admin-verify/:reference', handleAdminVerify);
+router.post('/verify/:reference', handleAdminVerify);
 
 /**
  * CREATE BOT PAYMENT RECORD
@@ -424,12 +556,25 @@ router.post('/bot/create-payment/:reference', async (req, res) => {
 
     const contact = customerInfo.contact;
     let profileId = null;
+    const dbClient = req.supabaseAdmin || req.supabase;
+
+    // Track in memory
+    global.botPayments = global.botPayments || {};
+    global.botPayments[reference] = {
+      contact,
+      email: customerInfo.email || (contact.includes('@') ? contact : null),
+      packageName: customerInfo.packageName || 'Daily Activation',
+      amount: customerInfo.amount || 75,
+      site: customerInfo.bettingSite || 'Unknown',
+      status: 'pending',
+      created_at: new Date().toISOString()
+    };
 
     // Find or create profile to get proper UUID for user_id
-    if (req.supabaseAdmin) {
+    if (dbClient) {
       try {
         // Try to find existing profile by email or phone
-        const { data: existingProfile } = await req.supabaseAdmin
+        const { data: existingProfile } = await dbClient
           .from('profiles')
           .select('id')
           .or(`email.eq.${contact},phone.eq.${contact}`)
@@ -439,7 +584,7 @@ router.post('/bot/create-payment/:reference', async (req, res) => {
           profileId = existingProfile.id;
         } else {
           // Create new profile if doesn't exist
-          const { data: newProfile, error: createErr } = await req.supabaseAdmin
+          const { data: newProfile, error: createErr } = await dbClient
             .from('profiles')
             .insert([{
               email: contact.includes('@') ? contact : null,
@@ -452,29 +597,27 @@ router.post('/bot/create-payment/:reference', async (req, res) => {
           if (newProfile) {
             profileId = newProfile.id;
           } else {
-            console.warn('⚠️ Profile creation failed:', createErr?.message);
+            console.warn('⚠️ Profile creation note:', createErr?.message);
           }
         }
 
-        // Insert pending payment record with proper UUID
-        if (profileId) {
-          const { error: dbError } = await req.supabaseAdmin
-            .from('payments')
-            .insert([{
-              user_id: profileId,
-              amount: customerInfo.amount || 75,
-              currency: 'USD',
-              method: 'Flutterwave',
-              status: 'pending',
-              reference: reference,
-              created_at: new Date().toISOString()
-            }]);
+        // Insert pending payment record
+        const { error: dbError } = await dbClient
+          .from('payments')
+          .insert([{
+            user_id: profileId,
+            amount: customerInfo.amount || 75,
+            currency: 'USD',
+            method: 'Flutterwave',
+            status: 'pending',
+            reference: reference,
+            created_at: new Date().toISOString()
+          }]);
 
-          if (dbError) {
-            console.warn('⚠️ Supabase Payment Insert (Non-fatal):', dbError.message);
-          } else {
-            console.log(`✅ Payment record created: ${reference} for user ${contact}`);
-          }
+        if (dbError) {
+          console.warn('⚠️ Supabase Payment Insert (Non-fatal):', dbError.message);
+        } else {
+          console.log(`✅ Payment record created: ${reference} for user ${contact}`);
         }
       } catch (dbErr) {
         console.error('⚠️ Database operation error (non-fatal):', dbErr.message);

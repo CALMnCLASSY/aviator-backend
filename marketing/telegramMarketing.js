@@ -742,7 +742,7 @@ class TelegramMarketingBot {
                 }
             }
 
-            const caption = `🔥 *AviSignals Premium Channel is LIVE!* 🚀\n\nGet continuous, non-stop signals for *every betting site* sent straight to you! Over 25 signals every hour for your favorite sites.\n\n👑 *Subscribe now for only $2 a week!*\n👉 Get access here: avisignals.com/premium`;
+            const caption = `🔥 *AviSignals Premium Channel is LIVE!* 🚀\n\nGet continuous, non-stop signals for *every betting site* sent straight to you! Over 25 signals every hour for your favorite sites.\n\n👑 *Join now for 100% FREE!* 🎁\n👉 Get free access: https://t.me/avisignalspremium`;
 
             if (fs.existsSync(promoImagePath)) {
                 console.log('📢 Sending premium promo with screenshot to main channel...');

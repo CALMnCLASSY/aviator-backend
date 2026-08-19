@@ -35,13 +35,16 @@ router.post('/login', (req, res) => {
  */
 router.get('/stats', async (req, res) => {
     try {
+        const db = req.supabaseAdmin || req.supabase;
+        if (!db) return res.status(500).json({ success: false, error: 'Database client unavailable' });
+
         // 1. Total Users
-        const { count: totalUsers } = await req.supabaseAdmin
+        const { count: totalUsers } = await db
             .from('profiles')
             .select('*', { count: 'exact', head: true });
 
         // 2. Pending Payments
-        const { count: pendingPayments } = await req.supabaseAdmin
+        const { count: pendingPayments } = await db
             .from('payments')
             .select('*', { count: 'exact', head: true })
             .eq('status', 'pending');
@@ -49,19 +52,19 @@ router.get('/stats', async (req, res) => {
         // 3. Activations Today
         const today = new Date();
         today.setHours(0,0,0,0);
-        const { count: activationsToday } = await req.supabaseAdmin
+        const { count: activationsToday } = await db
             .from('activations')
             .select('*', { count: 'exact', head: true })
             .gte('activated_at', today.toISOString());
 
         // 4. Revenue Today (Verified Payments)
-        const { data: paymentsToday } = await req.supabaseAdmin
+        const { data: paymentsToday } = await db
             .from('payments')
             .select('amount')
             .eq('status', 'verified')
             .gte('created_at', today.toISOString());
         
-        const revenueToday = paymentsToday.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+        const revenueToday = (paymentsToday || []).reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
 
         res.json({
             success: true,
@@ -70,7 +73,7 @@ router.get('/stats', async (req, res) => {
                 pendingVerifications: pendingPayments || 0,
                 todayRevenue: revenueToday,
                 todayActivations: activationsToday || 0,
-                onlineCount: await getOnlineCount(req.supabaseAdmin)
+                onlineCount: await getOnlineCount(db)
             }
         });
     } catch (err) {
@@ -92,7 +95,10 @@ async function getOnlineCount(supabase) {
  */
 router.get('/pending-verifications', async (req, res) => {
     try {
-        const { data, error } = await req.supabaseAdmin
+        const db = req.supabaseAdmin || req.supabase;
+        if (!db) return res.status(500).json({ success: false, error: 'Database client unavailable' });
+
+        const { data, error } = await db
             .from('payments')
             .select('*, profiles(email, phone)')
             .eq('status', 'pending')
@@ -107,7 +113,7 @@ router.get('/pending-verifications', async (req, res) => {
                 id: p.reference,
                 user: p.profiles?.email || 'Unknown',
                 phone: p.profiles?.phone || 'N/A',
-                amount: `${p.amount} ${p.currency}`,
+                amount: `${p.amount} ${p.currency || 'USD'}`,
                 timestamp: p.created_at,
                 status: p.status,
                 raw: p
@@ -124,18 +130,21 @@ router.get('/pending-verifications', async (req, res) => {
  */
 router.post('/clear-expired-verifications', async (req, res) => {
     try {
+        const db = req.supabaseAdmin || req.supabase;
+        if (!db) return res.status(500).json({ success: false, error: 'Database client unavailable' });
+
         const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
         
-        const { data, error } = await req.supabaseAdmin
+        const { data, error } = await db
             .from('payments')
-            .delete() // or .update({ status: 'rejected' })
+            .delete()
             .eq('status', 'pending')
             .lt('created_at', yesterday)
             .select();
 
         if (error) throw error;
 
-        res.json({ success: true, message: `Cleared ${data.length} expired verifications`, count: data.length });
+        res.json({ success: true, message: `Cleared ${data ? data.length : 0} expired verifications`, count: data ? data.length : 0 });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
@@ -146,7 +155,10 @@ router.post('/clear-expired-verifications', async (req, res) => {
  */
 router.get('/users', async (req, res) => {
     try {
-        const { data, error } = await req.supabaseAdmin
+        const db = req.supabaseAdmin || req.supabase;
+        if (!db) return res.status(500).json({ success: false, error: 'Database client unavailable' });
+
+        const { data, error } = await db
             .from('profiles')
             .select('*, activations(count), payments(count)')
             .order('last_seen', { ascending: false, nullsFirst: false });
