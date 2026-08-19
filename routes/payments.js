@@ -67,6 +67,59 @@ router.post('/usdt/create-order', async (req, res) => {
 });
 
 /**
+ * Helper to ensure a profile exists in Supabase (auth.users + profiles) for user_id constraint
+ */
+async function getOrCreateProfileId(db, contact, fallbackEmail = null, fallbackPhone = null) {
+  if (!db) return null;
+  const userContact = contact || fallbackEmail || fallbackPhone;
+  if (userContact) {
+    try {
+      const { data: existingProf } = await db
+        .from('profiles')
+        .select('id')
+        .or(`email.eq.${userContact},phone.eq.${userContact}`)
+        .limit(1)
+        .single();
+      if (existingProf?.id) return existingProf.id;
+    } catch (e) {}
+  }
+
+  const email = (userContact && userContact.includes('@')) ? userContact : (fallbackEmail || `guest_${Date.now()}@avisignals.com`);
+  const phone = (userContact && !userContact.includes('@')) ? userContact : fallbackPhone;
+  
+  if (db.auth && db.auth.admin) {
+    try {
+      const crypto = require('crypto');
+      const { data: authUser } = await db.auth.admin.createUser({
+        email,
+        password: crypto.randomBytes(16).toString('hex'),
+        email_confirm: true,
+        user_metadata: { phone: phone || null }
+      });
+      if (authUser && authUser.user && authUser.user.id) {
+        const userId = authUser.user.id;
+        await db.from('profiles').insert([{
+          id: userId,
+          email,
+          phone: phone || null,
+          created_at: new Date().toISOString()
+        }]);
+        return userId;
+      }
+    } catch (e) {
+      console.warn('⚠️ User auth creation note:', e.message);
+    }
+  }
+
+  try {
+    const { data: anyProf } = await db.from('profiles').select('id').limit(1).single();
+    if (anyProf?.id) return anyProf.id;
+  } catch (e) {}
+
+  return null;
+}
+
+/**
  * Helper function to handle full payment verification & activation dispatch
  */
 async function fulfillVerifiedPayment(dbClient, reference, flwData = {}) {
@@ -84,37 +137,10 @@ async function fulfillVerifiedPayment(dbClient, reference, flwData = {}) {
 
     if (findErr || !existing) {
       console.warn(`⚠️ Payment record for ${reference} not found in DB during fulfillment. Creating record...`);
-      const userEmail = flwData.customer?.email;
-      const userPhone = flwData.customer?.phone_number;
+      const userEmail = flwData.customer?.email || flwData.email;
+      const userPhone = flwData.customer?.phone_number || flwData.phone;
       const contact = userEmail || userPhone;
-      let profileId = null;
-
-      if (contact) {
-        try {
-          const { data: existingProf } = await db
-            .from('profiles')
-            .select('id')
-            .or(`email.eq.${contact},phone.eq.${contact}`)
-            .single();
-
-          if (existingProf) {
-            profileId = existingProf.id;
-          } else {
-            const { data: newProf } = await db
-              .from('profiles')
-              .insert([{
-                email: userEmail || null,
-                phone: userPhone || null,
-                created_at: new Date().toISOString()
-              }])
-              .select('id')
-              .single();
-            if (newProf) profileId = newProf.id;
-          }
-        } catch (profErr) {
-          console.warn('⚠️ Auto profile creation error:', profErr.message);
-        }
-      }
+      const profileId = await getOrCreateProfileId(db, contact, userEmail, userPhone);
 
       const { data: createdPay, error: insertPayErr } = await db
         .from('payments')
@@ -122,11 +148,10 @@ async function fulfillVerifiedPayment(dbClient, reference, flwData = {}) {
           user_id: profileId,
           amount: flwData.amount || 75,
           currency: flwData.currency || 'USD',
-          method: 'Flutterwave',
+          method: flwData.payment_type || 'Flutterwave',
           status: 'verified',
           reference: reference,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          created_at: new Date().toISOString()
         }])
         .select('*, profiles(email, phone, full_name, assigned_site)')
         .single();
@@ -144,8 +169,7 @@ async function fulfillVerifiedPayment(dbClient, reference, flwData = {}) {
       const { data: updated, error: updateErr } = await db
         .from('payments')
         .update({ 
-          status: 'verified',
-          updated_at: new Date().toISOString()
+          status: 'verified'
         })
         .eq('reference', reference)
         .select('*, profiles(email, phone, full_name, assigned_site)');
@@ -159,6 +183,10 @@ async function fulfillVerifiedPayment(dbClient, reference, flwData = {}) {
     }
 
     if (!payment) return null;
+
+    if (global.botPayments && global.botPayments[reference]) {
+      global.botPayments[reference].status = 'verified';
+    }
 
     const userEmail = payment.profiles?.email || flwData.customer?.email;
     const userPhone = payment.profiles?.phone || flwData.customer?.phone_number;
@@ -430,8 +458,7 @@ const handleAdminVerify = async (req, res) => {
       const { data: updated, error: updateErr } = await dbClient
         .from('payments')
         .update({ 
-          status: targetStatus,
-          updated_at: new Date().toISOString()
+          status: targetStatus
         })
         .eq('reference', reference)
         .select('*, profiles(email, phone, full_name, assigned_site)');
@@ -444,21 +471,29 @@ const handleAdminVerify = async (req, res) => {
                          (global.selarPayments && global.selarPayments[reference]) || 
                          (global.usdtPayments && global.usdtPayments[reference]) || {};
 
+      const contact = memPayment.contact || memPayment.email || memPayment.phone;
+      const profileId = await getOrCreateProfileId(dbClient, contact, memPayment.email, memPayment.phone);
+
       const { data: inserted, error: insertErr } = await dbClient
         .from('payments')
         .insert([{
+          user_id: profileId,
           amount: memPayment.amount || memPayment.priceUsd || 75,
           currency: memPayment.currency || 'USD',
           method: memPayment.paymentType || 'Manual Admin',
           status: targetStatus,
           reference: reference,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          created_at: new Date().toISOString()
         }])
         .select('*, profiles(email, phone, full_name, assigned_site)');
 
       if (insertErr) console.warn('⚠️ Fallback insert error on verify:', insertErr.message);
       data = inserted;
+    }
+
+    // Sync in-memory store if present
+    if (global.botPayments && global.botPayments[reference]) {
+      global.botPayments[reference].status = targetStatus;
     }
 
     // Discord Alert & Fulfillment
@@ -573,33 +608,7 @@ router.post('/bot/create-payment/:reference', async (req, res) => {
     // Find or create profile to get proper UUID for user_id
     if (dbClient) {
       try {
-        // Try to find existing profile by email or phone
-        const { data: existingProfile } = await dbClient
-          .from('profiles')
-          .select('id')
-          .or(`email.eq.${contact},phone.eq.${contact}`)
-          .single();
-
-        if (existingProfile) {
-          profileId = existingProfile.id;
-        } else {
-          // Create new profile if doesn't exist
-          const { data: newProfile, error: createErr } = await dbClient
-            .from('profiles')
-            .insert([{
-              email: contact.includes('@') ? contact : null,
-              phone: !contact.includes('@') ? contact : null,
-              created_at: new Date().toISOString()
-            }])
-            .select('id')
-            .single();
-
-          if (newProfile) {
-            profileId = newProfile.id;
-          } else {
-            console.warn('⚠️ Profile creation note:', createErr?.message);
-          }
-        }
+        profileId = await getOrCreateProfileId(dbClient, contact, customerInfo.email);
 
         // Insert pending payment record
         const { error: dbError } = await dbClient

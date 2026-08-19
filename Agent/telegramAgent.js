@@ -302,7 +302,7 @@ async function fetchLiveContext() {
         const [users, subs, payments, online] = await Promise.allSettled([
             supabase.from('profiles').select('id', { count: 'exact', head: true }),
             supabase.from('activations').select('code_type', { count: 'exact', head: false }),
-            supabase.from('payments').select('amount').eq('status', 'success')
+            supabase.from('payments').select('amount').or('status.eq.verified,status.eq.success')
                 .gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString()),
             Promise.resolve(global.activeSessions?.size || 0)
         ]);
