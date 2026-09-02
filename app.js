@@ -394,6 +394,7 @@ app.use((req, _res, next) => {
 // STATIC FILES
 // ============================================================
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/marketing-assets', express.static(path.join(__dirname, 'marketing')));
 
 // ============================================================
 // ADMIN PANEL — protected by token header

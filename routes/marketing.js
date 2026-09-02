@@ -173,4 +173,60 @@ router.get('/debug', (req, res) => {
     }
 });
 
+// Send premium video promo (premiumchannel.mp4)
+router.post('/broadcast-premium-video', async (req, res) => {
+    try {
+        const marketingBot = req.app.locals.marketingBot || global.marketingBotInstance;
+        
+        if (!marketingBot) {
+            return res.status(404).json({
+                success: false,
+                message: 'Marketing bot not initialized'
+            });
+        }
+        
+        const sent = await marketingBot.sendPremiumPromotion();
+        
+        res.json({
+            success: sent !== false,
+            message: 'Premium channel video promotion sent to Telegram channel'
+        });
+    } catch (error) {
+        console.error('Error broadcasting premium video promo:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: error.message
+        });
+    }
+});
+
+// Send agent referral program promo (agentprogram.jpg)
+router.post('/broadcast-agent-promo', async (req, res) => {
+    try {
+        const marketingBot = req.app.locals.marketingBot || global.marketingBotInstance;
+        
+        if (!marketingBot) {
+            return res.status(404).json({
+                success: false,
+                message: 'Marketing bot not initialized'
+            });
+        }
+        
+        const sent = await marketingBot.sendAgentProgramPromotion();
+        
+        res.json({
+            success: sent !== false,
+            message: 'Agent program promotion message with agentprogram.jpg sent to Telegram channel'
+        });
+    } catch (error) {
+        console.error('Error broadcasting agent promo:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;

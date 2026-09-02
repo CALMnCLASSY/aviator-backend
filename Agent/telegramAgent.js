@@ -58,7 +58,8 @@ const CONTENT_TYPES = [
     'signal_tease',
     'urgency',
     'educational',
-    'testimonial'
+    'testimonial',
+    'agent_opportunity'
 ];
 let contentTypeIndex = 0;
 
@@ -146,6 +147,15 @@ function generateTestimonialPost() {
     return { choices: [{ message: { content: text } }] };
 }
 
+function generateAgentOpportunity() {
+    const promoVariations = [
+        `💼 *Earn Passive Income with AviSignals Partner Program!* 💰💸\n\nInvite your friends or share your prediction results on social media and earn a *30% instant commission* every time someone activates their code!\n\n⚡ *Why become an AviSignals Partner?*\n✅ 30% Lifetime Commission per sale\n✅ Real-time Agent Dashboard to track your referred players\n✅ Free Marketing Videos & Banners provided in the Agent Tools\n✅ Instant payouts via Crypto (USDT) or Mobile Money\n\n👉 *Get your unique Referral Link in 30s:* ${SITE_URL}/agent.html\n💬 Support & Help: https://t.me/Aadmin4cnc`,
+        `🚀 *Turn Your Aviator Network into Daily Cash!* 📈💵\n\nDid you know you can earn 30% on every code bought by players you refer? No upfront fee. No experience needed.\n\n👑 *Get your custom Agent Link & download promo videos now:*\n👉 https://avisignals.com/agent.html\n\n💸 Track clicks, sales and profits live on your dashboard!`,
+        `💎 *AviSignals Referral Agent Program is LIVE!* 🤝\n\nEarn 30% commission per activation code. We provide all the viral TikTok/Telegram videos, images, and captions so you can start making money today.\n\n🔗 *Start here:* https://avisignals.com/agent.html`
+    ];
+    return { choices: [{ message: { content: pickRandom(promoVariations) } }] };
+}
+
 // ─── Route to correct generator ──────────────────────────────
 const GENERATORS = {
     sales_pitch: generateSalesPitch,
@@ -154,6 +164,7 @@ const GENERATORS = {
     urgency: generateUrgencyPost,
     educational: generateEducationalPost,
     testimonial: generateTestimonialPost,
+    agent_opportunity: generateAgentOpportunity,
 };
 
 
@@ -658,11 +669,27 @@ function startTelegramAgent() {
     console.log(`   📣 Channel            — ${CHANNEL_ID}`);
 }
 
+async function broadcastPremiumVideo() {
+    if (global.marketingBotInstance && typeof global.marketingBotInstance.sendPremiumPromotion === 'function') {
+        return await global.marketingBotInstance.sendPremiumPromotion();
+    }
+    return false;
+}
+
+async function broadcastAgentPromo() {
+    if (global.marketingBotInstance && typeof global.marketingBotInstance.sendAgentProgramPromotion === 'function') {
+        return await global.marketingBotInstance.sendAgentProgramPromotion();
+    }
+    return false;
+}
+
 module.exports = {
     startTelegramAgent,
     runChannelPost,
     sendToAdmin,
     sendToChannel,
+    broadcastPremiumVideo,
+    broadcastAgentPromo,
     stopPolling,
     processWebhookUpdate,   // consumed by the Express webhook route
     registerWebhook

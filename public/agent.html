@@ -1,0 +1,1805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Referral Agent Partner Portal | AviSignals</title>
+    <link rel="icon" href="favicon.jpg" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #070913;
+            --bg-card: rgba(17, 24, 39, 0.85);
+            --bg-card-hover: rgba(26, 36, 58, 0.95);
+            --accent: #f1c40f;
+            --accent-glow: rgba(241, 196, 15, 0.35);
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.35);
+            --danger: #ef4444;
+            --primary: #3b82f6;
+            --text: #f8fafc;
+            --text-dim: #94a3b8;
+            --text-muted: #64748b;
+            --border: rgba(241, 196, 15, 0.18);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --radius-xl: 28px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(241, 196, 15, 0.06) 0%, transparent 45%),
+                radial-gradient(circle at 85% 85%, rgba(16, 185, 129, 0.06) 0%, transparent 45%),
+                radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.04) 0%, transparent 60%);
+            background-attachment: fixed;
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 16px 60px;
+        }
+
+        /* Top Navbar */
+        .portal-nav {
+            width: 100%;
+            max-width: 1150px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            margin-bottom: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text);
+        }
+
+        .nav-logo-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, var(--accent) 0%, #d4ac0d 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3em;
+            color: #000;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .nav-title {
+            font-size: 1.25em;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-title span {
+            color: var(--accent);
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border-radius: var(--radius-md);
+            font-size: 0.9em;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.25s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .nav-btn-outline {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-dim);
+        }
+
+        .nav-btn-outline:hover {
+            color: #fff;
+            border-color: var(--border);
+            background: rgba(241, 196, 15, 0.08);
+        }
+
+        .nav-btn-primary {
+            background: linear-gradient(135deg, var(--accent) 0%, #d4ac0d 100%);
+            color: #000;
+            box-shadow: 0 4px 15px var(--accent-glow);
+        }
+
+        .nav-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--accent-glow);
+        }
+
+        /* Container layouts */
+        .main-container {
+            width: 100%;
+            max-width: 1150px;
+        }
+
+        .glass-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: 36px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(241, 196, 15, 0.03);
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* ── HERO LANDING SECTION ── */
+        .landing-hero {
+            text-align: center;
+            padding: 40px 20px 30px;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 18px;
+            background: rgba(241, 196, 15, 0.12);
+            border: 1px solid var(--accent);
+            border-radius: 30px;
+            color: var(--accent);
+            font-size: 0.85em;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        .landing-hero h1 {
+            font-size: 2.8em;
+            font-weight: 900;
+            line-height: 1.15;
+            margin-bottom: 16px;
+            letter-spacing: -1px;
+        }
+
+        .landing-hero h1 span {
+            background: linear-gradient(135deg, #f1c40f 0%, #f39c12 50%, #2ecc71 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            font-size: 1.15em;
+            color: var(--text-dim);
+            max-width: 720px;
+            margin: 0 auto 36px;
+            line-height: 1.6;
+        }
+
+        /* 3-Step Process Grid */
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+            text-align: left;
+        }
+
+        .step-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .step-card:hover {
+            border-color: var(--border);
+            transform: translateY(-4px);
+            background: var(--bg-card-hover);
+        }
+
+        .step-num {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(241, 196, 15, 0.15);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1em;
+            margin-bottom: 16px;
+        }
+
+        .step-card h3 {
+            font-size: 1.15em;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .step-card p {
+            font-size: 0.9em;
+            color: var(--text-dim);
+            line-height: 1.5;
+        }
+
+        /* Auth/Register Card */
+        .auth-container {
+            max-width: 540px;
+            margin: 0 auto;
+            background: rgba(13, 17, 29, 0.9);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+        }
+
+        .tab-switcher {
+            display: flex;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            border: none;
+            background: transparent;
+            color: var(--text-dim);
+            font-weight: 700;
+            font-size: 0.9em;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--accent) 0%, #d4ac0d 100%);
+            color: #000;
+            box-shadow: 0 4px 12px var(--accent-glow);
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+            text-align: left;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.85em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-dim);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 18px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1em;
+            outline: none;
+            transition: all 0.25s ease;
+        }
+
+        .form-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 15px rgba(241, 196, 15, 0.2);
+            background: rgba(0, 0, 0, 0.6);
+        }
+
+        .form-hint {
+            font-size: 0.78em;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--accent) 0%, #d4ac0d 100%);
+            color: #000;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.05em;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px var(--accent-glow);
+        }
+
+        /* ── AGENT DASHBOARD SECTION ── */
+        .dash-topbar {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border-subtle);
+            margin-bottom: 28px;
+        }
+
+        @media (min-width: 768px) {
+            .dash-topbar {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
+
+        .dash-title h2 {
+            font-size: 1.8em;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .dash-title p {
+            color: var(--text-dim);
+            font-size: 0.9em;
+            margin-top: 2px;
+        }
+
+        .dash-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .agent-code-tag {
+            background: rgba(241, 196, 15, 0.12);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-weight: 800;
+            font-size: 0.9em;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-withdraw {
+            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+            color: #fff;
+            border: none;
+            padding: 9px 18px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.9em;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px var(--success-glow);
+            transition: all 0.25s;
+        }
+
+        .btn-withdraw:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px var(--success-glow);
+        }
+
+        .btn-logout {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: var(--danger);
+            padding: 9px 16px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.25s;
+        }
+
+        .btn-logout:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: var(--danger);
+        }
+
+        /* Referral Link Card */
+        .referral-link-box {
+            background: linear-gradient(135deg, rgba(241, 196, 15, 0.08) 0%, rgba(16, 185, 129, 0.05) 100%);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            margin-bottom: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        @media (min-width: 850px) {
+            .referral-link-box {
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+            }
+        }
+
+        .link-info {
+            flex: 1;
+        }
+
+        .link-info h4 {
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--accent);
+            margin-bottom: 6px;
+        }
+
+        .link-display {
+            font-family: 'Courier New', monospace;
+            font-size: 1.15em;
+            color: #fff;
+            word-break: break-all;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 10px 16px;
+            border-radius: 10px;
+            border: 1px dashed var(--border);
+            display: inline-block;
+            margin-top: 4px;
+        }
+
+        .link-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-copy-link {
+            background: linear-gradient(135deg, var(--accent) 0%, #d4ac0d 100%);
+            color: #000;
+            font-weight: 800;
+            padding: 12px 22px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.25s;
+        }
+
+        .btn-copy-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px var(--accent-glow);
+        }
+
+        .btn-share-wa {
+            background: #25D366;
+            color: #fff;
+            font-weight: 700;
+            padding: 12px 18px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.25s;
+        }
+
+        .btn-share-wa:hover {
+            background: #20ba59;
+            transform: translateY(-2px);
+        }
+
+        .btn-share-tg {
+            background: #0088cc;
+            color: #fff;
+            font-weight: 700;
+            padding: 12px 18px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.25s;
+        }
+
+        .btn-share-tg:hover {
+            background: #0077b5;
+            transform: translateY(-2px);
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        @media (min-width: 640px) {
+            .metrics-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .metrics-grid {
+                grid-template-columns: repeat(6, 1fr);
+            }
+        }
+
+        .metric-card {
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 20px 16px;
+            text-align: center;
+            transition: all 0.25s ease;
+        }
+
+        .metric-card:hover {
+            border-color: var(--border);
+            transform: translateY(-3px);
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .metric-icon {
+            font-size: 1.3em;
+            margin-bottom: 6px;
+            color: var(--accent);
+        }
+
+        .metric-value {
+            font-size: 1.8em;
+            font-weight: 900;
+            color: #fff;
+            margin-bottom: 2px;
+            letter-spacing: -0.5px;
+        }
+
+        .metric-label {
+            font-size: 0.75em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-dim);
+        }
+
+        .metric-card.highlight {
+            border-color: rgba(16, 185, 129, 0.4);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(0, 0, 0, 0.3) 100%);
+        }
+
+        .metric-card.highlight .metric-value {
+            color: var(--success);
+        }
+
+        /* Simulator Card */
+        .calculator-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            margin-bottom: 30px;
+        }
+
+        .calc-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .calc-header-row h3 {
+            font-size: 1.15em;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .calc-slider {
+            width: 100%;
+            height: 8px;
+            background: #1c233a;
+            outline: none;
+            border-radius: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            margin-bottom: 20px;
+        }
+
+        .calc-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            box-shadow: 0 0 12px var(--accent);
+            transition: transform 0.15s;
+        }
+
+        .calc-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .calc-stats-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            border-top: 1px dashed var(--border-subtle);
+            padding-top: 16px;
+            text-align: center;
+        }
+
+        .calc-stat-sub {
+            font-size: 0.78em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+
+        .calc-stat-val {
+            font-size: 1.4em;
+            font-weight: 800;
+            color: #fff;
+            margin-top: 2px;
+        }
+
+        /* ── MARKETING TOOLS & ASSETS SECTION ── */
+        .tools-section {
+            margin-top: 36px;
+            border-top: 1px solid var(--border-subtle);
+            padding-top: 32px;
+        }
+
+        .section-header-row {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        @media (min-width: 768px) {
+            .section-header-row {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: flex-end;
+            }
+        }
+
+        .section-header-row h2 {
+            font-size: 1.6em;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .tools-nav-tabs {
+            display: flex;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-subtle);
+            padding: 4px;
+            border-radius: 12px;
+            flex-wrap: wrap;
+        }
+
+        .tools-tab-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            font-size: 0.88em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tools-tab-btn.active {
+            background: var(--accent);
+            color: #000;
+        }
+
+        /* Asset Grids */
+        .asset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .asset-card {
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+        }
+
+        .asset-card:hover {
+            border-color: var(--border);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+        }
+
+        .asset-preview {
+            width: 100%;
+            height: 160px;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .asset-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s;
+        }
+
+        .asset-card:hover .asset-preview img {
+            transform: scale(1.05);
+        }
+
+        .asset-preview video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .asset-tag {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.75);
+            border: 1px solid var(--border);
+            color: var(--accent);
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 0.72em;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .asset-body {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            justify-content: space-between;
+        }
+
+        .asset-title {
+            font-size: 0.95em;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .asset-desc {
+            font-size: 0.8em;
+            color: var(--text-dim);
+            line-height: 1.4;
+            margin-bottom: 14px;
+        }
+
+        .asset-btn-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-asset-dl {
+            flex: 1;
+            padding: 10px;
+            background: rgba(241, 196, 15, 0.12);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            border-radius: 8px;
+            font-size: 0.85em;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-asset-dl:hover {
+            background: var(--accent);
+            color: #000;
+        }
+
+        .btn-asset-preview {
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-dim);
+            border-radius: 8px;
+            font-size: 0.85em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-asset-preview:hover {
+            color: #fff;
+            border-color: #fff;
+        }
+
+        /* Copywriting Card */
+        .copy-card {
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .copy-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .copy-channel {
+            font-size: 0.8em;
+            font-weight: 700;
+            color: var(--accent);
+            text-transform: uppercase;
+        }
+
+        .copy-text-box {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 14px;
+            font-size: 0.9em;
+            color: #e2e8f0;
+            white-space: pre-wrap;
+            line-height: 1.5;
+            margin-bottom: 12px;
+            font-family: inherit;
+        }
+
+        .btn-copy-script {
+            padding: 8px 16px;
+            background: rgba(241, 196, 15, 0.15);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            border-radius: 8px;
+            font-size: 0.85em;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: 0.2s;
+        }
+
+        .btn-copy-script:hover {
+            background: var(--accent);
+            color: #000;
+        }
+
+        /* Conversion Activity Ledger */
+        .ledger-box {
+            margin-top: 36px;
+            border-top: 1px solid var(--border-subtle);
+            padding-top: 28px;
+        }
+
+        .ledger-box h3 {
+            font-size: 1.3em;
+            font-weight: 800;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+            background: rgba(0, 0, 0, 0.25);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            padding: 14px 18px;
+            font-size: 0.78em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-dim);
+            background: rgba(0, 0, 0, 0.35);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        td {
+            padding: 14px 18px;
+            font-size: 0.9em;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75em;
+            font-weight: 700;
+            text-transform: uppercase;
+            border: 1px solid;
+        }
+
+        .status-badge.click {
+            color: var(--text-dim);
+            background: rgba(148, 163, 184, 0.08);
+            border-color: rgba(148, 163, 184, 0.25);
+        }
+
+        .status-badge.signup {
+            color: var(--accent);
+            background: rgba(241, 196, 15, 0.08);
+            border-color: rgba(241, 196, 15, 0.3);
+        }
+
+        .status-badge.purchase {
+            color: var(--success);
+            background: rgba(16, 185, 129, 0.08);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .status-badge.withdrawal {
+            color: #f59e0b;
+            background: rgba(245, 158, 11, 0.08);
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-card {
+            background: linear-gradient(135deg, rgba(22, 27, 44, 0.98) 0%, rgba(13, 17, 29, 0.98) 100%);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            width: 100%;
+            max-width: 480px;
+            padding: 32px;
+            position: relative;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 16px;
+            right: 18px;
+            background: rgba(255, 255, 255, 0.08);
+            border: none;
+            color: #fff;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 1.2em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+
+        .modal-close-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Navigation -->
+    <header class="portal-nav">
+        <a href="bot.html" class="nav-brand">
+            <div class="nav-logo-icon">
+                <i class="fas fa-handshake"></i>
+            </div>
+            <div class="nav-title">AviSignals <span>Partner</span></div>
+        </a>
+        <div class="nav-links">
+            <a href="bot.html" class="nav-btn nav-btn-outline">
+                <i class="fas fa-arrow-left"></i> Predictor Bot
+            </a>
+            <a href="https://t.me/Aadmin4cnc" target="_blank" class="nav-btn nav-btn-outline">
+                <i class="fab fa-telegram-plane"></i> Admin Support
+            </a>
+        </div>
+    </header>
+
+    <div class="main-container">
+
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- 1. LANDING & REGISTRATION VIEW -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <div id="landingSection" class="glass-card">
+            <div class="landing-hero">
+                <div class="hero-badge">
+                    <i class="fas fa-coins"></i> 30% Lifetime Revenue Share
+                </div>
+                <h1>Earn Passive Income with <span>AviSignals</span></h1>
+                <p class="hero-subtitle">
+                    Turn your audience, friends, or social media followers into daily profits. Earn an instant 30% commission on every single Aviator code purchase!
+                </p>
+
+                <!-- 3 Easy Steps -->
+                <div class="steps-grid">
+                    <div class="step-card">
+                        <div class="step-num">1</div>
+                        <h3>Choose Your Agent Code</h3>
+                        <p>Register your unique promo name (e.g. <code>alex77</code>, <code>winpro</code>) in under 30 seconds.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">2</div>
+                        <h3>Share Free Tools & Videos</h3>
+                        <p>Download our 20+ viral TikTok videos, proof images & ready-to-post scripts from the Tools Hub.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">3</div>
+                        <h3>Collect 30% USDT Payouts</h3>
+                        <p>Track your sales live on the dashboard and cash out directly via USDT TRC-20 anytime!</p>
+                    </div>
+                </div>
+
+                <!-- Registration / Login Container -->
+                <div class="auth-container">
+                    <div class="tab-switcher">
+                        <button class="tab-btn active" id="tabRegisterBtn" onclick="switchAuthTab('register')">
+                            <i class="fas fa-user-plus"></i> Register Agent
+                        </button>
+                        <button class="tab-btn" id="tabLoginBtn" onclick="switchAuthTab('login')">
+                            <i class="fas fa-sign-in-alt"></i> Access Dashboard
+                        </button>
+                    </div>
+
+                    <!-- Register Form -->
+                    <form id="registerAgentForm">
+                        <div class="form-group">
+                            <label class="form-label">Desired Referral Code / Name</label>
+                            <input type="text" id="regCodeInput" class="form-input" placeholder="e.g. pilot77" required autocomplete="off">
+                            <div class="form-hint">Your unique tracking link will be: avisignals.com/?ref=<strong>yourname</strong></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Your Name / Alias (Optional)</label>
+                            <input type="text" id="regNameInput" class="form-input" placeholder="e.g. John Doe">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Telegram or WhatsApp Contact</label>
+                            <input type="text" id="regContactInput" class="form-input" placeholder="e.g. @yourtelegram or +123456789" required>
+                            <div class="form-hint">Used for fast payout confirmations & updates</div>
+                        </div>
+                        <button type="submit" class="btn-submit" id="btnRegisterSubmit">
+                            <i class="fas fa-rocket"></i> Register & Get Partner Link
+                        </button>
+                    </form>
+
+                    <!-- Login Form -->
+                    <form id="loginAgentForm" class="hidden">
+                        <div class="form-group">
+                            <label class="form-label">Your Referral Code</label>
+                            <input type="text" id="loginCodeInput" class="form-input" placeholder="e.g. pilot77" required autocomplete="off">
+                            <div class="form-hint">Enter your registered referral code to view your stats</div>
+                        </div>
+                        <button type="submit" class="btn-submit" id="btnLoginSubmit">
+                            <i class="fas fa-chart-line"></i> Open Agent Dashboard
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <!-- 2. AGENT DASHBOARD VIEW -->
+        <!-- ══════════════════════════════════════════════════════════════ -->
+        <div id="dashSection" class="glass-card hidden">
+            <!-- Top Dashboard Header -->
+            <div class="dash-topbar">
+                <div class="dash-title">
+                    <h2>Promoter <span style="color: var(--accent);">Dashboard</span></h2>
+                    <p>Real-Time Conversion Tracker & Marketing Assets Hub</p>
+                </div>
+                <div class="dash-actions">
+                    <span class="agent-code-tag" id="badgeCode">CODE: —</span>
+                    <button class="btn-withdraw" onclick="openWithdrawModal()">
+                        <i class="fas fa-wallet"></i> Withdraw Payout
+                    </button>
+                    <button class="btn-logout" onclick="logoutAgent()">
+                        <i class="fas fa-sign-out-alt"></i> Exit
+                    </button>
+                </div>
+            </div>
+
+            <!-- Custom Referral Link Box -->
+            <div class="referral-link-box">
+                <div class="link-info">
+                    <h4><i class="fas fa-link"></i> Your Unique Tracking Link</h4>
+                    <span class="link-display" id="referralLinkText">https://avisignals.com/?ref=—</span>
+                </div>
+                <div class="link-actions">
+                    <button class="btn-copy-link" id="copyLinkBtn">
+                        <i class="fas fa-copy"></i> Copy Link
+                    </button>
+                    <a href="#" target="_blank" class="btn-share-wa" id="shareWhatsAppBtn">
+                        <i class="fab fa-whatsapp"></i> Share
+                    </a>
+                    <a href="#" target="_blank" class="btn-share-tg" id="shareTelegramBtn">
+                        <i class="fab fa-telegram-plane"></i> Share
+                    </a>
+                </div>
+            </div>
+
+            <!-- KPI Metric Cards Grid -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-icon"><i class="fas fa-mouse-pointer"></i></div>
+                    <div class="metric-value" id="statClicks">0</div>
+                    <div class="metric-label">Total Clicks</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon"><i class="fas fa-user-clock"></i></div>
+                    <div class="metric-value" id="statSubmits">0</div>
+                    <div class="metric-label">Site Leads</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon"><i class="fas fa-user-check"></i></div>
+                    <div class="metric-value" id="statSignups">0</div>
+                    <div class="metric-label">Signups</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon"><i class="fas fa-shopping-bag"></i></div>
+                    <div class="metric-value" id="statSales" style="color: var(--accent);">0</div>
+                    <div class="metric-label">Paid Codes</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon"><i class="fas fa-funnel-dollar"></i></div>
+                    <div class="metric-value" id="statVolume">$0</div>
+                    <div class="metric-label">Gross Sales</div>
+                </div>
+                <div class="metric-card highlight">
+                    <div class="metric-icon"><i class="fas fa-sack-dollar"></i></div>
+                    <div class="metric-value" id="statCommission">$0.00</div>
+                    <div class="metric-label">Your 30% Earned</div>
+                </div>
+            </div>
+
+            <!-- Commission Calculator Slider -->
+            <div class="calculator-card">
+                <div class="calc-header-row">
+                    <h3><i class="fas fa-calculator" style="color: var(--accent);"></i> Earnings Projection Simulator</h3>
+                    <span style="font-weight: 800; color: var(--accent);" id="calcSliderLabel">10 Code Sales / week</span>
+                </div>
+                <input type="range" min="1" max="100" value="10" class="calc-slider" id="calcRange" oninput="updateCalculator(this.value)">
+                <div class="calc-stats-row">
+                    <div>
+                        <div class="calc-stat-sub">Referral Sales / Week</div>
+                        <div class="calc-stat-val" id="calcSalesVal">10 Codes</div>
+                    </div>
+                    <div>
+                        <div class="calc-stat-sub">Est. Weekly Volume</div>
+                        <div class="calc-stat-val" id="calcVolVal">$750.00</div>
+                    </div>
+                    <div>
+                        <div class="calc-stat-sub">Your 30% Weekly Payout</div>
+                        <div class="calc-stat-val" style="color: var(--success);" id="calcEarnVal">$225.00</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── MARKETING TOOLS & ASSET DOWNLOAD HUB ── -->
+            <div class="tools-section">
+                <div class="section-header-row">
+                    <div>
+                        <h2><i class="fas fa-photo-film" style="color: var(--accent);"></i> Marketing Toolkit & Downloads</h2>
+                        <p style="color: var(--text-dim); font-size: 0.9em;">Download viral videos, banners, and ready-made scripts to post on TikTok, Telegram, & WhatsApp</p>
+                    </div>
+                    <div class="tools-nav-tabs">
+                        <button class="tools-tab-btn active" onclick="switchToolsTab('images')">
+                            <i class="fas fa-image"></i> Banners (1-5)
+                        </button>
+                        <button class="tools-tab-btn" onclick="switchToolsTab('videos')">
+                            <i class="fas fa-video"></i> Videos (1-20)
+                        </button>
+                        <button class="tools-tab-btn" onclick="switchToolsTab('scripts')">
+                            <i class="fas fa-copy"></i> Ready Captions
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab 1: Images Grid -->
+                <div id="toolsImagesGrid" class="asset-grid">
+                    <!-- Populated dynamically via JS -->
+                </div>
+
+                <!-- Tab 2: Videos Grid -->
+                <div id="toolsVideosGrid" class="asset-grid hidden">
+                    <!-- Populated dynamically via JS -->
+                </div>
+
+                <!-- Tab 3: Copywriting Scripts -->
+                <div id="toolsScriptsGrid" class="hidden">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- Conversion Activity Ledger Feed -->
+            <div class="ledger-box">
+                <h3><i class="fas fa-list-check" style="color: var(--accent);"></i> Recent Conversion Feed</h3>
+                <div class="table-responsive">
+                    <table id="activityTable">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Event Type</th>
+                                <th>User Identifier</th>
+                                <th>Detail / Amount</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: var(--text-dim);">Loading referral conversions...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- 3. WITHDRAWAL MODAL (USDT TRC-20) -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <div id="withdrawModal" class="modal-overlay" onclick="handleModalOverlayClick(event)">
+        <div class="modal-card">
+            <button class="modal-close-btn" onclick="closeWithdrawModal()">&times;</button>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <div style="font-size: 2.5em; color: var(--success); margin-bottom: 8px;">
+                    <i class="fas fa-wallet"></i>
+                </div>
+                <h3 style="font-size: 1.4em; font-weight: 800;">Request USDT Payout</h3>
+                <p style="color: var(--text-dim); font-size: 0.88em; margin-top: 4px;">Instant payout sent via USDT TRC-20 network</p>
+            </div>
+
+            <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border); padding: 14px; border-radius: 12px; margin-bottom: 18px; text-align: center;">
+                <span style="font-size: 0.8em; color: var(--text-dim); text-transform: uppercase;">Available Balance</span>
+                <div style="font-size: 1.7em; font-weight: 900; color: var(--success);" id="modalAvailableBalance">$0.00</div>
+            </div>
+
+            <form id="withdrawForm">
+                <div class="form-group">
+                    <label class="form-label">Withdrawal Amount ($ USD)</label>
+                    <input type="number" id="withdrawAmountInput" class="form-input" placeholder="e.g. 50" min="10" step="1" required>
+                    <div class="form-hint">Minimum withdrawal: $10.00 USDT</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">USDT TRC-20 Wallet Address</label>
+                    <input type="text" id="withdrawAddressInput" class="form-input" placeholder="Starts with 'T' (34 characters)" required maxlength="34" pattern="^T[a-zA-Z0-9]{33}$">
+                    <div class="form-hint">Ensure this is a valid TRC-20 network address</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Contact (Telegram / WhatsApp)</label>
+                    <input type="text" id="withdrawContactInput" class="form-input" placeholder="e.g. @mytelegram">
+                </div>
+
+                <button type="submit" class="btn-submit" id="btnSubmitWithdrawal" style="background: linear-gradient(135deg, var(--success) 0%, #059669 100%); color: #fff;">
+                    <i class="fas fa-paper-plane"></i> Submit Withdrawal Request
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Script Section -->
+    <script>
+        const API_BASE = 'https://back.avisignals.com/api/referrals';
+        let currentAgentCode = '';
+        let currentAvailableBalance = 0;
+        let marketingToolsData = null;
+
+        // ── Auth Tab Switcher (Register vs Login) ──
+        function switchAuthTab(tab) {
+            const regBtn = document.getElementById('tabRegisterBtn');
+            const loginBtn = document.getElementById('tabLoginBtn');
+            const regForm = document.getElementById('registerAgentForm');
+            const loginForm = document.getElementById('loginAgentForm');
+
+            if (tab === 'register') {
+                regBtn.classList.add('active');
+                loginBtn.classList.remove('active');
+                regForm.classList.remove('hidden');
+                loginForm.classList.add('hidden');
+            } else {
+                loginBtn.classList.add('active');
+                regBtn.classList.remove('active');
+                loginForm.classList.remove('hidden');
+                regForm.classList.add('hidden');
+            }
+        }
+
+        // ── Register Agent Form ──
+        document.getElementById('registerAgentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const code = document.getElementById('regCodeInput').value.trim();
+            const name = document.getElementById('regNameInput').value.trim();
+            const contact = document.getElementById('regContactInput').value.trim();
+
+            if (!code) return;
+
+            const btn = document.getElementById('btnRegisterSubmit');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registering...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${API_BASE}/register-agent`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code, name, contact })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    window.history.pushState({}, '', `?code=${encodeURIComponent(data.code)}`);
+                    checkReferralAccess();
+                } else {
+                    alert(data.error || 'Failed to register agent. Please choose a different code.');
+                }
+            } catch (err) {
+                console.error('Agent registration error:', err);
+                alert('Connection error. Please try again.');
+            } finally {
+                btn.innerHTML = '<i class="fas fa-rocket"></i> Register & Get Partner Link';
+                btn.disabled = false;
+            }
+        });
+
+        // ── Login Agent Form ──
+        document.getElementById('loginAgentForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const code = document.getElementById('loginCodeInput').value.trim();
+            if (code) {
+                window.history.pushState({}, '', `?code=${encodeURIComponent(code)}`);
+                checkReferralAccess();
+            }
+        });
+
+        function logoutAgent() {
+            window.history.pushState({}, '', window.location.pathname);
+            document.getElementById('landingSection').classList.remove('hidden');
+            document.getElementById('dashSection').classList.add('hidden');
+            document.getElementById('loginCodeInput').value = '';
+            currentAgentCode = '';
+        }
+
+        // ── Load & Display Agent Dashboard ──
+        async function checkReferralAccess() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code') || urlParams.get('ref');
+
+            if (!code) {
+                document.getElementById('landingSection').classList.remove('hidden');
+                document.getElementById('dashSection').classList.add('hidden');
+                return;
+            }
+
+            currentAgentCode = code.trim().toLowerCase();
+
+            // Switch to dashboard view
+            document.getElementById('landingSection').classList.add('hidden');
+            document.getElementById('dashSection').classList.remove('hidden');
+
+            try {
+                // Fetch stats
+                const res = await fetch(`${API_BASE}/agent/${encodeURIComponent(currentAgentCode)}`);
+                const data = await res.json();
+
+                if (data.success && data.stats) {
+                    renderDashboard(data.stats, data.activities || []);
+                } else {
+                    alert('Referral statistics not found. Please verify your code or register anew.');
+                    logoutAgent();
+                }
+
+                // Load Marketing Tools
+                loadMarketingTools();
+
+            } catch (err) {
+                console.error('Fetch agent error:', err);
+                alert('Unable to load agent data. Please check connection.');
+            }
+        }
+
+        function renderDashboard(stats, activities) {
+            document.getElementById('badgeCode').innerText = `CODE: ${stats.code.toUpperCase()}`;
+
+            const promoLink = `${window.location.origin}/?ref=${stats.code}`;
+            document.getElementById('referralLinkText').innerText = promoLink;
+
+            // Setup 1-Click Copy
+            document.getElementById('copyLinkBtn').onclick = () => {
+                navigator.clipboard.writeText(promoLink).then(() => {
+                    const btn = document.getElementById('copyLinkBtn');
+                    btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                    btn.style.background = 'var(--success)';
+                    setTimeout(() => {
+                        btn.innerHTML = '<i class="fas fa-copy"></i> Copy Link';
+                        btn.style.background = '';
+                    }, 2000);
+                });
+            };
+
+            // Setup Social Shares
+            const waShareText = encodeURIComponent(`Stop losing on Aviator! ✈️ This AI Bot accurately predicts the crash multiplier. Try the 60-Minute FREE TRIAL here: ${promoLink}`);
+            document.getElementById('shareWhatsAppBtn').href = `https://api.whatsapp.com/send?text=${waShareText}`;
+
+            const tgShareText = encodeURIComponent(`Join thousands winning daily with AviSignals AI Predictor! 🚀 Free Trial available: ${promoLink}`);
+            document.getElementById('shareTelegramBtn').href = `https://t.me/share/url?url=${encodeURIComponent(promoLink)}&text=${tgShareText}`;
+
+            // Populate KPIs
+            document.getElementById('statClicks').innerText = stats.clicks;
+            document.getElementById('statSubmits').innerText = stats.submits;
+            document.getElementById('statSignups').innerText = stats.signups;
+            document.getElementById('statSales').innerText = stats.purchases;
+            document.getElementById('statVolume').innerText = `$${stats.revenue.toFixed(2)}`;
+            document.getElementById('statCommission').innerText = `$${stats.earnedCommission ? stats.earnedCommission.toFixed(2) : (stats.revenue * 0.3).toFixed(2)}`;
+
+            currentAvailableBalance = stats.availableBalance !== undefined ? stats.availableBalance : (stats.revenue * 0.3);
+            document.getElementById('modalAvailableBalance').innerText = `$${currentAvailableBalance.toFixed(2)}`;
+
+            // Render Conversion Table
+            renderActivities(activities);
+        }
+
+        function renderActivities(activities) {
+            const tbody = document.querySelector('#activityTable tbody');
+            if (!tbody) return;
+
+            if (activities.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--text-dim); padding: 24px;">No conversions logged yet. Share your link & videos to generate sales!</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            activities.forEach(item => {
+                const tr = document.createElement('tr');
+
+                let badgeClass = 'click';
+                let eventTitle = 'Click';
+                if (item.eventType === 'purchase') {
+                    badgeClass = 'purchase';
+                    eventTitle = 'Code Purchase';
+                } else if (item.eventType === 'signup') {
+                    badgeClass = 'signup';
+                    eventTitle = 'Registration';
+                } else if (item.eventType === 'landing_submit') {
+                    badgeClass = 'signup';
+                    eventTitle = 'Site Lead';
+                } else if (item.eventType === 'withdrawal_request') {
+                    badgeClass = 'withdrawal';
+                    eventTitle = 'Withdrawal';
+                }
+
+                let detail = '—';
+                if (item.amount) {
+                    if (item.eventType === 'withdrawal_request') {
+                        detail = `<span style="color: #f59e0b; font-weight:700;">-$${parseFloat(item.amount).toFixed(2)} USDT</span>`;
+                    } else {
+                        detail = `<span style="color: var(--success); font-weight:700;">+$${parseFloat(item.amount).toFixed(2)} (Earned $${(parseFloat(item.amount) * 0.3).toFixed(2)})</span>`;
+                    }
+                } else if (item.page) {
+                    detail = item.page;
+                }
+
+                const statusText = item.status ? item.status.toUpperCase() : 'COMPLETED';
+
+                tr.innerHTML = `
+                    <td>${new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                    <td><span class="status-badge ${badgeClass}">${eventTitle}</span></td>
+                    <td><strong>${item.user}</strong></td>
+                    <td>${detail}</td>
+                    <td><span style="font-size: 0.8em; color: var(--text-dim); font-weight: 600;">${statusText}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // ── Interactive Calculator Slider ──
+        function updateCalculator(val) {
+            const sales = parseInt(val, 10);
+            document.getElementById('calcSliderLabel').innerText = `${sales} Code Sales / week`;
+            document.getElementById('calcSalesVal').innerText = `${sales} Codes`;
+
+            const gross = sales * 75;
+            const earn = gross * 0.30;
+
+            document.getElementById('calcVolVal').innerText = `$${gross.toFixed(2)}`;
+            document.getElementById('calcEarnVal').innerText = `$${earn.toFixed(2)}`;
+        }
+
+        // ── Marketing Tools & Asset Loading ──
+        async function loadMarketingTools() {
+            try {
+                const res = await fetch(`${API_BASE}/marketing-tools`);
+                const data = await res.json();
+                if (data.success) {
+                    marketingToolsData = data;
+                    renderMarketingTools();
+                }
+            } catch (err) {
+                console.warn('Marketing tools load error:', err);
+            }
+        }
+
+        function switchToolsTab(tab) {
+            const btns = document.querySelectorAll('.tools-tab-btn');
+            btns.forEach(b => b.classList.remove('active'));
+
+            const imgGrid = document.getElementById('toolsImagesGrid');
+            const vidGrid = document.getElementById('toolsVideosGrid');
+            const scriptGrid = document.getElementById('toolsScriptsGrid');
+
+            imgGrid.classList.add('hidden');
+            vidGrid.classList.add('hidden');
+            scriptGrid.classList.add('hidden');
+
+            if (tab === 'images') {
+                btns[0].classList.add('active');
+                imgGrid.classList.remove('hidden');
+            } else if (tab === 'videos') {
+                btns[1].classList.add('active');
+                vidGrid.classList.remove('hidden');
+            } else {
+                btns[2].classList.add('active');
+                scriptGrid.classList.remove('hidden');
+            }
+        }
+
+        function renderMarketingTools() {
+            if (!marketingToolsData) return;
+
+            const promoLink = `${window.location.origin}/?ref=${currentAgentCode || 'vip'}`;
+
+            // 1. Render Images
+            const imgContainer = document.getElementById('toolsImagesGrid');
+            imgContainer.innerHTML = '';
+            marketingToolsData.images.forEach(img => {
+                const card = document.createElement('div');
+                card.className = 'asset-card';
+                card.innerHTML = `
+                    <div class="asset-preview">
+                        <span class="asset-tag">${img.category}</span>
+                        <img src="${img.url}" alt="${img.name}" loading="lazy">
+                    </div>
+                    <div class="asset-body">
+                        <div class="asset-title">${img.name}</div>
+                        <div class="asset-desc">High resolution promotion banner</div>
+                        <div class="asset-btn-row">
+                            <a href="${img.url}" download="${img.file}" target="_blank" class="btn-asset-dl">
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                        </div>
+                    </div>
+                `;
+                imgContainer.appendChild(card);
+            });
+
+            // 2. Render Videos
+            const vidContainer = document.getElementById('toolsVideosGrid');
+            vidContainer.innerHTML = '';
+            marketingToolsData.videos.forEach(vid => {
+                const card = document.createElement('div');
+                card.className = 'asset-card';
+                card.innerHTML = `
+                    <div class="asset-preview">
+                        <span class="asset-tag">${vid.category}</span>
+                        <video src="${vid.url}" controls preload="metadata"></video>
+                    </div>
+                    <div class="asset-body">
+                        <div class="asset-title">${vid.title}</div>
+                        <div class="asset-desc">${vid.desc}</div>
+                        <div class="asset-btn-row">
+                            <a href="${vid.url}" download="${vid.file}" class="btn-asset-dl">
+                                <i class="fas fa-download"></i> Download MP4
+                            </a>
+                        </div>
+                    </div>
+                `;
+                vidContainer.appendChild(card);
+            });
+
+            // 3. Render Copywriting Scripts
+            const scriptContainer = document.getElementById('toolsScriptsGrid');
+            scriptContainer.innerHTML = '';
+            marketingToolsData.copywritingTemplates.forEach(item => {
+                const customScript = item.text.replace(/\{\{LINK\}\}/g, promoLink);
+                const card = document.createElement('div');
+                card.className = 'copy-card';
+                card.innerHTML = `
+                    <div class="copy-header">
+                        <span class="copy-channel"><i class="fas fa-bullhorn"></i> ${item.channel}</span>
+                        <button class="btn-copy-script" onclick="copyScriptText(this, \`${encodeURIComponent(customScript)}\`)">
+                            <i class="fas fa-copy"></i> Copy Script
+                        </button>
+                    </div>
+                    <div class="copy-text-box">${customScript}</div>
+                `;
+                scriptContainer.appendChild(card);
+            });
+        }
+
+        function copyScriptText(btn, encodedText) {
+            const text = decodeURIComponent(encodedText);
+            navigator.clipboard.writeText(text).then(() => {
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                btn.style.background = 'var(--success)';
+                btn.style.color = '#fff';
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                    btn.style.background = '';
+                    btn.style.color = '';
+                }, 2000);
+            });
+        }
+
+        // ── Payout / Withdrawal Modal ──
+        function openWithdrawModal() {
+            const modal = document.getElementById('withdrawModal');
+            modal.classList.add('active');
+            document.getElementById('modalAvailableBalance').innerText = `$${currentAvailableBalance.toFixed(2)}`;
+            document.getElementById('withdrawAmountInput').value = Math.max(10, Math.floor(currentAvailableBalance));
+        }
+
+        function closeWithdrawModal() {
+            document.getElementById('withdrawModal').classList.remove('active');
+        }
+
+        function handleModalOverlayClick(e) {
+            if (e.target.id === 'withdrawModal') {
+                closeWithdrawModal();
+            }
+        }
+
+        // Handle Withdrawal Submit
+        document.getElementById('withdrawForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const amount = document.getElementById('withdrawAmountInput').value;
+            const walletAddress = document.getElementById('withdrawAddressInput').value.trim();
+            const contact = document.getElementById('withdrawContactInput').value.trim();
+
+            if (!amount || !walletAddress) return;
+
+            const btn = document.getElementById('btnSubmitWithdrawal');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${API_BASE}/request-withdrawal`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        code: currentAgentCode,
+                        amount: parseFloat(amount),
+                        walletAddress,
+                        contact
+                    })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    alert('🎉 ' + data.message);
+                    closeWithdrawModal();
+                    checkReferralAccess(); // Refresh dashboard data
+                } else {
+                    alert('❌ ' + (data.error || 'Failed to submit withdrawal request.'));
+                }
+            } catch (err) {
+                console.error('Withdrawal submit error:', err);
+                alert('Connection error. Please try again.');
+            } finally {
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Withdrawal Request';
+                btn.disabled = false;
+            }
+        });
+
+        // Initialize on load & handle browser back/forward
+        window.addEventListener('load', checkReferralAccess);
+        window.addEventListener('popstate', checkReferralAccess);
+    </script>
+</body>
+</html>

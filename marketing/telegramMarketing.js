@@ -26,7 +26,7 @@ class TelegramMarketingBot {
             `🎰 *PLAY AVIATOR? WE SUPPORT YOUR FAVORITE SITE!* 🎰\n\nOur bot connects to the exact game environment of your betting platform to give you precise cash-out signals.\n\n✅ *Works Perfectly On:*\n🔸 Betano • Stake • 1xBet • SportyBet\n🔸 Unibet • LeoVegas • 888casino\n🔸 Pin-Up • Melbet • Betway • Roobet\n🔸 MozzartBet • Betika • BetWinner\n🔸 ...and over 30+ other global platforms!\n\nDon't bet blind. Let our AI do the heavy lifting. Pick your site, enter your activation code, and wait for the signal! 📈💸\n\n👉 *Choose your site & start winning:* avisignals.com\n🔥 Join thousands of profitable players today.\n\n#AviatorSignals #AviatorPredictor #StakeAviator #1WinAviator #CrashGame`,
 
             // Template 3: Proof of Win / Urgency
-            `💥 *BOOM!* Another massive 15x multiplier accurately predicted! 🎯\n\nUsers who activated their bot today are already swimming in profits. What are you waiting for?\n\n✅ Global Support (Europe, Middle East, Africa, Americas)\n✅ Works on Stake, Betano, 1xBet, Unibet & more!\n✅ Pay easily with Crypto (USDT), Card, or Mobile Money\n\nStop guessing. Start predicting.\n👉 *Activate your bot here:* avisignals.com\n\n#AviatorSignals #AviatorPredictor #WinBig #CrashGame`
+            `💥 *BOOM!* Another massive 75x multiplier accurately predicted! 🎯\n\nUsers who activated their bot today are already swimming in profits. What are you waiting for?\n\n✅ Global Support (Europe, Middle East, Africa, Americas)\n✅ Works on Stake, Betano, 1xBet, Unibet & more!\n✅ Pay easily with Crypto (USDT), Card, or Mobile Money\n\nStop guessing. Start predicting.\n👉 *Activate your bot here:* avisignals.com\n\n#AviatorSignals #AviatorPredictor #WinBig #CrashGame`
         ];
 
         // Image and video queues for fair rotation (no repeats until all used)
@@ -61,6 +61,9 @@ class TelegramMarketingBot {
             { file: 'marketingvid16.mp4', category: 'marketing', caption_type: 'marketing_video' },
             { file: 'marketingvid17.mp4', category: 'marketing', caption_type: 'marketing_video' },
             { file: 'marketingvid18.mp4', category: 'marketing', caption_type: 'marketing_video' },
+            { file: 'marketingvid19.mp4', category: 'marketing', caption_type: 'marketing_video' },
+            { file: 'marketingvid20.mp4', category: 'marketing', caption_type: 'marketing_video' },
+            { file: 'premiumchannel.mp4', category: 'tutorial', caption_type: 'tutorial_video' }
         ];
 
         // ====== ALL 36 IMAGES mapped to context categories ======
@@ -68,7 +71,7 @@ class TelegramMarketingBot {
             // Win proof screenshots (for win_results, celebration)
             win_proof: [
                 '1xbetshot1.jpg', '1wintzshot.jpg', 'betikawinshot1.jpg', 'betwaywinshot.jpg', 'betikawinshot1.jpg', 'withdrawalwinshot.jpg',
-                'hollywithdraw1.jpg', 'popesshot.jpg', 'stakewithdr1.jpg', 'stakeusshot1.jpg', 'hollywoodshot2.jpg', 'hollywithdraw2.jpg'
+                'hollywithdraw1.jpg', 'popesshot.jpg', 'stakewithdr1.jpg', 'stakeusshot1.jpg', 'hollywoodshot2.jpg', 'hollywithdraw2.jpg', 'sportyngrshot1.jpg'
             ],
             // Bot/site screenshots (for promos, classy_promos)
             site_promo: [
@@ -79,7 +82,7 @@ class TelegramMarketingBot {
             signal_related: [
                 'dailypredictions.jpg', 'stakeusshot1.jpg',
                 'withdrawalwinshot.jpg', '1wintzshot.jpg',
-                '1xbetshot1.jpg', 'hollywoodshot1.jpg'
+                '1xbetshot1.jpg', 'hollywoodshot1.jpg', 'sportyngrshot1.jpg'
             ],
             // Free trial promo (for free trial messaging)
             free_trial: [
@@ -88,24 +91,24 @@ class TelegramMarketingBot {
             // Payment related (for payment promos)
             payment: [
                 '1xbetshot1.jpg', 'popesshot.jpg', 'hollywoodshot1.jpg',
-                '1wintzshot.jpg', 'hollywoodshot2.jpg', 'hollywithdraw2.jpg'
+                '1wintzshot.jpg', 'hollywoodshot2.jpg', 'hollywithdraw2.jpg', 'sportyngrshot1.jpg'
             ],
             // Hype / motivational (for hype, celebration)
             hype: [
-                'withdrawalwinshot.jpg', 'hollywithdraw1.jpg',
+                'withdrawalwinshot.jpg', 'hollywithdraw1.jpg', 'sportywithdr1.jpg',
                 'popesshot.jpg', '1wintzshot.jpg', 'stakewithdr1.jpg', 'hollywoodshot1.jpg', 'hollywoodshot2.jpg', 'hollywithdraw2.jpg'
             ],
             // Feature showcase (for tips, promos)
             features: [
                 'profitcalculator.jpg', 'profitcalculatorbase.jpg',
                 'selectbsite.jpg', 'selectbettingsite.jpg', '1xbetshot1.jpg', 'betikawinshot1.jpg', 'popesshot.jpg', '1wintzshot.jpg', 'stakewithdr1.jpg',
-                'securesiteentry.jpg', 'reviewexamples.jpg', 'hollywoodshot1.jpg', 'hollywoodshot2.jpg', 'hollywithdraw2.jpg'
+                'securesiteentry.jpg', 'reviewexamples.jpg', 'hollywoodshot1.jpg', 'hollywoodshot2.jpg', 'hollywithdraw2.jpg', 'sportyngrshot1.jpg'
             ],
             // General marketing (fallback)
             general: [
                 'marketing.jpg', 'marketingpic.jpg', 'hollywoodshot2.jpg', 'hollywithdraw2.jpg',
                 'marketingpic2.jpg', 'stakeusshot1.jpg', 'betikawinshot1.jpg', 'popesshot.jpg',
-                '1xbetshot1.jpg', '1wintzshot.jpg', 'hollywoodshot1.jpg'
+                '1xbetshot1.jpg', '1wintzshot.jpg', 'hollywoodshot1.jpg', 'marketingpic3.jpg', 'marketingpic4.jpg', 'marketingpic5.jpg'
             ]
         };
 
@@ -732,27 +735,55 @@ class TelegramMarketingBot {
 
     async sendPremiumPromotion() {
         try {
-            const promoImagePath = path.join(__dirname, 'images', 'premium_screenshot.jpg');
-            // If the placeholder file does not exist, copy one of the screenshots
-            if (!fs.existsSync(promoImagePath)) {
-                const srcPath = path.join(__dirname, 'images', 'avisignalsbotpage.jpg');
-                if (fs.existsSync(srcPath)) {
-                    fs.copyFileSync(srcPath, promoImagePath);
-                    console.log('📸 Created premium screenshot placeholder by copying avisignalsbotpage.jpg');
-                }
-            }
+            const videoPath = path.join(__dirname, 'premiumchannel.mp4');
+            const caption = `🔥 *SEE HOW VIP SIGNALS ARE DELIVERED LIVE!* 🎥🚀\n\n` +
+                `Watch how our AI sends accurate, real-time prediction alerts directly inside the Premium Channel! 📡💥\n\n` +
+                `✅ 24/7 Non-stop signals for 1Win, Betika, Stake, SportyBet, 1xBet & more\n` +
+                `✅ Exact Entry & Cashout Multipliers\n` +
+                `✅ Real-time Win confirmations\n\n` +
+                `👑 *Join our Telegram Signals Channel for FREE:* https://t.me/avisignalspremium\n` +
+                `🔑 *Get dedicated codes for YOUR specific betting site:* avisignals.com/bot`;
 
-            const caption = `🔥 *AviSignals Premium Channel is LIVE!* 🚀\n\nGet continuous, non-stop signals for *every betting site* sent straight to you! Over 25 signals every hour for your favorite sites.\n\n👑 *Join now for 100% FREE!* 🎁\n👉 Get free access: https://t.me/avisignalspremium`;
-
-            if (fs.existsSync(promoImagePath)) {
-                console.log('📢 Sending premium promo with screenshot to main channel...');
-                await this.sendImageToChannel(promoImagePath, caption);
+            if (fs.existsSync(videoPath)) {
+                console.log('🎥 Sending premium promo video (premiumchannel.mp4) to channel...');
+                return await this.sendVideoToChannel(videoPath, caption);
             } else {
-                console.log('📢 Sending text-only premium promo to main channel...');
-                await this.sendToChannel(caption);
+                console.log('📢 Sending text-only premium promo to channel...');
+                return await this.sendToChannel(caption);
             }
         } catch (error) {
-            console.error('❌ Error sending premium promotion to main channel:', error);
+            console.error('❌ Error sending premium promotion to channel:', error);
+            return false;
+        }
+    }
+
+    async sendAgentProgramPromotion() {
+        try {
+            const imagePath = path.join(__dirname, 'images', 'agentprogram.jpg');
+            const caption = `💼 *EARN PASSIVE INCOME WITH AVISIGNALS PARTNER PROGRAM!* 💰💸\n\n` +
+                `Did you know you can earn extra daily income by simply sharing AviSignals with your friends and followers?\n\n` +
+                `🔥 *WHY BECOME AN AVISIGNALS AGENT?*\n` +
+                `💵 *30% Lifetime Commission* on every single activation code purchase!\n` +
+                `📊 *Live Promoter Dashboard* — Track clicks, registrations, sales & earnings in real-time\n` +
+                `⚡ *Free Marketing Tools* — Get 20+ viral videos, promo banners & ready-made scripts\n` +
+                `💳 *Instant Payouts* directly to your Crypto, Bank, or Mobile Money!\n\n` +
+                `🚀 *How to Start in 60 Seconds:*\n` +
+                `1️⃣ Go to: https://avisignals.com/agent.html\n` +
+                `2️⃣ Choose your custom Referral Name / Code\n` +
+                `3️⃣ Copy your unique link & start sharing to make daily profits!\n\n` +
+                `👉 *Register your Agent Link now:* https://avisignals.com/agent.html\n` +
+                `💬 Questions? Contact Admin: https://t.me/Aadmin4cnc`;
+
+            if (fs.existsSync(imagePath)) {
+                console.log('📸 Sending Agent Program promo with agentprogram.jpg to channel...');
+                return await this.sendImageToChannel(imagePath, caption);
+            } else {
+                console.log('📢 Sending text-only Agent Program promo to channel...');
+                return await this.sendToChannel(caption);
+            }
+        } catch (error) {
+            console.error('❌ Error sending Agent Program promotion to channel:', error);
+            return false;
         }
     }
 
@@ -760,7 +791,7 @@ class TelegramMarketingBot {
         try {
             console.log('🎁 Starting code giveaway sequence...');
             // Announce giveaway
-            const announceMsg = "🎁 *GIVEAWAY in 30 seconds!*\\n\\nFirst person to comment get a free code! Be ready! 🚀";
+            const announceMsg = "🎁 *GIVEAWAY in 30 seconds!*\\n\\nFirst person gets the free code! Be ready! 🚀";
             await this.sendToChannel(announceMsg);
 
             // Wait 30 seconds
@@ -872,7 +903,7 @@ class TelegramMarketingBot {
                 type: 'image',
                 delay: 5000,
                 path: imagePath,
-                caption: `🤖 *Make sure your bot dashboard is ready.* Get daily codes or activate premium to lock in your predictions.\n\n👉 Start now: avisignals.com/bot.html`
+                caption: `🤖 *Make sure your bot dashboard is ready.* Get daily codes from the app and lock in your predictions.\n\n👉 Start now: avisignals.com/bot`
             });
         }
 
@@ -992,7 +1023,7 @@ class TelegramMarketingBot {
         queue.push({
             type: 'text',
             delay: 5000,
-            content: `⏰ *Don't sleep on tomorrow's profits.* Premium codes are selling fast. Buy your 24H or Weekly pass tonight to be ready for the morning session!\n\n👉 Upgrade here: avisignals.com/bot.html`
+            content: `⏰ *Don't sleep on tomorrow's profits.* Premium codes are selling fast. Buy your 24Hr or Weekly pass tonight to be ready for the morning session!\n\n👉 Upgrade here: avisignals.com/bot.html`
         });
 
         // Append channel template (supported countries/currencies/sites)
