@@ -1,11 +1,16 @@
 // routes/marketing.js
 const express = require('express');
 const router = express.Router();
+const { shareToChannel, generateDailyContentPack, generateWeeklyCalendar } = require('../Agent/socialMediaAgent');
+
+function getMarketingBot(req) {
+    return req.app.locals.marketingBot || global.marketingBotInstance;
+}
 
 // Get marketing bot status
 router.get('/status', (req, res) => {
     try {
-        const marketingBot = req.app.locals.marketingBot;
+        const marketingBot = getMarketingBot(req);
         
         if (!marketingBot) {
             return res.status(404).json({
@@ -35,7 +40,7 @@ router.get('/status', (req, res) => {
 // Start marketing bot
 router.post('/start', (req, res) => {
     try {
-        const marketingBot = req.app.locals.marketingBot;
+        const marketingBot = getMarketingBot(req);
         
         if (!marketingBot) {
             return res.status(404).json({
@@ -62,7 +67,7 @@ router.post('/start', (req, res) => {
 // Stop marketing bot
 router.post('/stop', (req, res) => {
     try {
-        const marketingBot = req.app.locals.marketingBot;
+        const marketingBot = getMarketingBot(req);
         
         if (!marketingBot) {
             return res.status(404).json({
@@ -89,7 +94,7 @@ router.post('/stop', (req, res) => {
 // Send test message
 router.post('/test', async (req, res) => {
     try {
-        const marketingBot = req.app.locals.marketingBot;
+        const marketingBot = getMarketingBot(req);
         
         if (!marketingBot) {
             return res.status(404).json({
@@ -116,7 +121,7 @@ router.post('/test', async (req, res) => {
 // Send free code tutorial
 router.post('/tutorial', async (req, res) => {
     try {
-        const marketingBot = req.app.locals.marketingBot;
+        const marketingBot = getMarketingBot(req);
         
         if (!marketingBot) {
             return res.status(404).json({
@@ -143,7 +148,7 @@ router.post('/tutorial', async (req, res) => {
 // Debug endpoint to check bot state
 router.get('/debug', (req, res) => {
     try {
-        const marketingBot = req.app.locals.marketingBot;
+        const marketingBot = getMarketingBot(req);
         
         if (!marketingBot) {
             return res.status(404).json({
@@ -161,7 +166,7 @@ router.get('/debug', (req, res) => {
                 flowStep: marketingBot.flowStep,
                 botToken: marketingBot.botToken ? 'Present' : 'Missing',
                 channelId: marketingBot.channelId,
-                messagesLoaded: Object.keys(marketingBot.messagePool).length
+                messagesLoaded: Object.keys(marketingBot.messagePool || {}).length
             }
         });
     } catch (error) {
@@ -176,7 +181,7 @@ router.get('/debug', (req, res) => {
 // Send premium video promo (premiumchannel.mp4)
 router.post('/broadcast-premium-video', async (req, res) => {
     try {
-        const marketingBot = req.app.locals.marketingBot || global.marketingBotInstance;
+        const marketingBot = getMarketingBot(req);
         
         if (!marketingBot) {
             return res.status(404).json({
@@ -204,7 +209,7 @@ router.post('/broadcast-premium-video', async (req, res) => {
 // Send agent referral program promo (agentprogram.jpg)
 router.post('/broadcast-agent-promo', async (req, res) => {
     try {
-        const marketingBot = req.app.locals.marketingBot || global.marketingBotInstance;
+        const marketingBot = getMarketingBot(req);
         
         if (!marketingBot) {
             return res.status(404).json({
@@ -224,6 +229,46 @@ router.post('/broadcast-agent-promo', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Internal server error',
+            error: error.message
+        });
+    }
+});
+
+// ─── SOCIAL MEDIA AGENT ENDPOINTS ─────────────────────────────
+
+// Manually broadcast social media post directly to Telegram channel
+router.post('/broadcast-social-post', async (req, res) => {
+    try {
+        const result = await shareToChannel();
+        res.json({
+            success: result?.success !== false,
+            message: 'Social media content broadcast triggered to Telegram channel',
+            details: result
+        });
+    } catch (error) {
+        console.error('Error broadcasting social post:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to broadcast social post',
+            error: error.message
+        });
+    }
+});
+
+// Manually trigger daily social media content pack generation to Admin
+router.post('/broadcast-social-pack', async (req, res) => {
+    try {
+        const result = await generateDailyContentPack();
+        res.json({
+            success: result?.success !== false,
+            message: 'Daily social media content pack generated and dispatched',
+            details: result
+        });
+    } catch (error) {
+        console.error('Error generating daily content pack:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to generate content pack',
             error: error.message
         });
     }

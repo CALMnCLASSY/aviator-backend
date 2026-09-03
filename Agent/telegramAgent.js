@@ -36,7 +36,7 @@ const supabase = createClient(
 
 // ─── Config ───────────────────────────────────────────────────
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const CHANNEL_ID = process.env.TELEGRAM_CHANNEL_ID || '@AviSignalsAviatorPredictorBot';
+const CHANNEL_ID = process.env.TELEGRAM_CHANNEL_ID || '-1002107223172';
 const ADMIN_CHAT = process.env.TELEGRAM_CHAT_ID;    // your personal Telegram chat ID
 const SITE_URL = 'https://avisignals.com';
 const BOT_URL = `${SITE_URL}/bot`;
@@ -229,26 +229,61 @@ function telegramRequest(method, payload, retries = 3) {
     });
 }
 
-function sendToChannel(text, targetChannelId = CHANNEL_ID) {
-    return telegramRequest('sendMessage', {
-        chat_id: targetChannelId,
-        text,
-        parse_mode: 'Markdown',
-        link_preview_options: { is_disabled: true }
-    });
+function detectParseMode(text) {
+    if (!text) return 'Markdown';
+    if (/<(b|i|u|s|a|code|pre|strong|em)[\s\S]*>/i.test(text)) {
+        return 'HTML';
+    }
+    return 'Markdown';
 }
 
-function sendToAdmin(text) {
+async function sendToChannel(text, targetChannelId = CHANNEL_ID, explicitParseMode = null) {
+    const parseMode = explicitParseMode || detectParseMode(text);
+    const res = await telegramRequest('sendMessage', {
+        chat_id: targetChannelId,
+        text,
+        parse_mode: parseMode,
+        link_preview_options: { is_disabled: true }
+    });
+
+    // If Telegram returns a parse/formatting error, retry cleanly as unformatted plain text
+    if (res && !res.ok && res.description && res.description.toLowerCase().includes('parse')) {
+        console.warn(`⚠️ Parse error with ${parseMode} on channel ${targetChannelId} — retrying as plain text`);
+        const cleanText = text.replace(/<[^>]*>/g, '').replace(/[*_`]/g, '');
+        return telegramRequest('sendMessage', {
+            chat_id: targetChannelId,
+            text: cleanText,
+            link_preview_options: { is_disabled: true }
+        });
+    }
+
+    return res;
+}
+
+async function sendToAdmin(text, explicitParseMode = null) {
     if (!ADMIN_CHAT) {
         console.warn('⚠️  TELEGRAM_CHAT_ID not set — cannot message admin');
         return Promise.resolve(null);
     }
-    return telegramRequest('sendMessage', {
+    const parseMode = explicitParseMode || detectParseMode(text);
+    const res = await telegramRequest('sendMessage', {
         chat_id: ADMIN_CHAT,
         text,
-        parse_mode: 'Markdown',
+        parse_mode: parseMode,
         link_preview_options: { is_disabled: true }
     });
+
+    if (res && !res.ok && res.description && res.description.toLowerCase().includes('parse')) {
+        console.warn(`⚠️ Parse error in admin message with ${parseMode} — retrying as plain text`);
+        const cleanText = text.replace(/<[^>]*>/g, '').replace(/[*_`]/g, '');
+        return telegramRequest('sendMessage', {
+            chat_id: ADMIN_CHAT,
+            text: cleanText,
+            link_preview_options: { is_disabled: true }
+        });
+    }
+
+    return res;
 }
 
 
