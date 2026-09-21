@@ -265,13 +265,7 @@ router.post('/webhook', async (req, res) => {
 
             console.log('Received callback:', data);
 
-            if (data.startsWith('verify_')) {
-                const orderId = data.replace('verify_', '');
-                await handlePaymentVerification(orderId, chatId, messageId, 'verified');
-            } else if (data.startsWith('reject_')) {
-                const orderId = data.replace('reject_', '');
-                await handlePaymentVerification(orderId, chatId, messageId, 'rejected');
-            } else if (data.startsWith('reply_')) {
+            if (data.startsWith('reply_')) {
                 const orderId = data.replace('reply_', '');
                 await handleCustomerReply(orderId, chatId, messageId);
             }

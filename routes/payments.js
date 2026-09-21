@@ -353,6 +353,11 @@ router.get('/bot/status/:reference', async (req, res) => {
   try {
     const { reference } = req.params;
     const dbClient = req.supabaseAdmin || req.supabase;
+
+    // Prevent any caching of status responses — critical for real-time verification
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
     
     if (!dbClient) {
       return res.json({ success: true, status: 'pending', message: 'Payment verification in progress' });
@@ -378,9 +383,12 @@ router.get('/bot/status/:reference', async (req, res) => {
       }
     }
 
-    // If in-memory state is verified, sync data status
-    if (global.botPayments && global.botPayments[reference]?.status === 'verified') {
-      data.status = 'verified';
+    // Sync in-memory state for BOTH verified AND rejected
+    if (global.botPayments && global.botPayments[reference]?.status) {
+      const memStatus = global.botPayments[reference].status;
+      if (memStatus === 'verified' || memStatus === 'rejected') {
+        data.status = memStatus;
+      }
     }
 
     // ACTIVE FALLBACK VERIFICATION IF STILL PENDING
