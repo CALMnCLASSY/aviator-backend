@@ -64,7 +64,7 @@ const REPLY_TO     = 'avisignalscnc@gmail.com';
 const SITE_URL     = 'https://avisignals.com';
 const BOT_URL      = `${SITE_URL}/bot.html`;
 const TELEGRAM_URL = 'https://t.me/AviSignalsAviatorPredictorBot';
-const ADMIN_TG     = 'https://t.me/Aadmin4cnc';
+const ADMIN_TG     = 'https://t.me/avisignalshelp_bot';
 const BRAND_GOLD   = '#f1c40f';
 const BRAND_DARK   = '#10152b';
 const BRAND_GREEN  = '#2ecc71';
@@ -141,7 +141,7 @@ function wrapInTemplate({ previewText = '', headline, body, ctaText, ctaUrl, foo
       <table cellpadding="0" cellspacing="0" border="0">
         <tr>
           <td>
-            <a href="${ADMIN_TG}" style="color:#229ED9;font-size:13px;font-weight:600;text-decoration:none;">✈️ Telegram Admin (@Aadmin4cnc)</a>
+            <a href="${ADMIN_TG}" style="color:#229ED9;font-size:13px;font-weight:600;text-decoration:none;">✈️ Telegram Admin (@avisignalshelp_bot)</a>
           </td>
         </tr>
       </table>

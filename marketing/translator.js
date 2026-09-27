@@ -63,8 +63,8 @@ function translateToAgent(text) {
     t = t.replace(/Congrats to everyone who followed today's signals!/g, 'Congrats to everyone who played today!');
     t = t.replace(/Don't sleep on tomorrow's profits. Premium codes are selling fast. Buy your 24H or Weekly pass tonight/g, 'Don\'t sleep on tomorrow\'s profits. Grab your 24H or Weekly pass tonight like I did');
 
-    t = t.replace(/https:\/\/t\.me\/Aadmin4cnc/g, 'https://t.me/ufomedz');
-    t = t.replace(/t\.me\/Aadmin4cnc/g, 't.me/ufomedz');
+    t = t.replace(/https:\/\/t\.me\/(?:Aadmin4cnc|avisignalshelp_bot)/g, 'https://t.me/ufomedz');
+    t = t.replace(/t\.me\/(?:Aadmin4cnc|avisignalshelp_bot)/g, 't.me/ufomedz');
 
     // 2. Generic word/phrase replacements for user persona (case-insensitive where appropriate)
     t = t.replace(/\bour bot\b/gi, 'the bot I use');

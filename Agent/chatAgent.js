@@ -143,7 +143,7 @@ REGISTRATION:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SUPPORT CONTACTS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- Telegram admin (direct): [@Aadmin4cnc](https://t.me/Aadmin4cnc)
+- Telegram admin (direct): [@avisignalshelp_bot](https://t.me/avisignalshelp_bot)
 - FREE Premium Signals channel: [Join Free](https://t.me/avisignalspremium) — share this with everyone!
 - Public signals channel: [AviSignals Channel](https://t.me/AviSignalsAviatorPredictorBot)
 
@@ -166,7 +166,7 @@ SALES RULES — READ CAREFULLY
 12. UPSELL FLOW (in order): Free channel join → Free trial on assigned site → Buy code for their specific preferred site.
 13. After every free trial mention, ALWAYS add: "Once you've tried it, you can get a code for YOUR preferred site — say SportyBet, 1win, or Betway — and run the bot there all day."
 14. If a user wants to play on a specific betting site → say: "The free trial runs on today's assigned site. To use the bot on [their site], buy a Premium Code — it locks predictions to YOUR platform for the full duration."
-15. If they seem to be a hot lead and are having trouble making payment, ask for their contact and provide admin details: [@Aadmin4cnc](https://t.me/Aadmin4cnc).
+15. If they seem to be a hot lead and are having trouble making payment, ask for their contact and provide admin details: [@avisignalshelp_bot](https://t.me/avisignalshelp_bot).
 16. When upselling from daily, always mention the weekly plan saves 52% — it's the sweet spot for most users.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 OBJECTION HANDLING
@@ -175,7 +175,7 @@ OBJECTION HANDLING
 "$75 is too expensive" → "Try the free trial first — no payment needed. Open the bot, click Free Trial, deposit on the assigned site, and play one session. Once you see it work, $75 will feel like nothing. One good Aviator session covers the cost easily."
 "$250 or $800 is too much" → "Start with the $75 daily plan — prove it to yourself. When you see the results in one session, the weekly plan at $250 will make total sense — that's just $35/day for 7 full days."
 "It didn't work for me" → "Sorry to hear that. Let's fix it — which betting site were you on and what happened exactly? I'll help you get sorted."
-"I want a refund" → "I hear you. Please contact our admin directly on Telegram: [@Aadmin4cnc](https://t.me/Aadmin4cnc) — they'll assist you right away."
+"I want a refund" → "I hear you. Please contact our admin directly on Telegram: [@avisignalshelp_bot](https://t.me/avisignalshelp_bot) — they'll assist you right away."
 "Can I get a discount?" → "Our weekly plan at $250 is already 52% cheaper than daily! But before spending anything — have you tried the free trial yet? It's 60 minutes of live bot predictions, completely free. Try it first, then decide."
 "I want free predictions" → "You have TWO free options right now: (1) Join the free Premium Signals Channel for 24/7 live predictions: https://t.me/avisignalspremium — (2) Claim your free trial code on the bot for a full 60-minute live session. Both are 100% free!"
 "Which site should I use?" → "For the free trial, it's today's randomly assigned site. Once you've experienced the bot working live, you can buy a code locked to YOUR preferred site — like SportyBet, 1win, Betway, 1xBet, etc."
@@ -202,7 +202,7 @@ The user is showing BUY INTENT. This is a HOT lead.
 The user is frustrated or unhappy. Your job is to de-escalate first.
 → Start with a genuine apology. Don't be defensive.
 → Ask one specific question to understand the problem.
-→ Offer the admin Telegram (@Aadmin4cnc) as the fastest human resolution path.
+→ Offer the admin Telegram (@avisignalshelp_bot) as the fastest human resolution path.
 → Do NOT upsell a frustrated user.
 → Optionally mention: "In the meantime, you can still get free predictions from our Telegram channel: https://t.me/avisignalspremium"
 `,
@@ -370,7 +370,7 @@ Simply select your platform on the bot dashboard, register/login, and sync the s
     // 5. Help / Contact Support / Admin
     if (/\b(help|support|contact|admin|owner|telegram|chat|reach|representative|agent)\b/i.test(text)) {
         return `For direct deposit assistance or account help, contact the admin:
-• 💬 **Telegram Support**: [@Aadmin4cnc](https://t.me/Aadmin4cnc)
+• 💬 **Telegram Support**: [@avisignalshelp_bot](https://t.me/avisignalshelp_bot)
 • 📣 **Official Telegram Channel**: [AviSignals Channel](https://t.me/AviSignalsAviatorPredictorBot)
 
 Our team is available 24/7.`;
@@ -544,7 +544,7 @@ async function handleChat(req, res) {
         } catch (groqErr) {
             console.error('❌ Groq API error:', groqErr.message);
             // Graceful fallback — don't show a blank error to the user
-            reply = `I'm having trouble understanding that. If its something you can't understand from the videos and tutorials provided on the app, reach out to our admin for immediate help on Telegram: [@Aadmin4cnc](https://t.me/Aadmin4cnc).`;
+            reply = `I'm having trouble understanding that. If its something you can't understand from the videos and tutorials provided on the app, reach out to our admin for immediate help on Telegram: [@avisignalshelp_bot](https://t.me/avisignalshelp_bot).`;
         }
 
         if (!reply) {
@@ -579,7 +579,7 @@ async function handleChat(req, res) {
     } catch (err) {
         console.error('❌ handleChat error:', err);
         return res.status(500).json({
-            reply: "I'm very busy with multiple chats right now. Please contact our admin on Telegram: [@Aadmin4cnc](https://t.me/Aadmin4cnc)"
+            reply: "I'm very busy with multiple chats right now. Please contact our admin on Telegram: [@avisignalshelp_bot](https://t.me/avisignalshelp_bot)"
         });
     }
 }

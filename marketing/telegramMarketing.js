@@ -20,7 +20,7 @@ class TelegramMarketingBot {
         this.channelTemplateIndex = 0;
         this.channelTemplates = [
             // Template 1: Global Reach & Available Countries
-            `🚀 *AVIATOR PREDICTOR - NOW AVAILABLE GLOBALLY!* 🌍\n\nDid you know our AI-powered signals work across multiple countries with localized payment support? Stop losing and start winning today!\n\n✅ *Supported Regions & Currencies:*\n🇪🇺 Europe: Euro (€), GBP (£), PLN (zł), RON (lei), SEK (kr), TRY (₺)\n🌍 Middle East: AED, SAR, QAR\n🌎 Americas: USD ($), CAD (C$), BRL (R$), MXN ($), COP ($), CLP ($)\n🌍 Africa: KES (KSh), NGN (₦), ZAR (R), GHS (GH₵), TZS (TSh) ...and more!\n\n🎯 We sync directly with the Aviator algorithms in your region.\n🔒 Secure payments. 100% automated activation.\n\n👉 *Get your 24H Activation Code Now:* avisignals.com\n💬 Need help? Contact Admin: https://t.me/Aadmin4cnc\n\n#AviatorSignals #AviatorPredictor #MakeMoneyOnline #StakeAviator #1WinAviator`,
+            `🚀 *AVIATOR PREDICTOR - NOW AVAILABLE GLOBALLY!* 🌍\n\nDid you know our AI-powered signals work across multiple countries with localized payment support? Stop losing and start winning today!\n\n✅ *Supported Regions & Currencies:*\n🇪🇺 Europe: Euro (€), GBP (£), PLN (zł), RON (lei), SEK (kr), TRY (₺)\n🌍 Middle East: AED, SAR, QAR\n🌎 Americas: USD ($), CAD (C$), BRL (R$), MXN ($), COP ($), CLP ($)\n🌍 Africa: KES (KSh), NGN (₦), ZAR (R), GHS (GH₵), TZS (TSh) ...and more!\n\n🎯 We sync directly with the Aviator algorithms in your region.\n🔒 Secure payments. 100% automated activation.\n\n👉 *Get your 24H Activation Code Now:* avisignals.com\n💬 Need help? Contact Admin: https://t.me/avisignalshelp_bot\n\n#AviatorSignals #AviatorPredictor #MakeMoneyOnline #StakeAviator #1WinAviator`,
 
             // Template 2: Supported Betting Sites
             `🎰 *PLAY AVIATOR? WE SUPPORT YOUR FAVORITE SITE!* 🎰\n\nOur bot connects to the exact game environment of your betting platform to give you precise cash-out signals.\n\n✅ *Works Perfectly On:*\n🔸 Betano • Stake • 1xBet • SportyBet\n🔸 Unibet • LeoVegas • 888casino\n🔸 Pin-Up • Melbet • Betway • Roobet\n🔸 MozzartBet • Betika • BetWinner\n🔸 ...and over 30+ other global platforms!\n\nDon't bet blind. Let our AI do the heavy lifting. Pick your site, enter your activation code, and wait for the signal! 📈💸\n\n👉 *Choose your site & start winning:* avisignals.com\n🔥 Join thousands of profitable players today.\n\n#AviatorSignals #AviatorPredictor #StakeAviator #1WinAviator #CrashGame`,
@@ -326,7 +326,7 @@ class TelegramMarketingBot {
 
         // 15% chance to add admin contact for non-win messages
         if (category !== 'win_results' && Math.random() < 0.15) {
-            processedMessage += '\n\n💬 Questions? Contact admin: https://t.me/Aadmin4cnc';
+            processedMessage += '\n\n💬 Questions? Contact admin: https://t.me/avisignalshelp_bot';
         }
 
         return processedMessage;
@@ -772,7 +772,7 @@ class TelegramMarketingBot {
                 `2️⃣ Choose your custom Referral Name / Code\n` +
                 `3️⃣ Copy your unique link & start sharing to make daily profits!\n\n` +
                 `👉 *Register your Agent Link now:* https://avisignals.com/agent.html\n` +
-                `💬 Questions? Contact Admin: https://t.me/Aadmin4cnc`;
+                `💬 Questions? Contact Admin: https://t.me/avisignalshelp_bot`;
 
             if (fs.existsSync(imagePath)) {
                 console.log('📸 Sending Agent Program promo with agentprogram.jpg to channel...');

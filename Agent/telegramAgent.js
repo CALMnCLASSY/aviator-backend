@@ -149,7 +149,7 @@ function generateTestimonialPost() {
 
 function generateAgentOpportunity() {
     const promoVariations = [
-        `💼 *Earn Passive Income with AviSignals Partner Program!* 💰💸\n\nInvite your friends or share your prediction results on social media and earn a *30% instant commission* every time someone activates their code!\n\n⚡ *Why become an AviSignals Partner?*\n✅ 30% Lifetime Commission per sale\n✅ Real-time Agent Dashboard to track your referred players\n✅ Free Marketing Videos & Banners provided in the Agent Tools\n✅ Instant payouts via Crypto (USDT) or Mobile Money\n\n👉 *Get your unique Referral Link in 30s:* ${SITE_URL}/agent.html\n💬 Support & Help: https://t.me/Aadmin4cnc`,
+        `💼 *Earn Passive Income with AviSignals Partner Program!* 💰💸\n\nInvite your friends or share your prediction results on social media and earn a *30% instant commission* every time someone activates their code!\n\n⚡ *Why become an AviSignals Partner?*\n✅ 30% Lifetime Commission per sale\n✅ Real-time Agent Dashboard to track your referred players\n✅ Free Marketing Videos & Banners provided in the Agent Tools\n✅ Instant payouts via Crypto (USDT) or Mobile Money\n\n👉 *Get your unique Referral Link in 30s:* ${SITE_URL}/agent.html\n💬 Support & Help: https://t.me/avisignalshelp_bot`,
         `🚀 *Turn Your Aviator Network into Daily Cash!* 📈💵\n\nDid you know you can earn 30% on every code bought by players you refer? No upfront fee. No experience needed.\n\n👑 *Get your custom Agent Link & download promo videos now:*\n👉 https://avisignals.com/agent.html\n\n💸 Track clicks, sales and profits live on your dashboard!`,
         `💎 *AviSignals Referral Agent Program is LIVE!* 🤝\n\nEarn 30% commission per activation code. We provide all the viral TikTok/Telegram videos, images, and captions so you can start making money today.\n\n🔗 *Start here:* https://avisignals.com/agent.html`
     ];
@@ -410,6 +410,10 @@ AVAILABLE ADMIN COMMANDS (remind user if relevant):
 /countdown — trigger live session countdown to channel NOW
 /post — trigger a random channel broadcast NOW
 /broadcast [msg] — post a custom message to channel
+/clients — list all active client bot conversations
+/takeover [chat_id] — pause bot for a client, reply manually
+/resume [chat_id] — re-enable bot for a client
+/clientlog [chat_id] — view conversation history for a client
 /help — full command list
 
 TONE: Sharp, direct, loyal COO. Data-driven, no filler. Short sentences.
@@ -442,6 +446,7 @@ async function handleAdminMessage(message) {
     const fromId = message.from?.id;
 
     // Security — only respond to the configured admin chat
+    // (Routing is handled upstream in processWebhookUpdate, but keep as safety)
     if (String(chatId) !== String(ADMIN_CHAT) && String(fromId) !== String(ADMIN_CHAT)) {
         console.log(`⚠️  Ignored message from unauthorized chat: ${chatId}`);
         return;
@@ -546,19 +551,114 @@ async function handleAdminMessage(message) {
         return;
     }
 
+    // ── /clients — list active client conversations ───────────
+    if (text.startsWith('/clients')) {
+        const { getActiveClients } = require('./clientSupportBot');
+        const clients = getActiveClients();
+        if (clients.length === 0) {
+            await telegramRequest('sendMessage', { chat_id: chatId, text: '📭 No active client conversations.', parse_mode: 'Markdown' });
+            return;
+        }
+        let msg = `👥 *Active Client Conversations* (${clients.length})\n\n`;
+        for (const c of clients.slice(0, 15)) {
+            const status = c.takenOver ? '🔴 TAKEOVER' : '🤖 Bot';
+            msg += `• *${c.name}* ${c.username ? '(@' + c.username + ')' : ''} — ${status}\n`;
+            msg += `  ID: \`${c.chatId}\` | Intent: _${c.intent}_ | ${c.messages} msgs | ${c.lastMin}m ago\n`;
+        }
+        if (clients.length > 15) msg += `\n_...and ${clients.length - 15} more_`;
+        msg += `\n\n💡 /takeover [chat\_id] — manual reply\n💡 /resume [chat\_id] — re-enable bot`;
+        await telegramRequest('sendMessage', { chat_id: chatId, text: msg, parse_mode: 'Markdown' });
+        return;
+    }
+
+    // ── /takeover — pause bot for a client, admin replies manually ──
+    if (text.startsWith('/takeover')) {
+        const targetId = text.split(' ')[1];
+        if (!targetId) {
+            await telegramRequest('sendMessage', { chat_id: chatId, text: '⚠️ Usage: /takeover [chat\_id]\n\nUse /clients to see active chats.', parse_mode: 'Markdown' });
+            return;
+        }
+        const { setTakeover } = require('./clientSupportBot');
+        setTakeover(targetId, true);
+        await telegramRequest('sendMessage', { chat_id: chatId, text: `🔴 Bot paused for client \`${targetId}\`. Their messages will be forwarded to you.\n\nUse /reply ${targetId} [message] to respond.\nUse /resume ${targetId} to re-enable the bot.`, parse_mode: 'Markdown' });
+        return;
+    }
+
+    // ── /resume — re-enable bot for a client ───────────────────
+    if (text.startsWith('/resume')) {
+        const targetId = text.split(' ')[1];
+        if (!targetId) {
+            await telegramRequest('sendMessage', { chat_id: chatId, text: '⚠️ Usage: /resume [chat\_id]', parse_mode: 'Markdown' });
+            return;
+        }
+        const { setTakeover } = require('./clientSupportBot');
+        setTakeover(targetId, false);
+        await telegramRequest('sendMessage', { chat_id: chatId, text: `🟢 Bot re-enabled for client \`${targetId}\`. AI will handle their messages again.`, parse_mode: 'Markdown' });
+        return;
+    }
+
+    // ── /reply — send a manual message to a client ─────────────
+    if (text.startsWith('/reply ')) {
+        const parts = text.match(/^\/reply\s+(\S+)\s+(.+)$/s);
+        if (!parts) {
+            await telegramRequest('sendMessage', { chat_id: chatId, text: '⚠️ Usage: /reply [chat\_id] [message]', parse_mode: 'Markdown' });
+            return;
+        }
+        const targetId = parts[1];
+        const replyMsg = parts[2];
+        const result = await telegramRequest('sendMessage', {
+            chat_id: targetId,
+            text: replyMsg,
+            parse_mode: 'Markdown',
+            link_preview_options: { is_disabled: false }
+        });
+        const status = result?.ok ? '✅ Message sent' : '❌ Failed to send';
+        await telegramRequest('sendMessage', { chat_id: chatId, text: `${status} to client \`${targetId}\`.`, parse_mode: 'Markdown' });
+        return;
+    }
+
+    // ── /clientlog — view conversation history ─────────────────
+    if (text.startsWith('/clientlog')) {
+        const targetId = text.split(' ')[1];
+        if (!targetId) {
+            await telegramRequest('sendMessage', { chat_id: chatId, text: '⚠️ Usage: /clientlog [chat\_id]', parse_mode: 'Markdown' });
+            return;
+        }
+        const { getClientHistory } = require('./clientSupportBot');
+        const log = getClientHistory(targetId);
+        if (!log) {
+            await telegramRequest('sendMessage', { chat_id: chatId, text: `❌ No conversation found for \`${targetId}\`.`, parse_mode: 'Markdown' });
+            return;
+        }
+        let msg = `📋 *Chat Log — ${log.name}* ${log.username ? '(@' + log.username + ')' : ''}\nIntent: _${log.intent}_\n\n`;
+        for (const h of log.history.slice(-10)) {
+            const label = h.role === 'user' ? '👤' : '🤖';
+            msg += `${label} ${h.content.slice(0, 200)}\n\n`;
+        }
+        await telegramRequest('sendMessage', { chat_id: chatId, text: msg.slice(0, 4000), parse_mode: 'Markdown' });
+        return;
+    }
+
     // ── /help ──────────────────────────────────────────────────
     if (text.startsWith('/help') || text.startsWith('/start')) {
         const helpMsg =
             `🤖 *ARIA — AviSignals Admin Bot*\n\n` +
-            `*QUICK COMMANDS*\n` +
+            `*BUSINESS COMMANDS*\n` +
             `• /status — live metrics\n` +
             `• /briefing — full business briefing\n` +
             `• /revenue — revenue snapshot\n` +
-            `• /users — user count + today's signups\n` +
+            `• /users — user count + today's signups\n\n` +
+            `*CHANNEL COMMANDS*\n` +
             `• /giveaway — run a code giveaway NOW\n` +
             `• /countdown — start live session countdown NOW\n` +
             `• /post — random channel broadcast NOW\n` +
             `• /broadcast [msg] — post custom message to channel\n\n` +
+            `*CLIENT BOT COMMANDS*\n` +
+            `• /clients — list active client conversations\n` +
+            `• /takeover [id] — pause bot, reply manually\n` +
+            `• /reply [id] [msg] — send manual reply to client\n` +
+            `• /resume [id] — re-enable bot for client\n` +
+            `• /clientlog [id] — view conversation history\n\n` +
             `*OR* just ask me anything in plain English!\n` +
             `_e.g. "what should I focus on today?" or "write a win post"_`;
         await telegramRequest('sendMessage', { chat_id: chatId, text: helpMsg, parse_mode: 'Markdown' });
@@ -615,7 +715,17 @@ async function handleAdminMessage(message) {
 async function processWebhookUpdate(update) {
     try {
         if (update.message) {
-            await handleAdminMessage(update.message);
+            const msgChatId = String(update.message.chat.id);
+            const msgFromId = String(update.message.from?.id || '');
+
+            // Route: Admin gets admin handler, everyone else gets client support bot
+            if (msgChatId === String(ADMIN_CHAT) || msgFromId === String(ADMIN_CHAT)) {
+                await handleAdminMessage(update.message);
+            } else {
+                // Client support bot handles all non-admin private messages
+                const { handleClientMessage } = require('./clientSupportBot');
+                await handleClientMessage(update.message);
+            }
         }
         // callback_query handling is done by routes/telegram.js webhook
     } catch (err) {
@@ -699,7 +809,8 @@ function startTelegramAgent() {
     console.log('   📋 Admin briefings    — 7AM, 12PM, 9PM EAT (no hourly spam)');
     console.log('   🎁 Code giveaway      — 1:00 PM EAT daily');
     console.log('   🔴 Live countdown     — 6:30→7:00 PM EAT daily');
-    console.log('   👂 Admin bot polling  — always on');
+    console.log('   👂 Admin bot webhook  — always on');
+    console.log('   🤖 Client support bot — active (@avisignalshelp_bot)');
     console.log(`   💬 Admin chat ID      — ${ADMIN_CHAT || 'NOT SET'}`);
     console.log(`   📣 Channel            — ${CHANNEL_ID}`);
 }
