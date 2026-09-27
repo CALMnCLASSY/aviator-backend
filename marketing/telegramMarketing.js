@@ -363,6 +363,9 @@ class TelegramMarketingBot {
                 }
             }
 
+            // Escape bot username underscore for Markdown so it doesn't break entity parsing
+            finalMessage = (finalMessage || '').replace(/avisignalshelp_bot/g, 'avisignalshelp\\_bot');
+
             const url = `https://api.telegram.org/bot${this.botToken}/sendMessage`;
             const payload = {
                 chat_id: this.channelId,
@@ -383,10 +386,28 @@ class TelegramMarketingBot {
                 console.log('✅ Message sent successfully');
                 this.totalMessagesSent++;
                 return true;
-            } else {
-                console.error('❌ Failed to send message:', result.description);
-                return false;
             }
+
+            // Automatic fallback if Telegram Markdown parser fails
+            if (result.description && result.description.toLowerCase().includes('parse')) {
+                console.warn('⚠️ Telegram markdown parse error, retrying without parse_mode');
+                delete payload.parse_mode;
+                payload.text = finalMessage.replace(/[*_`\[\]]/g, '');
+                const retryRes = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const retryResult = await retryRes.json();
+                if (retryResult.ok) {
+                    console.log('✅ Message sent successfully on plain-text fallback');
+                    this.totalMessagesSent++;
+                    return true;
+                }
+            }
+
+            console.error('❌ Failed to send message:', result.description);
+            return false;
         } catch (error) {
             console.error('❌ Error sending message:', error);
             return false;
@@ -396,11 +417,12 @@ class TelegramMarketingBot {
     async sendImageToChannel(imagePath, caption) {
         try {
             const FormData = require('form-data');
-            const form = new FormData();
+            const safeCaption = (caption || '').replace(/avisignalshelp_bot/g, 'avisignalshelp\\_bot');
 
+            const form = new FormData();
             form.append('chat_id', this.channelId);
             form.append('photo', fs.createReadStream(imagePath));
-            form.append('caption', caption);
+            form.append('caption', safeCaption);
             form.append('parse_mode', 'Markdown');
 
             const url = `https://api.telegram.org/bot${this.botToken}/sendPhoto`;
@@ -415,10 +437,26 @@ class TelegramMarketingBot {
                 console.log('✅ Image sent successfully');
                 this.totalMessagesSent++;
                 return true;
-            } else {
-                console.error('❌ Failed to send image:', result.description);
-                return false;
             }
+
+            // Automatic fallback if Markdown parse fails
+            if (result.description && result.description.toLowerCase().includes('parse')) {
+                console.warn('⚠️ Image caption markdown parse error, retrying without parse_mode');
+                const retryForm = new FormData();
+                retryForm.append('chat_id', this.channelId);
+                retryForm.append('photo', fs.createReadStream(imagePath));
+                retryForm.append('caption', safeCaption.replace(/[*_`\[\]]/g, ''));
+                const retryRes = await fetch(url, { method: 'POST', body: retryForm });
+                const retryJson = await retryRes.json();
+                if (retryJson.ok) {
+                    console.log('✅ Image sent successfully on plain-text fallback');
+                    this.totalMessagesSent++;
+                    return true;
+                }
+            }
+
+            console.error('❌ Failed to send image:', result.description);
+            return false;
         } catch (error) {
             console.error('❌ Error sending image:', error);
             return false;
@@ -428,11 +466,12 @@ class TelegramMarketingBot {
     async sendVideoToChannel(videoPath, caption) {
         try {
             const FormData = require('form-data');
-            const form = new FormData();
+            const safeCaption = (caption || '').replace(/avisignalshelp_bot/g, 'avisignalshelp\\_bot');
 
+            const form = new FormData();
             form.append('chat_id', this.channelId);
             form.append('video', fs.createReadStream(videoPath));
-            form.append('caption', caption);
+            form.append('caption', safeCaption);
             form.append('parse_mode', 'Markdown');
 
             const url = `https://api.telegram.org/bot${this.botToken}/sendVideo`;
@@ -447,10 +486,26 @@ class TelegramMarketingBot {
                 console.log('✅ Video sent successfully');
                 this.totalMessagesSent++;
                 return true;
-            } else {
-                console.error('❌ Failed to send video:', result.description);
-                return false;
             }
+
+            // Automatic fallback if Markdown parse fails
+            if (result.description && result.description.toLowerCase().includes('parse')) {
+                console.warn('⚠️ Video caption markdown parse error, retrying without parse_mode');
+                const retryForm = new FormData();
+                retryForm.append('chat_id', this.channelId);
+                retryForm.append('video', fs.createReadStream(videoPath));
+                retryForm.append('caption', safeCaption.replace(/[*_`\[\]]/g, ''));
+                const retryRes = await fetch(url, { method: 'POST', body: retryForm });
+                const retryJson = await retryRes.json();
+                if (retryJson.ok) {
+                    console.log('✅ Video sent successfully on plain-text fallback');
+                    this.totalMessagesSent++;
+                    return true;
+                }
+            }
+
+            console.error('❌ Failed to send video:', result.description);
+            return false;
         } catch (error) {
             console.error('❌ Error sending video:', error);
             return false;

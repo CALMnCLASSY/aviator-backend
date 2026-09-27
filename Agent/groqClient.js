@@ -92,6 +92,15 @@ function getClientInstance() {
     return clientInstances[currentKeyIndex];
 }
 
+const DEFAULT_MODEL = process.env.GROQ_MODEL || 'qwen/qwen3.8-27b';
+
+function resolveModel(model) {
+    if (!model || model.includes('llama-3.3-70b') || model.includes('llama3-70b') || model.includes('llama-3.1-70b')) {
+        return DEFAULT_MODEL;
+    }
+    return model;
+}
+
 // Wrap chat.completions.create to auto-track usage + enforce budget + handle rotation
 const groq = {
     chat: {
@@ -104,8 +113,14 @@ const groq = {
 
                 const client = getClientInstance();
                 
+                // Automatically route to an active supported model
+                const callParams = {
+                    ...params,
+                    model: resolveModel(params.model)
+                };
+
                 try {
-                    const result = await client.chat.completions.create(params);
+                    const result = await client.chat.completions.create(callParams);
                     if (result?.usage) {
                         trackTokens(result.usage);
                     }
