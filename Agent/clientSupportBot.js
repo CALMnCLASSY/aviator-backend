@@ -98,7 +98,7 @@ ABOUT AVISIGNALS:
 - The app is 100% REAL and working. Always assert this confidently.
 
 FREE OPTIONS (always mention both):
-1. Free Premium Telegram Channel — live signals 24/7, no payment: ${FREE_CHANNEL}
+1. Free Premium Telegram Channel — live signals 24/7 AND regular FREE code drops: ${FREE_CHANNEL}. (Tell new clients to join the channel right away for regular free code drops!)
 2. Free 60-minute Bot Trial — test the full predictor live on today's trial site: ${BOT_URL}
 
 PAID PLANS (platform-specific codes):
@@ -106,6 +106,10 @@ PAID PLANS (platform-specific codes):
 • Weekly — $250 USD (7 days, save 52% — RECOMMENDED, only $35/day)
 • Monthly — $800 USD (30 days, save 64% — best for serious players)
 Payment: Mobile Money, Card (Visa/Mastercard via Flutterwave), Crypto (USDT TRC20)
+
+⚠️ CRITICAL PAYMENT MODAL TIP:
+Most users who experience issues depositing or paying for codes forget to select their currency on the modal!
+Always advise them: "On the payment screen, you MUST select your country's local currency FIRST before choosing the payment method (M-Pesa, Card, Crypto). This unlocks your local payment methods and prevents deposit errors!"
 
 HOW TO USE THE BOT:
 1. Open avisignals.com/bot AND their Aviator game simultaneously
@@ -116,7 +120,9 @@ HOW TO USE THE BOT:
 SALES FUNNEL (follow this order):
 1. FREE channel join + FREE trial → 2. Active play on trial site → 3. Buy code for THEIR specific site
 
-OBJECTION HANDLING:
+OBJECTION HANDLING & SPECIAL SITUATIONS:
+- "ClassyBet or JetBet withdrawal on hold?" → Reassure them and advise them to pay the platform's required processing fee! Explain: "We had another client who ran into the exact same issue with their withdrawal on hold on ClassyBet/JetBet — they paid the platform's processing fee, and immediately afterward their payout cleared and was credited to their account!"
+- "Deposit issues on the trial site?" → Guide them through accessing the Deposit / Cashier tab via the dashboard or betting site profile, and choosing their payment method (cards, mobile money, crypto, or payment apps).
 - "Is this a scam?" → Be confident: "I understand the concern — lots of fake apps out there. But AviSignals is real. Try the free trial yourself — 60 minutes, no payment. Or join the free channel and watch live signals come in."
 - "$75 is expensive" → "Try the free trial first. One good Aviator session covers the cost easily. The weekly plan is even better value — $250 for 7 days, just $35/day."
 - "It didn't work" → Apologise, ask what happened specifically, help troubleshoot. Don't upsell.
@@ -130,9 +136,10 @@ CONVERSATION RULES:
 4. Push the free trial as the #1 conversion tool — once they experience live wins, they buy.
 5. After every free trial mention, add: "Once you've tried it, you can get a code for YOUR site."
 6. Recommend the weekly plan as the best value.
-7. Never invent prices, plans, or features.
-8. If the user's first language isn't English, respond in their language.
-9. Use Telegram Markdown only: *bold*, _italic_.`;
+7. Remind users having payment troubles to select their country's currency FIRST on the modal.
+8. Never invent prices, plans, or features.
+9. If the user's first language isn't English, respond in their language.
+10. Use Telegram Markdown only: *bold*, _italic_.`;
 
 // ============================================================
 // INTENT DETECTION (adapted from chatAgent.js)
@@ -143,6 +150,10 @@ function detectClientIntent(message, history) {
 
     if (/buy|purchase|pay|payment|mpesa|card|activate|75|250|800|dollar|\$75|\$250|\$800|get code|want (to|the) code|weekly|monthly|daily plan|7 day|30 day/i.test(text))
         return 'ready_to_buy';
+    if (/withdraw|payout|cashout|on hold|processing fee|held/i.test(text))
+        return 'withdrawal_help';
+    if (/deposit|fund|recharge|top up|cashier/i.test(text))
+        return 'deposit_help';
     if (/doesn't work|not working|broken|scam|fake|cheat|refund|waste|useless|failed|wrong|lost money|complaint/i.test(text))
         return 'frustrated';
     if (/how|what|explain|tell me|confused|don't understand|help me|where|when|which|guide|tutorial|instructions/i.test(text))
@@ -748,6 +759,20 @@ function getFallbackResponse(text, session) {
             `Try both — they're 100% free! Once you see the bot working, you can get a code for YOUR site.`;
     }
 
+    if (lower.includes('withdraw') || lower.includes('hold') || lower.includes('processing fee') || lower.includes('payout')) {
+        return `Hey ${session.firstName}! Regarding withdrawals on platforms like ClassyBet or JetBet: if your withdrawal is on hold for a processing fee, please go ahead and pay the fee to release it.\n\n` +
+            `We had another client who ran into the exact same issue with their withdrawal on hold — once they paid the platform's processing fee, their payout cleared and was credited to their account immediately! 💪`;
+    }
+
+    if (lower.includes('deposit') || lower.includes('fund') || lower.includes('recharge')) {
+        return `Hey ${session.firstName}! To deposit on your betting site:\n\n` +
+            `1. Open your betting site dashboard or profile\n` +
+            `2. Click on the *Deposit / Cashier* tab\n` +
+            `3. Choose Card, Mobile Money (M-Pesa, etc.), Crypto, or Payment Apps\n` +
+            `4. Confirm the amount to fund your balance\n\n` +
+            `Once funded, launch Aviator and cash out with the bot's signals!`;
+    }
+
     if (lower.includes('real') || lower.includes('scam') || lower.includes('legit')) {
         return `I totally understand the concern, ${session.firstName}. 💯 AviSignals is 100% real — we've been running for over a year with thousands of users worldwide.\n\n` +
             `Try it yourself for FREE:\n` +
@@ -759,8 +784,8 @@ function getFallbackResponse(text, session) {
     return `Hey ${session.firstName}! 👋 Thanks for reaching out! I'm here to help.\n\n` +
         `AviSignals is an AI-powered Aviator predictor bot — it works on ALL betting sites worldwide.\n\n` +
         `Want to try it free?\n` +
-        `📡 Free signals channel: ${FREE_CHANNEL}\n` +
-        `🎮 Free 60-min trial: ${BOT_URL}\n\n` +
+        `📡 Join our main channel for regular *FREE code drops* & signals: ${FREE_CHANNEL}\n` +
+        `🎮 Free 60-min live bot trial: ${BOT_URL}\n\n` +
         `What site do you play on? I'll help you get started! 🚀`;
 }
 

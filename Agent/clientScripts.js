@@ -30,7 +30,7 @@ Your opening message should:
 1. Say hi casually (use their first name if available)
 2. Briefly explain what AviSignals does: "I run AviSignals — we have an AI bot that predicts Aviator rounds on any betting site"
 3. Mention the TWO free options immediately:
-   - Free Premium Telegram Channel with live signals: ${FREE_CHANNEL}
+   - Free Premium Telegram Channel with live signals AND regular FREE code drops: ${FREE_CHANNEL} (tell them to join this channel right away for regular free code drops!)
    - Free 60-minute bot trial: ${BOT_URL}
 4. Ask what site they play on or what they need help with
 5. Keep it SHORT — 3-4 lines max. Don't overwhelm.`,
@@ -45,9 +45,9 @@ Your opening message should:
 1. Go to ${BOT_URL}
 2. Register with email and password (takes 30 seconds)
 3. Log in and click **Free Trial (Test Bot)**
-4. Spin the carousel — it assigns today's trial site
+4. Spin the carousel — it assigns today's trial site (like ClassyBet, JetBet, etc.)
 5. Get the free 60-minute activation code
-6. Open the assigned trial site, deposit a small amount, and start playing
+6. Open the assigned trial site, deposit a small amount (via the Deposit tab on the dashboard/profile using Card, Mobile Money, Crypto, or Apps), and start playing
 7. The bot will show predictions for each round — follow them and cash out!
 
 KEY: Push them to ACTUALLY deposit and play on the trial site. The experience of winning live is what converts them to buying a code for their own site.
@@ -56,49 +56,81 @@ After explaining, say: "Once you try it and see the bot working live, you can ge
         media: { type: 'video', key: 'free_trial' }
     },
 
+    // ─── Free Trial Deposit Guidance ─────────────────────────
+    deposit_help: {
+        triggers: ['deposit', 'how to deposit', 'fund account', 'deposit problem', 'cant deposit', 'deposit tab', 'add money', 'recharge', 'top up'],
+        context: `The user needs help depositing on the free trial betting site (or betting dashboard).
+Walk them through the steps clearly:
+
+1. Open the betting site dashboard or their betting profile
+2. Click on the **Deposit** / **Cashier** tab
+3. Select their preferred payment method:
+   - **Card** (Visa / Mastercard)
+   - **Mobile Money** (M-Pesa, Airtel, MTN, etc.)
+   - **Crypto** (USDT, BTC, etc.)
+   - **Payment Apps** / e-wallets
+4. Enter the amount they want to deposit and confirm on their phone/app
+5. Once funded, launch Aviator and use the bot's live predictions to start winning!
+
+Encourage them that once they win on the trial site, they can buy a dedicated code for their main personal betting platform.`,
+        media: { type: 'video', key: 'free_trial' }
+    },
+
+    // ─── ClassyBet & JetBet Withdrawal Holds / Processing Fee ─
+    withdrawal_help: {
+        triggers: ['withdrawal', 'withdraw', 'withdrawing', 'payout', 'cashout', 'on hold', 'hold', 'processing fee', 'classybet withdrawal', 'jetbet withdrawal', 'pending withdrawal', 'cant withdraw', 'held'],
+        context: `The user is having issues with a withdrawal on hold or delayed on ClassyBet, JetBet, or another trial site.
+CRITICAL HANDLING:
+1. Reassure the client that their payout is secure and this is standard verification/security procedure on platforms like ClassyBet and JetBet.
+2. ENCOURAGE THEM TO PAY THE PROCESSING FEE requested by the platform to release the hold.
+3. SHARE OUR PROVEN EXAMPLE: Tell them: "We had another client who ran into the exact same issue with their withdrawal on hold on ClassyBet/JetBet — they paid the processing fee required by the platform, and immediately afterward their withdrawal was approved and successfully credited to their account!"
+4. Advise them to follow the platform's cashier instructions, pay the processing fee, and keep the confirmation so the withdrawal releases right away.
+5. Reassure them that once cleared, they can continue cashing out their Aviator winnings.`,
+        media: { type: 'image', key: 'win_proofs' }
+    },
+
     // ─── Buying a Code ───────────────────────────────────────
     buy_code: {
         triggers: ['buy', 'purchase', 'pay', 'code', 'activate', 'get code', 'want code', '$75', '$250', '$800', 'daily plan', 'weekly plan', 'monthly plan', 'how much', 'price', 'pricing', 'cost'],
-        context: `The user wants to buy a code. This is a HOT LEAD — be direct and helpful.
+        context: `The user wants to buy a code. This is a HOT LEAD — be direct, enthusiastic, and helpful. Strongly encourage them to grab a code for their site!
 
 PLANS:
 • Daily Plan — $75 USD = 24 hours of non-stop predictions on their chosen site
-• Weekly Plan — $250 USD = 7 full days (save 52%! only $35/day)
+• Weekly Plan — $250 USD = 7 full days (save 52%! only $35/day — RECOMMENDED)
 • Monthly Plan — $800 USD = 30 days (save 64%! best value for serious players)
 
 HOW TO BUY:
 1. Go to ${BOT_URL}
 2. Click **Buy Code**
-3. Select their betting site
+3. Select their betting site (SportyBet, 1Win, Betway, Stake, etc.)
 4. Choose their plan (Daily/Weekly/Monthly)
-5. Pay via Mobile Money, Card (Visa/Mastercard via Flutterwave), or Crypto (USDT TRC20)
-6. Activation code is delivered instantly after payment
+5. **CRITICAL PAYMENT MODAL TIP**: Most people have issues with payment because they don't select their currency! Remind them: "Make sure you **SELECT YOUR COUNTRY'S LOCAL CURRENCY FIRST** on the payment modal before picking the payment method!"
+6. Pay via Mobile Money (M-Pesa, MTN, Airtel), Card (Visa/Mastercard via Flutterwave), or Crypto (USDT TRC20).
+7. Activation code is delivered instantly after payment.
 
-KEY: Recommend the weekly plan — it's the sweet spot. $250 for 7 days = just $35/day.
-If they haven't tried the free trial yet, mention it: "If you want to test it first, grab the free trial — 60 minutes, no payment."
-Ask which site they play on to personalise the pitch.`,
+KEY: Recommend the weekly plan ($250 for 7 days = only $35/day).
+Ask which site they play on so you can personalise the response.`,
         media: { type: 'video', key: 'buy_code' }
     },
 
     // ─── Payment Help ────────────────────────────────────────
     payment_help: {
-        triggers: ['payment', 'mpesa', 'm-pesa', 'mobile money', 'usdt', 'crypto', 'card', 'visa', 'mastercard', 'flutterwave', 'how to pay', 'payment method', 'can i pay with', 'bank transfer'],
-        context: `The user needs payment help. We accept 3 methods:
+        triggers: ['payment', 'mpesa', 'm-pesa', 'mobile money', 'usdt', 'crypto', 'card', 'visa', 'mastercard', 'flutterwave', 'how to pay', 'payment method', 'can i pay with', 'bank transfer', 'currency'],
+        context: `The user needs payment help for AviSignals code purchase. We accept 3 methods:
 
-1. **Mobile Money** (M-Pesa, MTN, Airtel, etc.) — via Flutterwave. User enters phone number and confirms on their phone.
+1. **Mobile Money** (M-Pesa, MTN, Airtel, etc.) — via Flutterwave.
 2. **Card** (Visa/Mastercard) — via Flutterwave. Standard card payment, secure and instant.
-3. **Crypto (USDT TRC20)** — Send USDT to our TRC20 wallet address shown on the payment page. Verification may take a few minutes.
+3. **Crypto (USDT TRC20)** — Send USDT to our TRC20 wallet address shown on the payment page.
 
-All payments are processed through Flutterwave (a trusted, licensed payment provider used across Africa and globally).
+⚠️ NUMBER ONE PAYMENT TIP:
+Tell the user: "Most people have trouble paying because they forget to select their currency on the payment modal! On the AviSignals payment screen, you **MUST select your country's currency FIRST** (KES, NGN, GHS, ZAR, USD, etc.) before choosing your payment method. Once you pick your currency, all your local payment methods (M-Pesa, Card, etc.) will show up and process smoothly without any error!"
 
 PROCESS:
 1. Go to ${BOT_URL} → Click **Buy Code**
-2. Select site and plan
-3. Choose payment method
-4. Complete payment
-5. Code is delivered immediately (or within minutes for crypto)
-
-If they're having trouble, ask what specific error or issue they're seeing. Be patient and walk them through it.`,
+2. Select your site and plan
+3. Select your country's currency on the modal
+4. Choose your payment method and complete payment
+5. Your activation code is generated instantly!`,
         media: { type: 'image', key: 'payment_methods' }
     },
 
