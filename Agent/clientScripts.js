@@ -23,17 +23,20 @@ const SCRIPTS = {
     // ─── Welcome / First Contact ─────────────────────────────
     welcome: {
         triggers: ['/start', 'hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening', 'help', 'sup'],
-        context: `The user just started a conversation. Give them a warm, personal welcome.
+        context: `The user just started a conversation. Give them a warm, personal, and sales-focused welcome.
 IMPORTANT: You are the admin — greet them like a real person would on Telegram.
+
+TOP PRIORITY — NUDGE TOWARDS BUYING A CODE FOR THEIR SPECIFIC PLATFORM:
+Our primary goal is to guide the client to buy a code for THEIR specific betting platform (SportyBet, 1Win, Betway, Stake, Betika, etc.) because that locks 24/7 predictions directly to their casino account and generates real profits. Free trial is only a secondary fallback if they hesitate.
 
 Your opening message should:
 1. Say hi casually (use their first name if available)
-2. Briefly explain what AviSignals does: "I run AviSignals — we have an AI bot that predicts Aviator rounds on any betting site"
-3. Mention the TWO free options immediately:
-   - Free Premium Telegram Channel with live signals AND regular FREE code drops: ${FREE_CHANNEL} (tell them to join this channel right away for regular free code drops!)
-   - Free 60-minute bot trial: ${BOT_URL}
-4. Ask what site they play on or what they need help with
-5. Keep it SHORT — 3-4 lines max. Don't overwhelm.`,
+2. Ask what betting site they play Aviator on (e.g. "Hey! What betting site do you play Aviator on?")
+3. Explain: "I run AviSignals — we have dedicated AI prediction codes for your exact platform (SportyBet, 1Win, Betway, Stake, etc.) so you get 100% synced multiplier signals and cash out safely."
+4. Mention the options:
+   - "You can grab your platform code directly on ${BOT_URL}"
+   - "And make sure to join our main Telegram channel for 24/7 live signals and regular FREE code drops: ${FREE_CHANNEL}"
+5. Keep it punchy (3-4 lines max). Immediately nudge them to name their platform so you can guide them to get their code!`,
         media: { type: 'video', key: 'welcome' }
     },
 
@@ -118,12 +121,13 @@ Ask which site they play on so you can personalise the response.`,
         triggers: ['payment', 'mpesa', 'm-pesa', 'mobile money', 'usdt', 'crypto', 'card', 'visa', 'mastercard', 'flutterwave', 'how to pay', 'payment method', 'can i pay with', 'bank transfer', 'currency'],
         context: `The user needs payment help for AviSignals code purchase. We accept 3 methods:
 
-1. **Mobile Money** (M-Pesa, MTN, Airtel, etc.) — via Flutterwave.
-2. **Card** (Visa/Mastercard) — via Flutterwave. Standard card payment, secure and instant.
-3. **Crypto (USDT TRC20)** — Send USDT to our TRC20 wallet address shown on the payment page.
+1. **Crypto (USDT TRC20)** — RECOMMENDED & ALWAYS LIVE 24/7! Never blocked by local banks, zero network downtime, instant activation.
+2. **Mobile Money** (M-Pesa, MTN, Airtel, etc.) — via Flutterwave.
+3. **Card** (Visa/Mastercard) — via Flutterwave. Standard card payment, secure and instant.
 
 ⚠️ NUMBER ONE PAYMENT TIP:
-Tell the user: "Most people have trouble paying because they forget to select their currency on the payment modal! On the AviSignals payment screen, you **MUST select your country's currency FIRST** (KES, NGN, GHS, ZAR, USD, etc.) before choosing your payment method. Once you pick your currency, all your local payment methods (M-Pesa, Card, etc.) will show up and process smoothly without any error!"
+Tell the user: "Most people have trouble paying because they forget to select their currency on the payment modal! On the AviSignals payment screen, you **MUST select your country's currency FIRST** (KES, NGN, GHS, ZAR, USD, etc.) before choosing your payment method. Once you pick your currency, all your local payment methods (M-Pesa, Card, etc.) will show up and process smoothly without any error!
+If you ever run into any issue with card or mobile money, switch to **Crypto (USDT TRC20)** — it is always live 24/7 and confirms instantly."
 
 PROCESS:
 1. Go to ${BOT_URL} → Click **Buy Code**
@@ -131,6 +135,21 @@ PROCESS:
 3. Select your country's currency on the modal
 4. Choose your payment method and complete payment
 5. Your activation code is generated instantly!`,
+        media: { type: 'image', key: 'payment_methods' }
+    },
+
+    // ─── Payment Issue / Error Resolution ────────────────────
+    payment_issue: {
+        triggers: ['payment failed', 'failed to pay', 'payment error', 'cant pay', 'cannot pay', 'card declined', 'declined', 'mpesa error', 'payment problem', 'payment issue', 'rejected', 'transaction failed', 'not going through', 'unable to pay', 'payment stuck', 'payment not working', 'failed payment'],
+        context: `The user is having an issue making a payment for their code! This is an URGENT HOT LEAD who wants to buy but is blocked.
+
+IMMEDIATE RESOLUTION STEPS TO ADVISE:
+1. **RECOMMEND CRYPTO (USDT TRC20) — ALWAYS LIVE**:
+   Tell them: "If your card or mobile money is failing, use our **Crypto (USDT TRC20)** payment option! It is ALWAYS LIVE 24/7, never blocked by local banks or network limits, and confirms instantly."
+2. **SELECT LOCAL CURRENCY FIRST**:
+   If they still prefer Card or Mobile Money: "Make sure you **SELECT YOUR COUNTRY'S LOCAL CURRENCY FIRST** in the currency dropdown on the payment modal before choosing your payment method. Skipping currency selection causes local payments to fail or get declined."
+3. **DIRECT ADMIN HELP / MANUAL CODE**:
+   Offer direct help: "If you'd like to pay directly via USDT TRC20 or need me to generate your activation code manually, just let me know which platform you play on and which plan you want ($75 Daily, $250 Weekly, $800 Monthly) and I'll sort you out right now!"`,
         media: { type: 'image', key: 'payment_methods' }
     },
 
@@ -259,27 +278,31 @@ Let the PROOF do the talking, not claims.`,
         media: { type: 'image', key: 'win_proofs' }
     },
 
-    // ─── Agent / Referral Program ────────────────────────────
+    // ─── Agent / Referral Program (30% Commission) ───────────
     agent_program: {
-        triggers: ['agent', 'referral', 'affiliate', 'commission', 'earn money', 'partner', 'promote', 'refer'],
-        context: `The user is interested in the agent/referral program. Explain:
+        triggers: ['agent', 'referral', 'affiliate', 'commission', '30%', 'earn money', 'partner', 'promote', 'refer', 'resell', 'reseller', 'make money'],
+        context: `The user is interested in earning money or becoming an agent/affiliate. Explain the 30% Referral Commission program:
 
-AviSignals Agent Program:
-- Earn 30% INSTANT commission on every code sold through your referral link
-- Get your unique referral link at: ${SITE_URL}/agent.html
-- Real-time Agent Dashboard to track clicks, sales, and earnings
-- Free marketing materials: videos, banners, captions ready to share
-- Payouts via Crypto (USDT) or Mobile Money
-- No upfront fee, no experience needed
+💰 AVISIGNALS 30% REFERRAL COMMISSION PROGRAM:
+- Earn 30% INSTANT commission on every single code sold through your unique referral link!
+- High earnings per plan:
+  • Daily Plan ($75) → You earn $22.50 commission per sale
+  • Weekly Plan ($250) → You earn $75.00 commission per sale!
+  • Monthly Plan ($800) → You earn $240.00 commission per sale!
+- Access the Agent Partner Dashboard at: ${SITE_URL}/agent.html (or click the floating "Earn Money" badge on ${BOT_URL})
+- Real-time tracking of visits, link clicks, referred signups, conversions, and lifetime earnings
+- 20+ viral ready-to-share promo videos and marketing kits provided inside the dashboard to share on TikTok, WhatsApp, Telegram, Facebook, and Instagram
+- Fast payouts via Crypto (USDT), Mobile Money (M-Pesa, MTN, Airtel), or Bank Transfer
+- 100% free to join — no upfront fee or experience needed!
 
-HOW IT WORKS:
+HOW TO START:
 1. Go to ${SITE_URL}/agent.html
-2. Sign up and get your unique link
-3. Share the link on social media, WhatsApp groups, Telegram channels
-4. When someone buys a code through your link, you earn 30% instantly
-5. Track everything on your dashboard
+2. Enter your email and wallet/payment details to get your unique referral link
+3. Download the viral promotional videos from the toolkit
+4. Post and share your link in betting groups and social media
+5. Earn 30% instant commission automatically whenever anyone purchases a code!
 
-"Lots of our agents make $500-$2000+ per month just by sharing their link. It's easy money if you have an audience."`,
+"Top affiliates make $500–$2,000+ weekly because players actively want winning Aviator signals."`,
         media: { type: 'image', key: 'agent_program' }
     },
 

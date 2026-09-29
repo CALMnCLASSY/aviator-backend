@@ -378,20 +378,46 @@ function sendCodeEvent({ site, codeType, code, generatedAt, user }) {
 /**
  * AI chat session summary — called by chatAgent after inactivity
  */
-function sendChatSummary({ text, user, page, intent, isHotLead = false }) {
+function sendChatSummary({ text, user, page, intent, isHotLead = false, isPaymentIssue = false }) {
+    let title = '🤖 Chat Session Summary';
+    let color = COLOR.gold;
+
+    if (isPaymentIssue) {
+        title = '🚨 PAYMENT ISSUE — Client Needs Help Paying!';
+        color = COLOR.red;
+    } else if (isHotLead) {
+        title = '🔥 HOT LEAD — Chat Summary';
+        color = COLOR.hotlead;
+    }
+
+    const fields = [
+        { name: 'USER',     value: safeValue(user),                              inline: true },
+        { name: 'PAGE',     value: safeValue(page),                              inline: true },
+        { name: 'INTENT',   value: safeValue(intent || 'unknown'),               inline: true },
+        { name: 'STATUS',   value: isPaymentIssue ? '**🚨 PAYMENT BLOCKED**' : (isHotLead ? '**🔥 HOT LEAD**' : 'Normal'), inline: true },
+    ];
+
+    if (isPaymentIssue) {
+        fields.push({
+            name: 'ACTION TAKEN / ADVICE',
+            value: '💬 Client advised to switch to **Crypto (USDT TRC20)** — always live 24/7!',
+            inline: false
+        });
+    }
+
     const embed = baseEmbed({
-        title:       isHotLead ? '🔥 HOT LEAD — Chat Summary' : '🤖 Chat Session Summary',
-        color:       isHotLead ? COLOR.hotlead : COLOR.gold,
+        title,
+        color,
         description: String(text).slice(0, 4000),
-        fields:      [
-            { name: 'USER',     value: safeValue(user),                              inline: true },
-            { name: 'PAGE',     value: safeValue(page),                              inline: true },
-            { name: 'INTENT',   value: safeValue(intent || 'unknown'),               inline: true },
-            { name: 'LEAD',     value: isHotLead ? '**🔥 YES — follow up!**' : 'No', inline: true },
-        ],
-        footer: `${FOOTER_TAG} · Chat Agent (6min inactivity timeout)`
+        fields,
+        footer: `${FOOTER_TAG} · Chat Agent Support`
     });
     dispatch('chat', embed);
+
+    // If payment issue, also dispatch to alerts channel for immediate visibility
+    if (isPaymentIssue) {
+        dispatch('alerts', embed);
+    }
 }
 
 /**
