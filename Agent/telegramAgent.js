@@ -414,6 +414,10 @@ AVAILABLE ADMIN COMMANDS (remind user if relevant):
 /takeover [chat_id] — pause bot for a client, reply manually
 /resume [chat_id] — re-enable bot for a client
 /clientlog [chat_id] — view conversation history for a client
+/pending — payments awaiting verification
+/lookup [email|ref] — check a payment status
+/resendcode [email|ref] — resend activation code email
+/sendcode [chat_id] — DM activation code to a client
 /help — full command list
 
 TONE: Sharp, direct, loyal COO. Data-driven, no filler. Short sentences.
@@ -562,8 +566,10 @@ async function handleAdminMessage(message) {
         let msg = `👥 *Active Client Conversations* (${clients.length})\n\n`;
         for (const c of clients.slice(0, 15)) {
             const status = c.takenOver ? '🔴 TAKEOVER' : '🤖 Bot';
+            const slotBits = [c.slots?.site, c.slots?.plan, c.slots?.method].filter(Boolean).join('/');
             msg += `• *${c.name}* ${c.username ? '(@' + c.username + ')' : ''} — ${status}\n`;
-            msg += `  ID: \`${c.chatId}\` | Intent: _${c.intent}_ | ${c.messages} msgs | ${c.lastMin}m ago\n`;
+            msg += `  ID: \`${c.chatId}\` | _${c.intent}_ | stage: _${c.funnelStage || 'new'}_${c.codeRecovery && c.codeRecovery !== 'resolved' ? ` (${c.codeRecovery})` : ''}\n`;
+            msg += `  ${c.messages} msgs | ${c.lastMin}m ago${slotBits ? ` | ${slotBits}` : ''}\n`;
         }
         if (clients.length > 15) msg += `\n_...and ${clients.length - 15} more_`;
         msg += `\n\n💡 /takeover [chat\_id] — manual reply\n💡 /resume [chat\_id] — re-enable bot`;
@@ -639,6 +645,106 @@ async function handleAdminMessage(message) {
         return;
     }
 
+    // ── /pending — list payments awaiting verification ─────────
+    if (text.startsWith('/pending')) {
+        const { listPendingPayments } = require('./paymentSupport');
+        const pending = await listPendingPayments(24);
+        if (pending.length === 0) {
+            await telegramRequest('sendMessage', { chat_id: chatId, text: '✅ No pending payments in the last 24h.', parse_mode: 'Markdown' });
+            return;
+        }
+        let msg = `⏳ *Pending Payments* (${pending.length}, last 24h)\n\n`;
+        for (const p of pending.slice(0, 15)) {
+            const email = p.profiles?.email || 'no-email';
+            const when = p.created_at ? new Date(p.created_at).toLocaleTimeString('en-KE', { timeZone: 'Africa/Nairobi', hour: '2-digit', minute: '2-digit' }) : '?';
+            msg += `• \`${p.reference}\`\n  ${email} | $${p.amount} ${p.currency || ''} | ${p.method || '?'} | _${p.status}_ | ${when}\n`;
+        }
+        msg += `\n💡 /lookup <ref> for details — or verify via the button on the client alert.`;
+        await telegramRequest('sendMessage', { chat_id: chatId, text: msg, parse_mode: 'Markdown' });
+        return;
+    }
+
+    // ── /lookup <email|ref> — payment status check ─────────────
+    if (text.startsWith('/lookup')) {
+        const q = text.split(' ').slice(1).join(' ').trim();
+        if (!q) {
+            await telegramRequest('sendMessage', { chat_id: chatId, text: '⚠️ Usage: /lookup [email or payment reference]', parse_mode: 'Markdown' });
+            return;
+        }
+        const { lookupPayment, isVerifiedStatus, isPendingStatus } = require('./paymentSupport');
+        const result = await lookupPayment(q.includes('@') ? { email: q } : { reference: q });
+        let msg;
+        if (!result.found) {
+            msg = `❌ No payment found for \`${q}\`${result.error ? `\nError: ${result.error}` : ''}`;
+        } else {
+            const p = result.payment;
+            const status = isVerifiedStatus(p.status) ? '✅ VERIFIED' : isPendingStatus(p.status) ? '⏳ PENDING' : `❌ ${String(p.status || 'unknown').toUpperCase()}`;
+            msg = `🔎 *Payment Lookup*\n\n` +
+                `Ref: \`${p.reference}\`\n` +
+                `Status: ${status}\n` +
+                `Amount: $${p.amount} ${p.currency || ''} via ${p.method || '?'}\n` +
+                `Email: ${p.profiles?.email || 'unknown'}\n` +
+                `Site: ${p.profiles?.assigned_site || 'unknown'}\n` +
+                `Created: ${p.created_at ? new Date(p.created_at).toLocaleString('en-KE', { timeZone: 'Africa/Nairobi' }) : '?'}`;
+            if (result.all && result.all.length > 1) {
+                msg += `\n\n_Note: ${result.all.length} payments under this email — showing the latest._`;
+            }
+        }
+        await telegramRequest('sendMessage', { chat_id: chatId, text: msg, parse_mode: 'Markdown' });
+        return;
+    }
+
+    // ── /resendcode <email|ref> — resend activation code email ──
+    if (text.startsWith('/resendcode')) {
+        const q = text.split(' ').slice(1).join(' ').trim();
+        if (!q) {
+            await telegramRequest('sendMessage', { chat_id: chatId, text: '⚠️ Usage: /resendcode [email or payment reference]', parse_mode: 'Markdown' });
+            return;
+        }
+        const { lookupPayment, resendCodeEmail, isVerifiedStatus } = require('./paymentSupport');
+        const result = await lookupPayment(q.includes('@') ? { email: q } : { reference: q });
+        if (!result.found) {
+            await telegramRequest('sendMessage', { chat_id: chatId, text: `❌ No payment found for \`${q}\`.`, parse_mode: 'Markdown' });
+            return;
+        }
+        let warn = '';
+        if (!isVerifiedStatus(result.payment.status)) {
+            warn = `⚠️ Payment \`${result.payment.reference}\` is *${result.payment.status}* — code sent anyway (admin override).\n`;
+        }
+        const sent = await resendCodeEmail(result.payment);
+        const msg = sent.sent
+            ? `${warn}✅ Activation code re-sent to ${sent.email} (code: \`${sent.code}\`).`
+            : `${warn}❌ Resend failed: ${sent.reason || 'email send error'}.`;
+        await telegramRequest('sendMessage', { chat_id: chatId, text: msg, parse_mode: 'Markdown' });
+        return;
+    }
+
+    // ── /sendcode <chatId> — DM the activation code to a client ─
+    if (text.startsWith('/sendcode')) {
+        const targetId = text.split(' ')[1];
+        if (!targetId) {
+            await telegramRequest('sendMessage', { chat_id: chatId, text: '⚠️ Usage: /sendcode [client chat\_id]\n\nSends the activation code for their site straight into their chat.', parse_mode: 'Markdown' });
+            return;
+        }
+        const { getClientHistory, sendClientMessage } = require('./clientSupportBot');
+        const { getCodeForSite } = require('./paymentSupport');
+        const log = getClientHistory(targetId);
+        const site = log?.slots?.site || null;
+        const code = getCodeForSite(site);
+        const siteLabel = site || 'their site';
+        const res = await sendClientMessage(targetId,
+            `🔑 *Your activation code:* \`${code}\`\n\n` +
+            `Enter it at ${BOT_URL} → *Enter Code* → *Activate* — your plan starts immediately. Enjoy! 🚀`);
+        await telegramRequest('sendMessage', {
+            chat_id: chatId,
+            text: res && res.ok
+                ? `✅ Code \`${code}\` (${siteLabel}) sent to client \`${targetId}\`.`
+                : `❌ Failed to message client \`${targetId}\` — they may need to /start the bot first.`,
+            parse_mode: 'Markdown'
+        });
+        return;
+    }
+
     // ── /help ──────────────────────────────────────────────────
     if (text.startsWith('/help') || text.startsWith('/start')) {
         const helpMsg =
@@ -659,6 +765,11 @@ async function handleAdminMessage(message) {
             `• /reply [id] [msg] — send manual reply to client\n` +
             `• /resume [id] — re-enable bot for client\n` +
             `• /clientlog [id] — view conversation history\n\n` +
+            `*PAYMENT SUPPORT*\n` +
+            `• /pending — payments awaiting verification\n` +
+            `• /lookup [email|ref] — check a payment status\n` +
+            `• /resendcode [email|ref] — resend activation code email\n` +
+            `• /sendcode [chat\_id] — DM the code to a client chat\n\n` +
             `*OR* just ask me anything in plain English!\n` +
             `_e.g. "what should I focus on today?" or "write a win post"_`;
         await telegramRequest('sendMessage', { chat_id: chatId, text: helpMsg, parse_mode: 'Markdown' });
@@ -727,7 +838,17 @@ async function processWebhookUpdate(update) {
                 await handleClientMessage(update.message);
             }
         }
-        // callback_query handling is done by routes/telegram.js webhook
+
+        // Inline-button taps on admin alert messages
+        if (update.callback_query) {
+            const cb = update.callback_query;
+            const cbFromId = String(cb.from?.id || '');
+            const cbChatId = String(cb.message?.chat?.id || '');
+            if (cbFromId === String(ADMIN_CHAT) || cbChatId === String(ADMIN_CHAT)) {
+                const { handleAdminCallback } = require('./clientSupportBot');
+                await handleAdminCallback(cb);
+            }
+        }
     } catch (err) {
         console.error('❌ Webhook update error:', err.message);
     }

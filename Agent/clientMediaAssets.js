@@ -130,6 +130,7 @@ const IMAGES = {
     free_trial_ui: { file: 'getfreetrial.jpg', caption: '🆓 Click "Free Trial" to get your 60-minute trial code — no payment!' },
     daily_predictions: { file: 'dailypredictions.jpg', caption: '📡 Daily prediction accuracy — our AI tracks every round.' },
     agent_program: { file: 'agentprogram.jpg', caption: '💼 Earn 30% commission as an AviSignals Agent — share and earn!' },
+    email_example: { file: 'emailexample.jpg', caption: '📧 This is how your activation code email looks — it lands in your inbox instantly after payment (check spam/junk too).' },
 
     // Site-specific screenshots
     sportybet_shot: { file: 'sportyngrshot1.jpg', caption: '🏆 SportyBet session — bot predictions hitting accurately.' },

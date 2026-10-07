@@ -98,8 +98,8 @@ CRITICAL HANDLING:
         context: `The user wants to buy a code. This is a HOT LEAD — be direct, enthusiastic, and helpful. Strongly encourage them to grab a code for their site!
 
 PLANS:
-• Daily Plan — $75 USD = 24 hours of non-stop predictions on their chosen site
-• Weekly Plan — $250 USD = 7 full days (save 52%! only $35/day — RECOMMENDED)
+• Daily Plan — $75 USD = 24 hours of non-stop predictions on their chosen site — MOST POPULAR & most affordable entry point
+• Weekly Plan — $250 USD = 7 full days (save 52%! only $35/day)
 • Monthly Plan — $800 USD = 30 days (save 64%! best value for serious players)
 
 HOW TO BUY:
@@ -109,9 +109,9 @@ HOW TO BUY:
 4. Choose their plan (Daily/Weekly/Monthly)
 5. **CRITICAL PAYMENT MODAL TIP**: Most people have issues with payment because they don't select their currency! Remind them: "Make sure you **SELECT YOUR COUNTRY'S LOCAL CURRENCY FIRST** on the payment modal before picking the payment method!"
 6. Pay via Mobile Money (M-Pesa, MTN, Airtel), Card (Visa/Mastercard via Flutterwave), or Crypto (USDT TRC20).
-7. Activation code is delivered instantly after payment.
+7. Activation code is delivered instantly after payment — it arrives by EMAIL ("Your AviSignals Activation Code" — check spam/junk too).
 
-KEY: Recommend the weekly plan ($250 for 7 days = only $35/day).
+KEY: Most users prefer the Daily $75 plan — it's what most people can afford. LEAD with the $75 daily as the popular pick; only mention Weekly/Monthly as upgrades if they want more time.
 Ask which site they play on so you can personalise the response.`,
         media: { type: 'video', key: 'buy_code' }
     },
@@ -189,7 +189,7 @@ If we have a demo video for their site, it will be sent automatically.
 
 If they're asking about the free trial: "The free trial runs on today's assigned trial site. To use the bot on [their site], you need a Premium Code — it locks predictions to YOUR specific platform."
 
-Pricing reminder: Daily $75, Weekly $250 (recommended, saves 52%), Monthly $800.`
+Pricing reminder: Daily $75 (most popular — what most users go for), Weekly $250, Monthly $800.`
     },
 
     // ─── How the Bot Works ───────────────────────────────────
@@ -304,6 +304,59 @@ HOW TO START:
 
 "Top affiliates make $500–$2,000+ weekly because players actively want winning Aviator signals."`,
         media: { type: 'image', key: 'agent_program' }
+    },
+
+    // ─── Code Delivery Question (how do I get the code) ──────
+    code_delivery: {
+        triggers: ['how will i get', 'how do i get the code', 'get the code', 'receive the code', 'receive my code', 'code sent', 'sent to my email', 'after paying', 'after i pay', 'once i pay', 'where will the code', 'deliver the code', 'delivery', 'check my email', 'to my email', 'email me'],
+        context: `The user is asking HOW the code is delivered after paying. Reassure them — delivery is instant and automatic:
+
+- After payment, the activation code is sent STRAIGHT TO THEIR EMAIL — subject line "Your AviSignals Activation Code".
+- Tell them to use the SAME email they pay with, and to check spam/junk/promotions folders if they don't see it within a minute.
+- An example screenshot of the email will be attached — point them to it: "It looks exactly like this email 👇"
+- They then enter the code at ${BOT_URL} → Enter Code → Activate — the plan timer starts on activation.
+- Reassure: "No waiting, no manual processing — the code lands in your email the second your payment confirms."`,
+        media: { type: 'image', key: 'email_example' }
+    },
+
+    // ─── Deposit Not Reflecting (JetBet/ClassyBet claims) ─────
+    deposit_not_updated: {
+        triggers: ['deposit not', 'deposit didn', 'deposit did not', 'did not update', 'not update', 'not updated my', 'not reflect', 'not reflecting', 'not credited', 'deposit not updated', 'balance not updated', 'deposit missing', 'deposit not showing', 'haven\'t reflected', 'deposit still'],
+        context: `The user claims their deposit on the trial site (usually ClassyBet/JetBet) did NOT update their balance.
+
+HANDLING:
+1. Reassure: "Your deposit is safe — deposits on their betting site normally take some time to reflect. It updates automatically once the platform finishes processing, so just be patient."
+2. Collect their USERNAME/ACCOUNT NAME on that betting site so we can check on it — the bot will forward it for review.
+3. Do NOT suggest another deposit. Do NOT push anything else — resolve this first.`,
+    },
+
+    // ─── Paid But No Code Received ───────────────────────────
+    paid_no_code: {
+        triggers: ['paid but', 'paid and', 'no code', 'haven\'t received', 'didn\'t receive', 'didnt receive', 'never received', 'where is my code', 'wheres my code', 'waiting for my code', 'waiting for code', 'code not received', 'didn\'t get my code', 'still no code', 'i have paid', 'i already paid', 'payment went through', 'sent the money', 'made payment', 'still waiting'],
+        context: `The user PAID for a code but says they haven't received it. This is the most sensitive scenario — they already gave us money.
+
+CRITICAL RULES:
+- NEVER try to sell them anything. NEVER suggest paying again.
+- Be apologetic, fast, and precise. They are anxious about their money.
+- Step 1 (always first): Ask them to check their EMAIL — the activation code is emailed automatically on verification. Remind them to check spam/junk/promotions folders for "Your AviSignals Activation Code".
+- Step 2: If not found, collect the EMAIL ADDRESS they paid with or the payment/transaction reference so the order can be looked up.
+- If the order shows verified: the code is re-sent to their email automatically — tell them to check inbox + spam again. If email keeps failing, the code can be shared here in chat.
+- If the order shows pending: reassure them payment was received and codes are released right after confirmation — usually minutes. We flag it for priority review.
+- If no order is found: ask for the transaction reference or a screenshot of the payment confirmation so it can be verified manually.`,
+    },
+
+    // ─── Withdrawal Follow-Up (already paid the fee) ─────────
+    withdrawal_status: {
+        triggers: ['paid the fee', 'paid processing fee', 'paid the processing fee', 'fee already', 'after paying the fee', 'still on hold', 'still pending withdrawal', 'still can\'t withdraw', 'still cannot withdraw', 'withdrawal still', 'fee but still', 'paid but still on hold'],
+        context: `The user already paid the platform's processing fee but their withdrawal STILL hasn't arrived. They are worried and need reassurance — NOT another payment request.
+
+HANDLING:
+1. Reassure: "Your payout is being processed — once the fee clears, the platform releases the withdrawal. It can take a little time to reflect."
+2. Ask them to confirm: did they keep the payment confirmation/receipt for the fee? Advise keeping it.
+3. Advise them to check the withdrawal status in the platform's cashier/withdrawal history tab.
+4. If it's been a long time or the platform asks for ANOTHER fee: tell them you'll check on it personally — "Send me your account name on the site and the exact time you paid the fee — I'll check the status for you right now."
+5. Keep them calm and confident. Do NOT push buying a code here — resolve the withdrawal first.`,
+        media: { type: 'image', key: 'win_proofs' }
     },
 
     // ─── Follow-up Nudge (proactive) ─────────────────────────

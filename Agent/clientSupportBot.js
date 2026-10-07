@@ -24,6 +24,7 @@ const fs = require('fs');
 const path = require('path');
 const groq = require('./groqClient');
 const { matchScript, SCRIPTS, BOT_URL, FREE_CHANNEL } = require('./clientScripts');
+const paymentSupport = require('./paymentSupport');
 const {
     VIDEOS, IMAGES, getVideoPath, getImagePath,
     matchSiteVideo, getCachedFileId, setCachedFileId,
@@ -153,11 +154,12 @@ CONVERSATION RULES:
 2. Always be warm, confident, and helpful.
 3. If they mention a specific betting site, confirm it works on that site and guide them to buy a code for it.
 4. Priority is purchasing a code for their platform — only offer free trial if they resist or need proof first.
-5. Recommend the weekly plan ($250) as the best value.
+5. Lead with the Daily $75 plan (most popular, most affordable); pitch Weekly $250 / Monthly $800 only as upgrades.
 6. If anyone runs into payment errors, immediately recommend Crypto (USDT TRC20) and remind them to select their currency first.
 7. Never invent prices, plans, or features.
 8. If the user's first language isn't English, respond in their language.
-9. Use Telegram Markdown only: *bold*, _italic_.`;
+9. Use Telegram Markdown only: *bold*, _italic_.
+10. After payment, the activation code is sent to the client's EMAIL automatically — always mention this when they ask how they'll receive it.`;
 
 // ============================================================
 // INTENT DETECTION (adapted from chatAgent.js)
@@ -165,10 +167,26 @@ CONVERSATION RULES:
 function detectClientIntent(message, history) {
     const text = (message || '').toLowerCase();
     const allText = (history || []).map(m => m.content).join(' ').toLowerCase() + ' ' + text;
+    // Only the USER's own words count for payment history context
+    const userText = (history || []).filter(m => m.role === 'user').map(m => m.content).join(' ').toLowerCase() + ' ' + text;
+
+    // FIRST: client already PAID but hasn't received their code.
+    // Must run before payment_issue/ready_to_buy — never misroute to sales.
+    const saidPaid = /\b(paid|payed|sent (the |my )?(money|payment|cash)|made (the |a |my )?payment|completed (the |my )?payment|payment (went|has gone|is) through|transaction (was |is )?(successful|complete|completed|done)|already paid|just paid|i'?ve paid|i have paid)\b/i.test(text);
+    const codeMissing = /(didn'?t|haven'?t|hasn'?t|havent|didnt|not|never|no|still|where('s| is))\s*(get|got|receive[ds]?|recieve[ds]?|see|find|send|sent|arrive[ds]?|come)?\s*(my |the |any )?(code|activation|email|e-mail|mail)\b|no code|where('s| is) my code|waiting for (my |the )?(code|activation|email)/i.test(text);
+    if (saidPaid && codeMissing) return 'paid_no_code';
+    // "where is my code" style + payment mentioned earlier by the user
+    if (/(where('s| is)|waiting for|didn'?t (get|receive)|haven'?t (got|received)|still no)\s*(my |the )?(code|activation|email)/i.test(text)
+        && /\b(paid|payment|sent|money|\$\d+|usdt|mpesa|m-pesa)\b/i.test(userText))
+        return 'paid_no_code';
 
     // Check for payment issues first before generic buy intent
     if (/payment.*(fail|error|problem|issue|declined|stuck|reject|cancel|not work)|can'?t pay|cannot pay|card declined|declined|mpesa.*(error|fail|not work)|failed to pay|unable to pay|transaction failed|not going through|payment.*declined/i.test(text))
         return 'payment_issue';
+
+    // Deposit claimed but not reflecting on the betting site (JetBet/ClassyBet etc.)
+    if (/(deposit|deposited|top\s?up|recharge|funded?)\b.{0,40}(not|didn'?t|didnt|hasn'?t|haven'?t|havent|still).{0,30}(reflect|show|update|credit|appear|come|arrive|balance)|\b(not|didn'?t|hasn'?t|haven'?t|still not|yet to)\s+(reflect|reflecting|reflects|updated|updating|credited|showing|appear)\b.{0,20}(deposit|balance|account)?|balance.{0,20}(not|hasn'?t|didn'?t).{0,20}(update|reflect|change)/i.test(text))
+        return 'deposit_not_updated';
 
     if (/buy|purchase|pay|payment|mpesa|card|activate|75|250|800|dollar|\$75|\$250|\$800|get code|want (to|the) code|weekly|monthly|daily plan|7 day|30 day/i.test(text))
         return 'ready_to_buy';
@@ -186,6 +204,65 @@ function detectClientIntent(message, history) {
         return 'hesitant';
 
     return 'browsing';
+}
+
+// ============================================================
+// SLOT EXTRACTION & FUNNEL STAGE
+// ============================================================
+const KNOWN_SITES = [
+    'sportybet', 'betway', '1win', '1xbet', 'betika', 'stake', 'hollywoodbets',
+    'hollywood', 'bangbet', 'parimatch', '22bet', 'mozzart', 'odibets', 'betking',
+    'msport', 'bet365', 'melbet', 'linebet', 'helabet', 'classybet', 'jetbet',
+    'betano', 'pin-up', 'supabets', 'roobet', 'rushbet', 'bc.game', 'betwinner', 'betpawa'
+];
+
+const PLAN_LABELS = { daily: 'Daily $75', weekly: 'Weekly $250', monthly: 'Monthly $800' };
+const PLAN_AMOUNTS = { daily: 75, weekly: 250, monthly: 800 };
+
+function extractSlots(text, session) {
+    const s = session.slots;
+    const lower = (text || '').toLowerCase();
+
+    // Betting site — last mention wins (user may change their mind)
+    for (const site of KNOWN_SITES) {
+        if (lower.includes(site)) { s.site = site; break; }
+    }
+    // Plan
+    if (/\b(weekly|week|7[\s-]?days?|\$?\s?250)\b/i.test(lower)) s.plan = 'weekly';
+    else if (/\b(monthly|month|30[\s-]?days?|\$?\s?800)\b/i.test(lower)) s.plan = 'monthly';
+    else if (/\b(daily|24[\s-]?(hours?|hrs?)|\$?\s?75)\b/i.test(lower)) s.plan = 'daily';
+    // Payment method
+    if (/\b(usdt|crypto|trc\s?-?20|binance|bitcoin|btc)\b/i.test(lower)) s.method = 'usdt';
+    else if (/\b(m\s?-?pesa|mobile money|mtn|airtel|tigo|vodacom)\b/i.test(lower)) s.method = 'mobile_money';
+    else if (/\b(card|visa|master\s?card|debit)\b/i.test(lower)) s.method = 'card';
+    // Email address
+    const emailMatch = (text || '').match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/);
+    if (emailMatch) s.email = emailMatch[0];
+    // Payment / transaction reference
+    const refMatch = (text || '').match(/\b((?:FLW|USDT|BOT|SELAR|PAY)[_-][A-Z0-9_-]{4,}|[A-Z0-9]{10,})\b/);
+    if (refMatch) s.paymentRef = refMatch[0];
+}
+
+const FUNNEL_ORDER = ['new', 'browsing', 'trial_interest', 'buying', 'awaiting_payment', 'paid_pending', 'activated'];
+
+function updateFunnelStage(session, intent) {
+    const target = {
+        paid_no_code: 'paid_pending',
+        payment_issue: 'awaiting_payment',
+        ready_to_buy: 'buying',
+        withdrawal_help: 'trial_interest',
+        deposit_help: 'trial_interest',
+        deposit_not_updated: 'trial_interest',
+        needs_guidance: 'trial_interest',
+        skeptical: 'browsing',
+        hesitant: 'browsing',
+        browsing: 'browsing',
+    }[intent] || session.funnelStage;
+
+    // Only move forward — never regress a client back down the funnel
+    if (FUNNEL_ORDER.indexOf(target) > FUNNEL_ORDER.indexOf(session.funnelStage)) {
+        session.funnelStage = target;
+    }
 }
 
 // ============================================================
@@ -230,26 +307,31 @@ function telegramAPI(method, payload) {
     });
 }
 
-async function sendClientMessage(chatId, text) {
+async function sendClientMessage(chatId, text, replyMarkup = null) {
     // Sanitise for Telegram Markdown — escape unmatched special chars
     const safeText = sanitiseMarkdown(text);
 
-    const res = await telegramAPI('sendMessage', {
+    const payload = {
         chat_id: chatId,
         text: safeText,
         parse_mode: 'Markdown',
         link_preview_options: { is_disabled: false }
-    });
+    };
+    if (replyMarkup) payload.reply_markup = replyMarkup;
+
+    const res = await telegramAPI('sendMessage', payload);
 
     // If Markdown parse fails, retry as plain text
     if (res && !res.ok && res.description && res.description.toLowerCase().includes('parse')) {
         console.warn(`⚠️ Markdown parse error for client ${chatId} — retrying plain text`);
         const cleanText = text.replace(/[*_`\[\]]/g, '');
-        return telegramAPI('sendMessage', {
+        const cleanPayload = {
             chat_id: chatId,
             text: cleanText,
             link_preview_options: { is_disabled: false }
-        });
+        };
+        if (replyMarkup) cleanPayload.reply_markup = replyMarkup;
+        return telegramAPI('sendMessage', cleanPayload);
     }
     return res;
 }
@@ -401,6 +483,15 @@ function getOrCreateSession(chatId, message) {
             notifiedAdmin: false,
             hotLeadNotified: false,
             paymentIssueNotified: false,
+            withdrawalNotified: false,
+            paidNoCodeNotified: false,
+            depositIssueNotified: false,
+            // Guided-funnel state
+            slots: { site: null, plan: null, method: null, email: null, paymentRef: null, siteUsername: null },
+            funnelStage: 'new',
+            codeRecovery: null,          // null | 'check_email' | 'need_email' | 'need_ref' | 'pending_verify' | 'resolved'
+            codeRecoveryAttempts: 0,
+            depositIssue: null,          // null | 'awaiting_username' | 'forwarded'
         };
         clientSessions.set(String(chatId), session);
     }
@@ -429,6 +520,18 @@ function addToSessionHistory(session, role, content) {
 // ============================================================
 // ADMIN NOTIFICATIONS
 // ============================================================
+
+// Standard quick-action row attached to every client alert.
+// Extra buttons can be appended per alert type.
+function adminKeyboard(chatId, extraRow = null) {
+    const rows = [[
+        { text: '🔴 Takeover', callback_data: `takeover_${chatId}` },
+        { text: '📋 View log', callback_data: `clog_${chatId}` }
+    ]];
+    if (extraRow && extraRow.length) rows.push(extraRow);
+    return { inline_keyboard: rows };
+}
+
 async function notifyAdminNewClient(session, messageText) {
     if (session.notifiedAdmin) return;
     session.notifiedAdmin = true;
@@ -445,10 +548,11 @@ async function notifyAdminNewClient(session, messageText) {
             `Username: ${session.username ? '@' + session.username : 'N/A'}\n` +
             `Chat ID: \`${session.chatId}\`\n` +
             `Intent: _${intent}_\n` +
+            `Stage: _${session.funnelStage}_\n` +
             `Message: "${(messageText || '').slice(0, 100)}"\n\n` +
             `Bot is handling. Use /takeover ${session.chatId} to take over.`;
 
-        await sendClientMessage(ADMIN_CHAT, msg);
+        await sendClientMessage(ADMIN_CHAT, msg, adminKeyboard(session.chatId));
     }
 
     // Log new client session to Discord
@@ -477,9 +581,12 @@ async function notifyAdminHotLead(session, messageText) {
             `Username: ${session.username ? '@' + session.username : 'N/A'}\n` +
             `Chat ID: \`${session.chatId}\`\n` +
             `Message: "${(messageText || '').slice(0, 150)}"\n\n` +
+            `Slots: site=${session.slots.site || '?'} plan=${session.slots.plan || '?'} method=${session.slots.method || '?'}\n` +
             `Bot is guiding to purchase. /takeover ${session.chatId} if needed.`;
 
-        await sendClientMessage(ADMIN_CHAT, msg);
+        await sendClientMessage(ADMIN_CHAT, msg, adminKeyboard(session.chatId, [
+            { text: '💳 Send USDT details', callback_data: `usdt_${session.chatId}` }
+        ]));
     }
 
     // Log hot lead alert to Discord
@@ -509,9 +616,12 @@ async function notifyAdminPaymentIssue(session, messageText) {
             `Chat ID: \`${session.chatId}\`\n` +
             `Message: "${(messageText || '').slice(0, 200)}"\n\n` +
             `Client wants to buy but is blocked by a payment error!\n` +
+            `Slots: site=${session.slots.site || '?'} plan=${session.slots.plan || '?'}\n` +
             `Bot advised Crypto USDT TRC20. /takeover ${session.chatId} to close the deal.`;
 
-        await sendClientMessage(ADMIN_CHAT, msg);
+        await sendClientMessage(ADMIN_CHAT, msg, adminKeyboard(session.chatId, [
+            { text: '💳 Send USDT details', callback_data: `usdt_${session.chatId}` }
+        ]));
     }
 
     // Log payment issue alert to Discord (chat + alerts channels)
@@ -527,6 +637,131 @@ async function notifyAdminPaymentIssue(session, messageText) {
             });
         } catch (e) {
             console.warn('⚠️ Discord log error (payment issue):', e.message);
+        }
+    }
+}
+
+/**
+ * PAID-NO-CODE alert — client paid but code never arrived.
+ * Highest-priority support alert: includes payment ref/status when known
+ * plus one-tap verify / resend buttons.
+ */
+async function notifyAdminPaidNoCode(session, messageText, payment = null) {
+    if (session.paidNoCodeNotified) return;
+    session.paidNoCodeNotified = true;
+
+    if (ADMIN_CHAT) {
+        let msg = `🚨 *PAID — NO CODE RECEIVED*\n\n` +
+            `Name: ${session.firstName}\n` +
+            `Username: ${session.username ? '@' + session.username : 'N/A'}\n` +
+            `Chat ID: \`${session.chatId}\`\n` +
+            `Pay email: ${session.slots.email || 'unknown'}\n` +
+            `Message: "${(messageText || '').slice(0, 150)}"\n`;
+
+        const extraRow = [];
+        if (payment && payment.reference) {
+            msg += `\nOrder: \`${payment.reference}\` — status: _${payment.status}_ | $${payment.amount} ${payment.currency || ''}`;
+            if (paymentSupport.isPendingStatus(payment.status)) {
+                extraRow.push({ text: '✅ Verify & send code', callback_data: `verify_${payment.reference}_${session.chatId}` });
+            } else if (paymentSupport.isVerifiedStatus(payment.status)) {
+                extraRow.push({ text: '📧 Resend code email', callback_data: `resend_${payment.reference}_${session.chatId}` });
+            }
+        }
+        msg += `\n\nBot is running recovery flow. /takeover ${session.chatId} to reply personally.`;
+
+        await sendClientMessage(ADMIN_CHAT, msg, adminKeyboard(session.chatId, extraRow));
+    }
+
+    if (discordAgent && typeof discordAgent.sendChatSummary === 'function') {
+        try {
+            discordAgent.sendChatSummary({
+                text: `🚨 **PAID — NO CODE RECEIVED**\n**Name**: ${session.firstName}\n**Username**: ${session.username ? '@' + session.username : 'None'}\n**Chat ID**: \`${session.chatId}\`\n**Pay email**: ${session.slots.email || 'unknown'}\n**Message**: "${(messageText || '').slice(0, 300)}"${payment ? `\n**Order**: \`${payment.reference}\` status: ${payment.status}` : ''}`,
+                user: session.username ? `@${session.username} (${session.firstName})` : `${session.firstName} (${session.chatId})`,
+                page: 'Telegram (@avisignalshelp_bot)',
+                intent: 'paid_no_code',
+                isHotLead: true,
+                isPaymentIssue: true
+            });
+        } catch (e) {
+            console.warn('⚠️ Discord log error (paid_no_code):', e.message);
+        }
+    }
+}
+
+/**
+ * Deposit-not-reflecting alert — client claims a deposit on
+ * JetBet/ClassyBet (or another site) didn't update their balance.
+ * When siteUsername is set, this is the username follow-up forward.
+ */
+async function notifyAdminDepositIssue(session, messageText) {
+    const isUsernameUpdate = !!session.slots.siteUsername;
+    if (!isUsernameUpdate) {
+        if (session.depositIssueNotified) return;
+        session.depositIssueNotified = true;
+    }
+
+    if (ADMIN_CHAT) {
+        let msg = `🏦 *DEPOSIT NOT REFLECTING*\n\n` +
+            `Name: ${session.firstName}\n` +
+            `Username: ${session.username ? '@' + session.username : 'N/A'}\n` +
+            `Chat ID: \`${session.chatId}\`\n` +
+            `Site: ${session.slots.site || 'not mentioned'}\n` +
+            `Report: "${(messageText || '').slice(0, 150)}"\n`;
+        if (isUsernameUpdate) {
+            msg += `\n*Site username:* \`${session.slots.siteUsername}\``;
+        } else {
+            msg += `\nClient asked for their site username — will forward it.`;
+        }
+        msg += `\n\n/takeover ${session.chatId} to step in.`;
+
+        await sendClientMessage(ADMIN_CHAT, msg, adminKeyboard(session.chatId));
+    }
+
+    if (discordAgent && typeof discordAgent.sendChatSummary === 'function') {
+        try {
+            discordAgent.sendChatSummary({
+                text: `🏦 **DEPOSIT NOT REFLECTING**\n**Name**: ${session.firstName}\n**Username**: ${session.username ? '@' + session.username : 'None'}\n**Chat ID**: \`${session.chatId}\`\n**Site**: ${session.slots.site || 'not mentioned'}${session.slots.siteUsername ? `\n**Site username**: \`${session.slots.siteUsername}\`` : ''}\n**Report**: "${(messageText || '').slice(0, 300)}"`,
+                user: session.username ? `@${session.username} (${session.firstName})` : `${session.firstName} (${session.chatId})`,
+                page: 'Telegram (@avisignalshelp_bot)',
+                intent: 'deposit_not_updated',
+                isHotLead: false
+            });
+        } catch (e) {
+            console.warn('⚠️ Discord log error (deposit issue):', e.message);
+        }
+    }
+}
+
+/**
+ * Withdrawal issue alert — client stuck on a trial-site withdrawal.
+ */
+async function notifyAdminWithdrawalIssue(session, messageText) {
+    if (session.withdrawalNotified) return;
+    session.withdrawalNotified = true;
+
+    if (ADMIN_CHAT) {
+        const msg = `💸 *WITHDRAWAL ISSUE — Client Needs Help*\n\n` +
+            `Name: ${session.firstName}\n` +
+            `Username: ${session.username ? '@' + session.username : 'N/A'}\n` +
+            `Chat ID: \`${session.chatId}\`\n` +
+            `Site: ${session.slots.site || 'not mentioned'}\n` +
+            `Message: "${(messageText || '').slice(0, 150)}"\n\n` +
+            `Bot is guiding them through the platform's withdrawal process. /takeover ${session.chatId} to step in.`;
+
+        await sendClientMessage(ADMIN_CHAT, msg, adminKeyboard(session.chatId));
+    }
+
+    if (discordAgent && typeof discordAgent.sendChatSummary === 'function') {
+        try {
+            discordAgent.sendChatSummary({
+                text: `💸 **WITHDRAWAL ISSUE**\n**Name**: ${session.firstName}\n**Username**: ${session.username ? '@' + session.username : 'None'}\n**Chat ID**: \`${session.chatId}\`\n**Site**: ${session.slots.site || 'not mentioned'}\n**Message**: "${(messageText || '').slice(0, 300)}"`,
+                user: session.username ? `@${session.username} (${session.firstName})` : `${session.firstName} (${session.chatId})`,
+                page: 'Telegram (@avisignalshelp_bot)',
+                intent: 'withdrawal_help',
+                isHotLead: false
+            });
+        } catch (e) {
+            console.warn('⚠️ Discord log error (withdrawal):', e.message);
         }
     }
 }
@@ -586,7 +821,11 @@ function scheduleFollowUp(session) {
         const intent = session.intent;
         let followUpText;
 
-        if (intent === 'ready_to_buy') {
+        if (session.funnelStage === 'paid_pending' && session.codeRecovery !== 'resolved') {
+            followUpText = `Hey ${session.firstName}! Just checking — did your activation code arrive? 🔑 If not, send me the email you paid with (or your payment reference) and I'll pull up your order right away.`;
+        } else if (intent === 'withdrawal_help') {
+            followUpText = `Hey ${session.firstName}! 💸 Any update on your withdrawal — did the payout clear? If you're still stuck, tell me exactly where it's held up and I'll check it for you.`;
+        } else if (intent === 'ready_to_buy' || session.funnelStage === 'awaiting_payment') {
             followUpText = `Hey ${session.firstName}! 👋 Did you manage to get your code? If you ran into any issues with payment, just let me know — I'll help you sort it out right away 💪`;
         } else {
             followUpText = `Hey ${session.firstName}! 🎮 Did you get a chance to try the free trial yet? If you need any help getting started, I'm here — just ask!`;
@@ -646,9 +885,28 @@ async function handleClientMessage(message) {
     // Add user message to history
     addToSessionHistory(session, 'user', text);
 
+    // Extract funnel slots (site, plan, method, email, payment ref)
+    extractSlots(text, session);
+
     // Detect intent
-    const intent = detectClientIntent(text, session.history);
+    let intent = detectClientIntent(text, session.history);
+
+    // Continue an in-progress code-recovery flow even when the latest
+    // message alone doesn't re-trigger the paid_no_code intent
+    // (e.g. the client just sends their email address or reference).
+    const recovering = session.codeRecovery && session.codeRecovery !== 'resolved';
+    if (recovering && intent !== 'payment_issue' && intent !== 'ready_to_buy') {
+        intent = 'paid_no_code';
+    }
+
+    // Continue an in-progress deposit-issue flow — the reply IS the username
+    if (session.depositIssue === 'awaiting_username'
+        && !['payment_issue', 'ready_to_buy', 'paid_no_code', 'withdrawal_help'].includes(intent)) {
+        intent = 'deposit_not_updated';
+    }
+
     session.intent = intent;
+    updateFunnelStage(session, intent);
 
     // Match conversation script
     const script = matchScript(text);
@@ -662,6 +920,24 @@ async function handleClientMessage(message) {
     }
     if (intent === 'payment_issue') {
         await notifyAdminPaymentIssue(session, text);
+    }
+    if (intent === 'withdrawal_help') {
+        await notifyAdminWithdrawalIssue(session, text);
+    }
+
+    // ── Deposit not reflecting: deterministic flow ───────────
+    if (intent === 'deposit_not_updated') {
+        await handleDepositIssueFlow(chatId, session, text);
+        scheduleFollowUp(session);
+        return;
+    }
+
+    // ── Paid-but-no-code: deterministic recovery flow ─────────
+    // Precision beats AI freeform here — run the staged flow.
+    if (intent === 'paid_no_code') {
+        await handlePaidNoCodeFlow(chatId, session, text);
+        scheduleFollowUp(session);
+        return;
     }
 
     // Build system prompt with script context
@@ -680,7 +956,7 @@ async function handleClientMessage(message) {
     }
 
     // Add intent-specific addon
-    const intentAddon = getIntentAddon(intent);
+    const intentAddon = getIntentAddon(intent, session);
     if (intentAddon) {
         systemPrompt += `\n\nINTENT-SPECIFIC INSTRUCTIONS:\n${intentAddon}`;
     }
@@ -732,16 +1008,178 @@ async function handleClientMessage(message) {
 }
 
 // ============================================================
+// DEPOSIT-NOT-REFLECTING FLOW (JetBet/ClassyBet claims)
+// Reassure → collect site username → forward username+site to admin.
+// session.depositIssue: null → 'awaiting_username' → 'forwarded'
+// ============================================================
+async function handleDepositIssueFlow(chatId, session, text) {
+    // Stage 2: client replied with their site username
+    if (session.depositIssue === 'awaiting_username') {
+        session.slots.siteUsername = (text || '').trim().slice(0, 60);
+        session.depositIssue = 'forwarded';
+
+        const msg = `Thanks, ${session.firstName}! 🙏\n\n` +
+            `I've noted *${session.slots.siteUsername}* on ${session.slots.site || 'the site'} — like I said, deposits normally update after some time. Just be patient and it will reflect automatically.\n\n` +
+            `I've also flagged it for a manual check, so if anything is actually stuck we'll catch it ✅`;
+        await sendClientMessage(chatId, msg);
+        addToSessionHistory(session, 'assistant', msg);
+        await notifyAdminDepositIssue(session, text); // forwards username + site
+        return;
+    }
+
+    // Stage 1: claim received — reassure + ask for site username
+    session.depositIssue = 'awaiting_username';
+    const siteLabel = session.slots.site || 'the site';
+    const msg = `Don't worry, ${session.firstName} — your deposit is safe 🙏\n\n` +
+        `Deposits on ${siteLabel} sometimes take a little time to reflect — it updates automatically once the platform finishes processing, so just be patient.\n\n` +
+        `Meanwhile, send me your *username on ${siteLabel}* and I'll flag it to be checked on my side ✅`;
+    await sendClientMessage(chatId, msg);
+    addToSessionHistory(session, 'assistant', msg);
+    await notifyAdminDepositIssue(session, text); // initial claim alert
+}
+
+// ============================================================
+// PAID-NO-CODE RECOVERY FLOW
+// Deterministic staged flow — the most sensitive scenario,
+// so it runs on templates + real DB lookups, not AI freeform.
+// session.codeRecovery stages:
+//   check_email → need_email / need_ref → pending_verify → resolved
+// ============================================================
+async function handlePaidNoCodeFlow(chatId, session, text) {
+    // Client found the code on their own — close the loop warmly.
+    if (/(found it|got it|i see it|it'?s there|received it|came through|in (my )?spam|in (my )?junk|it arrived)/i.test(text)) {
+        session.codeRecovery = 'resolved';
+        const msg = `Perfect, glad it landed! 🎉 Enter the code at ${BOT_URL} → *Enter Code* → *Activate* and your plan starts instantly. Enjoy the wins!`;
+        await sendClientMessage(chatId, msg);
+        addToSessionHistory(session, 'assistant', msg);
+        return;
+    }
+
+    // Step 1 (per flow): ALWAYS start by having them check their email
+    if (!session.codeRecovery) {
+        session.codeRecovery = 'check_email';
+        const msg = `Thanks for letting me know, ${session.firstName} 🙏\n\n` +
+            `First — please check your *email inbox* and also the *spam/junk/promotions* folder for an email titled *"Your AviSignals Activation Code"*. It sometimes lands there.\n\n` +
+            `If it's really not there, send me the *email address you paid with* (or your payment/transaction reference) and I'll pull up your order instantly.`;
+        await sendClientMessage(chatId, msg);
+        addToSessionHistory(session, 'assistant', msg);
+        await notifyAdminPaidNoCode(session, text);
+        return;
+    }
+
+    // We still don't have an email or reference to look up
+    if (!session.slots.email && !session.slots.paymentRef) {
+        session.codeRecoveryAttempts++;
+        session.codeRecovery = 'need_email';
+
+        if (session.codeRecoveryAttempts >= 2) {
+            // Asked twice already — escalate rather than loop
+            const msg = `No worries — I've flagged your order for a manual check on my side. 🛠️\n\n` +
+                `If you can, send a *screenshot of your payment confirmation* or the *transaction reference* — that lets me verify and release your code immediately.`;
+            await sendClientMessage(chatId, msg);
+            addToSessionHistory(session, 'assistant', msg);
+            await notifyAdminPaidNoCode(session, text);
+            return;
+        }
+
+        const msg = `Got it — what's the *email address* you used when paying? (Or paste the transaction/payment reference.) I'll check your order status right now.`;
+        await sendClientMessage(chatId, msg);
+        addToSessionHistory(session, 'assistant', msg);
+        return;
+    }
+
+    // We have an identifier — look the order up in Supabase
+    await sendClientMessage(chatId, `Give me a second — checking your order now 🔎`);
+
+    const result = await paymentSupport.lookupPayment({
+        email: session.slots.email,
+        reference: session.slots.paymentRef
+    });
+
+    // ── Branch A: payment found + verified → resend the code ──
+    if (result.found && paymentSupport.isVerifiedStatus(result.payment.status)) {
+        const payment = result.payment;
+        const email = payment.profiles?.email || session.slots.email;
+        const sent = await paymentSupport.resendCodeEmail(payment);
+
+        session.codeRecovery = 'resolved';
+        session.funnelStage = 'activated';
+
+        let msg;
+        if (sent.sent) {
+            msg = `Found it — your payment is *confirmed* ✅\n\n` +
+                `I've just re-sent your activation code to *${email}*. Check the inbox + spam/junk folder — subject is "Your AviSignals Activation Code".\n\n` +
+                `If it still doesn't land in a few minutes, tell me and I'll drop the code right here in chat.`;
+        } else {
+            // Email delivery failed — deliver the code directly in chat
+            const code = paymentSupport.getCodeForSite(payment.profiles?.assigned_site);
+            msg = `Your payment is *confirmed* ✅ — the email is being stubborn, so here's your code directly:\n\n` +
+                `🔑 *${code}*\n\n` +
+                `Enter it at ${BOT_URL} → *Enter Code* → *Activate*. Your plan starts now 🚀`;
+        }
+        await sendClientMessage(chatId, msg);
+        addToSessionHistory(session, 'assistant', msg);
+        await notifyAdminPaidNoCode(session, text, payment);
+        return;
+    }
+
+    // ── Branch B: payment found but still pending ─────────────
+    if (result.found) {
+        session.codeRecovery = 'pending_verify';
+        const payment = result.payment;
+        const msg = `Good news — I can see your payment *${payment.reference}* came through ✅\n\n` +
+            `It's in the verification queue right now — codes go out automatically the moment it's confirmed, usually within minutes.\n\n` +
+            `I've flagged yours for a priority check — sit tight, you'll have it shortly 💪`;
+        await sendClientMessage(chatId, msg);
+        addToSessionHistory(session, 'assistant', msg);
+        await notifyAdminPaidNoCode(session, text, payment);
+        return;
+    }
+
+    // ── Branch C: nothing found → manual verification needed ──
+    session.codeRecovery = 'need_ref';
+    const who = session.slots.email ? `*${session.slots.email}*` : 'that reference';
+    const msg = `Hmm, I can't find an order under ${who} 🤔\n\n` +
+        `Can you send me your *payment reference / transaction ID* or a screenshot of the payment confirmation? I'll verify it manually right now.`;
+    await sendClientMessage(chatId, msg);
+    addToSessionHistory(session, 'assistant', msg);
+    await notifyAdminPaidNoCode(session, text, null);
+}
+
+// ============================================================
 // INTENT ADDONS (injected into AI prompt based on intent)
 // ============================================================
-function getIntentAddon(intent) {
-    const addons = {
-        ready_to_buy: `The user is showing BUY INTENT — this is a HOT lead.
-→ Present all 3 plans clearly: *Daily $75* (24hrs), *Weekly $250* (7 days, save 52%), *Monthly $800* (30 days, save 64%).
+function getIntentAddon(intent, session = null) {
+    // Dynamic guided checkout — only ever asks for the NEXT missing slot
+    let readyToBuyAddon = `The user is showing BUY INTENT — this is a HOT lead.
+→ Present plans leading with the popular pick: *Daily $75* (24hrs — most popular & affordable), then *Weekly $250* (7 days), *Monthly $800* (30 days).
 → Ask which site they play on to personalise.
-→ Recommend the weekly plan as best value: $250 = $35/day.
 → Tell them to go to ${BOT_URL}, click Buy Code, select site and plan, then pay.
-→ Keep it SHORT and action-focused.`,
+→ When they ask how the code is delivered: the code is sent to their EMAIL automatically after payment (check spam/junk too).
+→ Keep it SHORT and action-focused.`;
+
+    if (session) {
+        const s = session.slots;
+        const collected = `Collected so far — site: ${s.site || '?'}, plan: ${s.plan ? PLAN_LABELS[s.plan] : '?'}, method: ${s.method || '?'}`;
+        let nextStep;
+        if (!s.site) {
+            nextStep = `Ask which betting site they play on (one short question — nothing else).`;
+        } else if (!s.plan) {
+            nextStep = `They play on ${s.site}. Present the plans with prices — lead with Daily $75 (most popular, most affordable), mention Weekly $250 and Monthly $800 as upgrades. Ask which plan they want.`;
+        } else if (!s.method) {
+            nextStep = `They want ${PLAN_LABELS[s.plan]} for ${s.site}. Ask how they want to pay: Mobile Money, Card, or Crypto (USDT TRC20 — always works 24/7).`;
+        } else {
+            nextStep = `All details collected (${s.site} + ${PLAN_LABELS[s.plan]} + ${s.method}). Give exact checkout steps: ${BOT_URL} → Buy Code → select ${s.site} → ${PLAN_LABELS[s.plan]} → on the payment modal SELECT THEIR LOCAL CURRENCY FIRST → choose ${s.method}. Remind: the code arrives by EMAIL automatically right after payment (check spam/junk too).`;
+        }
+        readyToBuyAddon = `The user is showing BUY INTENT — this is a HOT lead. Run the guided checkout.
+${collected}
+NEXT STEP — do ONLY this, keep it SHORT:
+→ ${nextStep}
+→ NEVER re-ask for slots already collected. NEVER dump all questions at once.`;
+    }
+
+    const addons = {
+        ready_to_buy: readyToBuyAddon,
 
         frustrated: `The user is frustrated. De-escalate first.
 → Start with genuine apology. Don't be defensive.
@@ -780,6 +1218,7 @@ function getIntentAddon(intent) {
         withdrawal_help: `The user has a withdrawal issue. Reassure them.
 → If ClassyBet/JetBet withdrawal on hold: encourage them to pay the processing fee.
 → "We had another client with the exact same issue — they paid the fee and their payout cleared immediately."
+→ If they ALREADY paid the fee and are still waiting: reassure the payout is processing, tell them to keep the fee confirmation, check the withdrawal history tab, and offer to check personally — do NOT push another payment.
 → Advise them to follow the platform's cashier instructions.`,
 
         deposit_help: `The user needs help depositing on the trial betting site.
@@ -817,6 +1256,13 @@ function cleanResponse(text) {
 // ============================================================
 function getFallbackResponse(text, session) {
     const lower = (text || '').toLowerCase();
+
+    // Paid but no code — never send a sales pitch to someone who already paid
+    if (session.codeRecovery || /paid.*(but|and).*(no|not|didn'?t|haven'?t).*(code|email)|no code|haven'?t received|didn'?t receive|waiting for.*(code|activation)/i.test(lower)) {
+        return `Thanks for letting me know, ${session.firstName} 🙏\n\n` +
+            `First — please check your *email inbox* and the *spam/junk* folder for "Your AviSignals Activation Code".\n\n` +
+            `If it's not there, send me the *email you paid with* or the *payment reference* and I'll pull up your order right now.`;
+    }
 
     if (lower.includes('price') || lower.includes('cost') || lower.includes('how much') || lower.includes('$75') || lower.includes('buy')) {
         return `Hey ${session.firstName}! 💰 Here are our plans:\n\n` +
@@ -865,6 +1311,127 @@ function getFallbackResponse(text, session) {
 }
 
 // ============================================================
+// ADMIN INLINE-BUTTON CALLBACKS
+// Handles callback_query updates routed from telegramAgent.js
+// (buttons attached to client alerts: takeover, log, USDT, verify, resend)
+// ============================================================
+async function handleAdminCallback(callbackQuery) {
+    const data = callbackQuery.data || '';
+    const adminChat = callbackQuery.message?.chat?.id;
+
+    const answer = async (text) => {
+        await telegramAPI('answerCallbackQuery', {
+            callback_query_id: callbackQuery.id,
+            text: text || 'Done'
+        });
+    };
+
+    const toAdmin = async (text) => sendClientMessage(ADMIN_CHAT, text);
+
+    try {
+        // ── Takeover ─────────────────────────────────────────
+        if (data.startsWith('takeover_')) {
+            const targetId = data.replace('takeover_', '');
+            setTakeover(targetId, true);
+            await answer('Bot paused for this client');
+            await toAdmin(`🔴 Bot paused for client \`${targetId}\`.\nTheir messages now forward to you. /reply ${targetId} [msg] to respond, /resume ${targetId} when done.`);
+            return;
+        }
+
+        // ── View client log ──────────────────────────────────
+        if (data.startsWith('clog_')) {
+            const targetId = data.replace('clog_', '');
+            const log = getClientHistory(targetId);
+            await answer();
+            if (!log) {
+                await toAdmin(`❌ No conversation found for \`${targetId}\`.`);
+                return;
+            }
+            let msg = `📋 *Chat Log — ${log.name}* ${log.username ? '(@' + log.username + ')' : ''}\n` +
+                `Intent: _${log.intent}_ | Stage: _${log.funnelStage}_\n` +
+                `Slots: site=${log.slots.site || '?'} plan=${log.slots.plan || '?'} method=${log.slots.method || '?'} email=${log.slots.email || '?'} ref=${log.slots.paymentRef || '?'}\n\n`;
+            for (const h of log.history.slice(-8)) {
+                msg += `${h.role === 'user' ? '👤' : '🤖'} ${h.content.slice(0, 150)}\n\n`;
+            }
+            await toAdmin(msg.slice(0, 4000));
+            return;
+        }
+
+        // ── Send USDT payment details to client ───────────────
+        if (data.startsWith('usdt_')) {
+            const targetId = data.replace('usdt_', '');
+            const session = clientSessions.get(String(targetId));
+            const amount = session && session.slots.plan ? PLAN_AMOUNTS[session.slots.plan] : 75;
+            const planLabel = session && session.slots.plan ? PLAN_LABELS[session.slots.plan] : 'Daily $75';
+
+            const msg = `💳 *Pay via Crypto (USDT TRC20)* — always live 24/7, never blocked by banks.\n\n` +
+                `Send *$${amount} USDT* (${planLabel}) to this TRC20 wallet:\n\n` +
+                `\`${paymentSupport.USDT_WALLET_ADDRESS}\`\n\n` +
+                `⚠️ Make sure the network is *TRC20* — sending on another network loses the funds.\n\n` +
+                `Once sent, reply here with the *transaction hash / screenshot* and I'll activate your ${session?.slots?.site || 'site'} code immediately ⚡`;
+
+            const res = await sendClientMessage(targetId, msg);
+            if (session) addToSessionHistory(session, 'assistant', msg);
+            await answer(res && res.ok ? 'USDT details sent to client' : 'Failed to send');
+            await toAdmin(`${res && res.ok ? '✅' : '❌'} USDT details → \`${targetId}\` (${planLabel}).`);
+            return;
+        }
+
+        // ── Verify payment & dispatch code ────────────────────
+        if (data.startsWith('verify_')) {
+            const m = data.match(/^verify_(.+)_(-?\d+)$/);
+            if (!m) { await answer('Bad callback data'); return; }
+            const [, reference, clientChatId] = m;
+            await answer('Verifying...');
+
+            const ok = await paymentSupport.adminVerifyPayment(reference);
+            if (ok) {
+                const session = clientSessions.get(String(clientChatId));
+                if (session) { session.codeRecovery = 'resolved'; session.funnelStage = 'activated'; }
+                await sendClientMessage(clientChatId,
+                    `Great news — your payment is *confirmed* ✅\n\n` +
+                    `Your activation code has just been sent to your email (check spam/junk too — subject: "Your AviSignals Activation Code").\n\n` +
+                    `Enter it at ${BOT_URL} → *Enter Code* → *Activate*. Enjoy! 🚀`);
+                await toAdmin(`✅ Verified \`${reference}\` — code dispatched to client \`${clientChatId}\`.`);
+            } else {
+                await toAdmin(`❌ Verification call failed for \`${reference}\`. Try /resendcode or check the admin panel.`);
+            }
+            return;
+        }
+
+        // ── Resend code email ─────────────────────────────────
+        if (data.startsWith('resend_')) {
+            const m = data.match(/^resend_(.+)_(-?\d+)$/);
+            if (!m) { await answer('Bad callback data'); return; }
+            const [, reference, clientChatId] = m;
+            await answer('Resending...');
+
+            const result = await paymentSupport.lookupPayment({ reference });
+            if (!result.found) {
+                await toAdmin(`❌ Payment \`${reference}\` not found in DB.`);
+                return;
+            }
+            const sent = await paymentSupport.resendCodeEmail(result.payment);
+            if (sent.sent) {
+                await toAdmin(`✅ Code re-sent to ${sent.email} (ref \`${reference}\`).`);
+                const session = clientSessions.get(String(clientChatId));
+                if (session) { session.codeRecovery = 'resolved'; }
+                await sendClientMessage(clientChatId,
+                    `All sorted ✅ Your activation code has been re-sent to your email — check inbox + spam for "Your AviSignals Activation Code". Tell me if it doesn't land!`);
+            } else {
+                await toAdmin(`❌ Resend failed for \`${reference}\` (${sent.reason || 'email send failed'}).`);
+            }
+            return;
+        }
+
+        await answer('Unknown action');
+    } catch (err) {
+        console.error('❌ Admin callback error:', err.message);
+        try { await answer('Error — check logs'); } catch (_) {}
+    }
+}
+
+// ============================================================
 // ADMIN COMMANDS (exported for telegramAgent.js)
 // ============================================================
 
@@ -885,6 +1452,9 @@ function getActiveClients() {
             name: session.firstName,
             username: session.username,
             intent: session.intent,
+            funnelStage: session.funnelStage,
+            slots: session.slots,
+            codeRecovery: session.codeRecovery,
             messages: session.history.length,
             ageMin,
             lastMin,
@@ -909,6 +1479,9 @@ function getClientHistory(chatId) {
         name: session.firstName,
         username: session.username,
         intent: session.intent,
+        funnelStage: session.funnelStage,
+        slots: session.slots,
+        codeRecovery: session.codeRecovery,
         history: session.history,
     };
 }
@@ -918,6 +1491,8 @@ function getClientHistory(chatId) {
 // ============================================================
 module.exports = {
     handleClientMessage,
+    handleAdminCallback,
+    sendClientMessage,
     getActiveClients,
     getClientHistory,
     isClientTakenOver,
