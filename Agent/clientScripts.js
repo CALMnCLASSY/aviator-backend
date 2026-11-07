@@ -17,6 +17,7 @@
 const SITE_URL = 'https://avisignals.com';
 const BOT_URL = `${SITE_URL}/bot`;
 const FREE_CHANNEL = 'https://t.me/avisignalspremium';
+const USDT_ADDRESS = process.env.USDT_WALLET_ADDRESS || 'TCRwpXHYvcXY3y4FJThLHCc9hHbs9H4ExH';
 
 const SCRIPTS = {
 
@@ -112,7 +113,13 @@ HOW TO BUY:
 7. Activation code is delivered instantly after payment — it arrives by EMAIL ("Your AviSignals Activation Code" — check spam/junk too).
 
 KEY: Most users prefer the Daily $75 plan — it's what most people can afford. LEAD with the $75 daily as the popular pick; only mention Weekly/Monthly as upgrades if they want more time.
-Ask which site they play on so you can personalise the response.`,
+Ask which site they play on so you can personalise the response.
+
+AFTER presenting plans — ALWAYS ask which payment method they normally use (card, mobile money, or crypto), then guide them through THEIR method:
+- Card / Mobile Money: ${BOT_URL} → Buy Code → site & plan → on the payment modal SELECT COUNTRY'S LOCAL CURRENCY FIRST → enter card details or phone number → pay → code arrives by EMAIL.
+- Crypto (USDT TRC20): use a crypto app like Binance, OKX, or Trust Wallet → buy USDT → send on the TRC20 (Tron) network to ${USDT_ADDRESS} → share the tx hash/screenshot → verified → code arrives by EMAIL. ⚠️ Must be TRC20 — other networks lose funds.
+
+IMPORTANT: Code purchases have NO extra fees — they only pay the plan price. Never mention "fees" to a code buyer (that only applies to betting-site withdrawal holds).`,
         media: { type: 'video', key: 'buy_code' }
     },
 
@@ -125,16 +132,22 @@ Ask which site they play on so you can personalise the response.`,
 2. **Mobile Money** (M-Pesa, MTN, Airtel, etc.) — via Flutterwave.
 3. **Card** (Visa/Mastercard) — via Flutterwave. Standard card payment, secure and instant.
 
-⚠️ NUMBER ONE PAYMENT TIP:
-Tell the user: "Most people have trouble paying because they forget to select their currency on the payment modal! On the AviSignals payment screen, you **MUST select your country's currency FIRST** (KES, NGN, GHS, ZAR, USD, etc.) before choosing your payment method. Once you pick your currency, all your local payment methods (M-Pesa, Card, etc.) will show up and process smoothly without any error!
-If you ever run into any issue with card or mobile money, switch to **Crypto (USDT TRC20)** — it is always live 24/7 and confirms instantly."
+FIRST: Ask which payment method they normally use — "How do you usually pay for things online: card, mobile money, or crypto?" Then walk them through THEIR method step by step:
 
-PROCESS:
-1. Go to ${BOT_URL} → Click **Buy Code**
-2. Select your site and plan
-3. Select your country's currency on the modal
-4. Choose your payment method and complete payment
-5. Your activation code is generated instantly!`,
+CARD / MOBILE MONEY:
+1. Go to ${BOT_URL} → Click **Buy Code** → select site & plan
+2. On the payment modal: **SELECT YOUR COUNTRY'S CURRENCY FIRST** (KES, NGN, GHS, ZAR, USD, etc.) — skipping this is the #1 cause of failed payments
+3. Choose Card → enter card details, OR Mobile Money → enter phone number → approve the prompt on their phone
+4. Pay → activation code arrives by EMAIL automatically (check spam/junk too)
+
+CRYPTO (USDT TRC20) — step by step:
+1. They need a crypto app — Binance, OKX, Trust Wallet, or any exchange that supports USDT
+2. Buy/load USDT inside the app
+3. Send the plan amount ($75 / $250 / $800) on the **TRC20 (Tron) network** to our wallet: ${USDT_ADDRESS}
+   ⚠️ It MUST be TRC20 — sending via ERC20/BEP20/other networks loses the funds permanently
+4. After sending, they share the transaction hash or a screenshot — the payment is verified and the code is sent to their email
+
+If they ever hit an error on card/mobile money, switch them to crypto — it's always live and confirms instantly.`,
         media: { type: 'image', key: 'payment_methods' }
     },
 
@@ -149,7 +162,13 @@ IMMEDIATE RESOLUTION STEPS TO ADVISE:
 2. **SELECT LOCAL CURRENCY FIRST**:
    If they still prefer Card or Mobile Money: "Make sure you **SELECT YOUR COUNTRY'S LOCAL CURRENCY FIRST** in the currency dropdown on the payment modal before choosing your payment method. Skipping currency selection causes local payments to fail or get declined."
 3. **DIRECT ADMIN HELP / MANUAL CODE**:
-   Offer direct help: "If you'd like to pay directly via USDT TRC20 or need me to generate your activation code manually, just let me know which platform you play on and which plan you want ($75 Daily, $250 Weekly, $800 Monthly) and I'll sort you out right now!"`,
+   Offer direct help: "If you'd like to pay directly via USDT TRC20 or need me to generate your activation code manually, just let me know which platform you play on and which plan you want ($75 Daily, $250 Weekly, $800 Monthly) and I'll sort you out right now!"
+
+CRYPTO WALKTHROUGH (if they pick USDT):
+   - They need a crypto app — Binance, OKX, Trust Wallet, or any exchange with USDT
+   - Buy USDT in the app, then SEND it on the **TRC20 (Tron) network** to: ${USDT_ADDRESS}
+   - ⚠️ TRC20 only — any other network loses the funds
+   - Once sent, they share the tx hash/screenshot → verified → code delivered to their email`,
         media: { type: 'image', key: 'payment_methods' }
     },
 
@@ -343,6 +362,21 @@ CRITICAL RULES:
 - If the order shows verified: the code is re-sent to their email automatically — tell them to check inbox + spam again. If email keeps failing, the code can be shared here in chat.
 - If the order shows pending: reassure them payment was received and codes are released right after confirmation — usually minutes. We flag it for priority review.
 - If no order is found: ask for the transaction reference or a screenshot of the payment confirmation so it can be verified manually.`,
+    },
+
+    // ─── Code / Trial Expired (renewal) ──────────────────────
+    code_expired: {
+        triggers: ['expired', 'expiry', 'code expired', 'my code stopped', 'code stopped working', 'trial ended', 'trial is over', 'trial over', 'trial finished', 'code finished', 'code ended', 'predictions stopped', 'session ended', 'session is over', 'ran out', 'not working anymore', 'doesn\'t work anymore', 'no longer working', 'renew', 'renewal', 'reactivate', 'extend my', 'subscription ended', 'subscription expired', 'plan ended', 'plan expired', '60 minutes is over', 'buy another code', 'new code', 'another code'],
+        context: `The client's code or trial has ENDED — this is a warm returning customer. Treat them like someone who already knows the product.
+
+CRITICAL RULES:
+- Do NOT re-explain what AviSignals is — they already used it.
+- Acknowledge their session: "Hope the predictions treated you well!" 
+- If it was the FREE TRIAL: explain it's one-time — a code for THEIR specific site gives non-stop predictions locked to their platform.
+- If it was a PAID code: pitch a renewal for the same site (or ask if they want to switch sites). Weekly $250 saves 52% vs daily — best value for returning players.
+- Present plans briefly: Daily $75 / Weekly $250 / Monthly $800.
+- Ask which payment method they normally use (card, mobile money, or crypto) and guide them through it — payment happens on ${BOT_URL} → Buy Code, and the new code lands in their EMAIL automatically after payment.
+- NEVER mention fees or extra charges — renewing a code costs exactly the plan price.`,
     },
 
     // ─── Withdrawal Follow-Up (already paid the fee) ─────────

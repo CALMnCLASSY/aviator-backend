@@ -39,6 +39,7 @@ try { supabase = require('./supabaseClient'); } catch (_) {}
 // ─── Config ───────────────────────────────────────────────────
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_CHAT = process.env.TELEGRAM_CHAT_ID;
+const USDT_ADDRESS = paymentSupport.USDT_WALLET_ADDRESS || 'TCRwpXHYvcXY3y4FJThLHCc9hHbs9H4ExH';
 
 // ─── Client session store (in-memory) ─────────────────────────
 const clientSessions = new Map();
@@ -131,14 +132,44 @@ Payment methods: Crypto (USDT TRC20), Mobile Money (M-Pesa, MTN, Airtel), Card (
      Offer to provide the USDT TRC20 wallet address directly or activate their code manually.
 
 FREE OPTIONS (secondary fallback):
-1. Free Premium Telegram Channel — live signals 24/7 AND regular FREE code drops: ${FREE_CHANNEL}. (Tell new clients to join the channel right away for regular free code drops!)
+1. Free Premium Telegram Channel — live signals 24/7 (25+ signals per hour across 12+ betting platforms) AND regular FREE code drops: ${FREE_CHANNEL}. (Tell new clients to join the channel right away for regular free code drops!)
 2. Free 60-minute Bot Trial — test the predictor on today's trial site: ${BOT_URL}
+- Registration: ${BOT_URL} → Register with email & password → log in → click *Free Trial (Test Bot)* → spin the carousel → get the 60-min trial code for the assigned site.
+- If a client has an unused trial code → push them to USE it right now (deposit a small amount on the trial site and play live). The winning experience is what converts them.
+- If their trial session already ended → pivot IMMEDIATELY to buying a code for their specific site. Don't re-pitch the trial.
 
-HOW TO USE THE BOT:
-1. Open avisignals.com/bot AND their Aviator game simultaneously
-2. Bot shows predicted multiplier for the NEXT round
-3. Place bet when round starts → cash out just BEFORE the predicted multiplier
-4. Repeat every round
+HOW TO BUY A CODE (the ONLY purchase flow — memorise this):
+1. Client goes to ${BOT_URL} → clicks *Buy Code* → selects their betting site → picks a plan (Daily/Weekly/Monthly).
+2. On the payment modal they pay the plan price using their chosen method (details below).
+3. The activation code is delivered to their EMAIL automatically the moment payment is confirmed (subject: "Your AviSignals Activation Code" — tell them to check spam/junk too).
+- If someone wants a code: the answer is ALWAYS "pay for it on the app/site, then check your email for the code." Never complicate it.
+- NEVER tell a code buyer they need to pay a "fee", "activation fee", or "processing fee" — code purchases have NO extra charges. The plan price is all they pay.
+
+⚠️ TWO COMPLETELY DIFFERENT KINDS OF PAYMENT — NEVER MIX THEM UP:
+A) BUYING AN AVISIGNALS CODE — the client pays the plan price ($75/$250/$800) on ${BOT_URL} and receives an activation code by email. This is OUR payment. There are NO additional fees, ever.
+B) TRIAL-SITE WITHDRAWAL HOLDS — a betting site like ClassyBet/JetBet may hold a player's withdrawal of THEIR OWN WINNINGS and ask for a "processing fee" paid TO THE BETTING PLATFORM. This is between the client and the betting site — it has nothing to do with buying our codes.
+→ If the conversation is about withdrawals/cashing out winnings → it's type B. Apply the withdrawal guidance.
+→ If the conversation is about buying/activating a code → it's type A. NEVER mention processing fees, and never tell them to pay anything beyond the plan price.
+→ If unsure which situation the client is in, ASK first: "Quick check — are you trying to withdraw winnings from a betting site, or are you trying to buy an activation code?"
+
+💳 PAYMENT METHOD GUIDANCE — ASK FIRST, THEN GUIDE STEP-BY-STEP:
+After presenting the plans/prices, ALWAYS ask which payment method they normally use: "How do you usually pay for things online — card, mobile money, or crypto?"
+Then guide them through THEIR specific method:
+
+CARD / MOBILE MONEY (M-Pesa, MTN, Airtel, etc.):
+1. Go to ${BOT_URL} → Buy Code → select site & plan
+2. On the payment modal: SELECT YOUR COUNTRY'S LOCAL CURRENCY FIRST in the dropdown (KES, NGN, GHS, ZAR, etc.) — skipping this is the #1 cause of failed payments
+3. Choose Card or Mobile Money → enter card details / phone number → confirm the payment (mobile money sends a prompt to their phone)
+4. Code arrives by EMAIL automatically once payment confirms — check spam/junk too
+
+CRYPTO (USDT TRC20) — always live 24/7, never blocked by banks:
+1. They need a crypto app/wallet — e.g. Binance, OKX, Trust Wallet, or any exchange that supports USDT
+2. Buy/load USDT in the app
+3. Send USDT on the *TRC20 (Tron)* network to our wallet: ${USDT_ADDRESS}
+   ⚠️ MUST be TRC20 — sending on ERC20/BEP20 loses the funds
+4. Amount = the plan price ($75 Daily / $250 Weekly / $800 Monthly)
+5. After sending, they share the transaction hash or screenshot — payment gets verified and the activation code is sent to their email
+6. Faster option if they're in a hurry: send them these wallet details right away so they can pay directly
 
 OBJECTION HANDLING & SPECIAL SITUATIONS:
 - "ClassyBet or JetBet withdrawal on hold?" → Reassure them and advise them to pay the platform's required processing fee! Explain: "We had another client who ran into the exact same issue with their withdrawal on hold on ClassyBet/JetBet — they paid the platform's processing fee, and immediately afterward their payout cleared and was credited to their account!"
@@ -154,12 +185,16 @@ CONVERSATION RULES:
 2. Always be warm, confident, and helpful.
 3. If they mention a specific betting site, confirm it works on that site and guide them to buy a code for it.
 4. Priority is purchasing a code for their platform — only offer free trial if they resist or need proof first.
-5. Lead with the Daily $75 plan (most popular, most affordable); pitch Weekly $250 / Monthly $800 only as upgrades.
+5. Lead with the Daily $75 plan (most popular, most affordable); pitch Weekly $250 / Monthly $800 only as upgrades. When upselling from daily, mention the weekly saves 52% — it's the sweet spot.
 6. If anyone runs into payment errors, immediately recommend Crypto (USDT TRC20) and remind them to select their currency first.
 7. Never invent prices, plans, or features.
 8. If the user's first language isn't English, respond in their language.
 9. Use Telegram Markdown only: *bold*, _italic_.
-10. After payment, the activation code is sent to the client's EMAIL automatically — always mention this when they ask how they'll receive it.`;
+10. After payment, the activation code is sent to the client's EMAIL automatically — always mention this when they ask how they'll receive it.
+11. NEVER repeat yourself. Read the conversation history: if you already gave a piece of information, a price list, or instructions, do NOT send it again — build on it instead. Vary your greetings, wording, and structure every message. Never send the same or near-same reply twice.
+12. NEVER re-ask a question the client already answered (their site, plan, payment method, email — it's all in the history). Acknowledge what they told you and move forward.
+13. Match the conversation stage: new client → welcome + ask their site; choosing → present plans + ask payment method; paying → method-specific steps; paid → email delivery + reassurance. Don't loop back to earlier stages.
+14. Distinguish code purchases from trial-site withdrawal fees at all times (see the two-payment-types section above). Code buyers pay the plan price on the app, nothing more.`;
 
 // ============================================================
 // INTENT DETECTION (adapted from chatAgent.js)
@@ -180,6 +215,12 @@ function detectClientIntent(message, history) {
         && /\b(paid|payment|sent|money|\$\d+|usdt|mpesa|m-pesa)\b/i.test(userText))
         return 'paid_no_code';
 
+    // Withdrawal context guard — messages about withdrawing winnings /
+    // processing fees must NEVER be routed to sales or generic payment
+    // help, even when they contain words like "pay" or "fee".
+    const withdrawalCtx = /withdraw|payout|cashout|on hold|processing fee|release (my |the )?(fund|withdraw|payout|winning)|held/i.test(text);
+    if (withdrawalCtx) return 'withdrawal_help';
+
     // Check for payment issues first before generic buy intent
     if (/payment.*(fail|error|problem|issue|declined|stuck|reject|cancel|not work)|can'?t pay|cannot pay|card declined|declined|mpesa.*(error|fail|not work)|failed to pay|unable to pay|transaction failed|not going through|payment.*declined/i.test(text))
         return 'payment_issue';
@@ -188,12 +229,18 @@ function detectClientIntent(message, history) {
     if (/(deposit|deposited|top\s?up|recharge|funded?)\b.{0,40}(not|didn'?t|didnt|hasn'?t|haven'?t|havent|still).{0,30}(reflect|show|update|credit|appear|come|arrive|balance)|\b(not|didn'?t|hasn'?t|haven'?t|still not|yet to)\s+(reflect|reflecting|reflects|updated|updating|credited|showing|appear)\b.{0,20}(deposit|balance|account)?|balance.{0,20}(not|hasn'?t|didn'?t).{0,20}(update|reflect|change)/i.test(text))
         return 'deposit_not_updated';
 
-    if (/buy|purchase|pay|payment|mpesa|card|activate|75|250|800|dollar|\$75|\$250|\$800|get code|want (to|the) code|weekly|monthly|daily plan|7 day|30 day/i.test(text))
-        return 'ready_to_buy';
-    if (/withdraw|payout|cashout|on hold|processing fee|held/i.test(text))
-        return 'withdrawal_help';
+    // Depositing funds onto a betting site (trial site help)
     if (/deposit|fund|recharge|top up|cashier/i.test(text))
         return 'deposit_help';
+
+    // Returning client whose code/trial ended — renewal opportunity.
+    // Checked before ready_to_buy so "my code expired, want another"
+    // lands in the renewal flow, not the first-time pitch.
+    if (/expired|expiry|ran out|finished|ended|is over|stopped working|no longer working|not working anymore|doesn'?t work anymore|renew|reactivat|extend|subscription|trial.{0,15}(over|ended|finished|done)|code.{0,15}(over|ended|finished|expired)|session.{0,15}(over|ended|finished)|plan.{0,15}(over|ended|finished|expired)|predictions? (stopped|ended|finished)|60 ?min(ute)?s? (is |are )?(over|done|up)/i.test(text))
+        return 'code_expired';
+
+    if (/buy|purchase|pay|payment|mpesa|card|activate|75|250|800|dollar|\$75|\$250|\$800|get code|want (to|the) code|weekly|monthly|daily plan|7 day|30 day/i.test(text))
+        return 'ready_to_buy';
     if (/doesn't work|not working|broken|scam|fake|cheat|refund|waste|useless|failed|wrong|lost money|complaint/i.test(text))
         return 'frustrated';
     if (/how|what|explain|tell me|confused|don't understand|help me|where|when|which|guide|tutorial|instructions/i.test(text))
@@ -250,6 +297,7 @@ function updateFunnelStage(session, intent) {
         paid_no_code: 'paid_pending',
         payment_issue: 'awaiting_payment',
         ready_to_buy: 'buying',
+        code_expired: 'buying',
         withdrawal_help: 'trial_interest',
         deposit_help: 'trial_interest',
         deposit_not_updated: 'trial_interest',
@@ -492,6 +540,7 @@ function getOrCreateSession(chatId, message) {
             codeRecovery: null,          // null | 'check_email' | 'need_email' | 'need_ref' | 'pending_verify' | 'resolved'
             codeRecoveryAttempts: 0,
             depositIssue: null,          // null | 'awaiting_username' | 'forwarded'
+            fallbacksSent: new Set(),    // dedupes offline fallback replies
         };
         clientSessions.set(String(chatId), session);
     }
@@ -985,6 +1034,29 @@ async function handleClientMessage(message) {
         // Clean up any AI self-identification slips
         reply = cleanResponse(reply);
 
+        // Anti-repetition: never send a client the same reply twice.
+        // If the generated reply matches something already sent, retry
+        // once with an explicit "say it differently" instruction.
+        const normalise = (t) => (t || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        const replyNorm = normalise(reply);
+        if (replyNorm && session.history.some(m => m.role === 'assistant' && normalise(m.content) === replyNorm)) {
+            try {
+                const retry = await groq.chat.completions.create({
+                    messages: [
+                        { role: 'system', content: systemPrompt + `\n\nIMPORTANT: Your last reply repeated something you already sent in this chat. Rephrase it completely — new wording, different angle, ideally shorter. If it helps, acknowledge you already covered it ("Like I mentioned...") and move the conversation forward.` },
+                        ...session.history.map(h => ({ role: h.role, content: h.content }))
+                    ],
+                    model: 'llama-3.3-70b-versatile',
+                    temperature: 0.9,
+                    max_tokens: 500,
+                });
+                const alt = retry.choices[0]?.message?.content?.trim();
+                if (alt && normalise(alt) !== replyNorm) {
+                    reply = cleanResponse(alt);
+                }
+            } catch (_) { /* keep original reply on retry failure */ }
+        }
+
         // Send text response
         await sendClientMessage(chatId, reply);
         addToSessionHistory(session, 'assistant', reply);
@@ -1167,9 +1239,15 @@ function getIntentAddon(intent, session = null) {
         } else if (!s.plan) {
             nextStep = `They play on ${s.site}. Present the plans with prices — lead with Daily $75 (most popular, most affordable), mention Weekly $250 and Monthly $800 as upgrades. Ask which plan they want.`;
         } else if (!s.method) {
-            nextStep = `They want ${PLAN_LABELS[s.plan]} for ${s.site}. Ask how they want to pay: Mobile Money, Card, or Crypto (USDT TRC20 — always works 24/7).`;
+            nextStep = `They want ${PLAN_LABELS[s.plan]} for ${s.site}. Ask which payment method they normally use — card, mobile money (M-Pesa/MTN/Airtel), or crypto (USDT — always works 24/7). One question, nothing else.`;
         } else {
-            nextStep = `All details collected (${s.site} + ${PLAN_LABELS[s.plan]} + ${s.method}). Give exact checkout steps: ${BOT_URL} → Buy Code → select ${s.site} → ${PLAN_LABELS[s.plan]} → on the payment modal SELECT THEIR LOCAL CURRENCY FIRST → choose ${s.method}. Remind: the code arrives by EMAIL automatically right after payment (check spam/junk too).`;
+            const methodSteps = {
+                usdt: `CRYPTO steps — they need a crypto app (Binance, OKX, Trust Wallet, or any exchange). Buy/load USDT → send $${PLAN_AMOUNTS[s.plan]} on the *TRC20 (Tron)* network to wallet: ${USDT_ADDRESS} (⚠️ MUST be TRC20 — other networks lose the funds) → after sending, they share the transaction hash or screenshot → payment verified → code sent to their EMAIL.`,
+                card: `CARD steps — ${BOT_URL} → Buy Code → select ${s.site} → ${PLAN_LABELS[s.plan]} → on the payment modal SELECT THEIR COUNTRY'S LOCAL CURRENCY FIRST in the dropdown → choose Card → enter card details → pay → code arrives by EMAIL automatically (check spam/junk too).`,
+                mobile_money: `MOBILE MONEY steps — ${BOT_URL} → Buy Code → select ${s.site} → ${PLAN_LABELS[s.plan]} → on the payment modal SELECT THEIR COUNTRY'S LOCAL CURRENCY FIRST in the dropdown → choose Mobile Money → enter their phone number → approve the payment prompt on their phone → code arrives by EMAIL automatically (check spam/junk too).`,
+            };
+            nextStep = `All details collected (${s.site} + ${PLAN_LABELS[s.plan]} + ${s.method}). Give ONLY the steps for their method — numbered list, keep it tight:
+${methodSteps[s.method] || methodSteps.card}`;
         }
         readyToBuyAddon = `The user is showing BUY INTENT — this is a HOT lead. Run the guided checkout.
 ${collected}
@@ -1208,22 +1286,32 @@ NEXT STEP — do ONLY this, keep it SHORT:
 → Recommend starting with the free trial.
 → Keep it conversational.`,
 
-        payment_issue: `🚨 URGENT: The user is trying to PAY but is hitting an error! This is a HOT LEAD blocked by payment.
+        payment_issue: `🚨 URGENT: The user is trying to PAY FOR A CODE but is hitting an error! This is a HOT LEAD blocked by payment.
 → IMMEDIATELY recommend *Crypto (USDT TRC20)* — always live 24/7, never blocked by banks.
-→ Remind them: "Select your country's local currency FIRST on the payment modal before choosing the payment method."
+→ Crypto fallback steps: they need a crypto app (Binance, OKX, Trust Wallet...) → buy USDT → send on the *TRC20 (Tron)* network to ${USDT_ADDRESS} → share the tx hash/screenshot → verified → code by email.
+→ If they prefer to retry card/mobile money: "Select your country's local currency FIRST on the payment modal before choosing the payment method" — that fixes most failures.
 → Offer direct help: "If you want, I can send you the USDT wallet address directly or help activate your code manually."
 → Ask which plan and site they want to confirm the order.
 → Be reassuring and fast — don't let this lead drop!`,
 
-        withdrawal_help: `The user has a withdrawal issue. Reassure them.
+        withdrawal_help: `The user has a WITHDRAWAL issue on a betting site (their own winnings). Reassure them.
+→ This is about the BETTING PLATFORM's processing fee — completely separate from buying an AviSignals code. NEVER mix the two.
 → If ClassyBet/JetBet withdrawal on hold: encourage them to pay the processing fee.
 → "We had another client with the exact same issue — they paid the fee and their payout cleared immediately."
 → If they ALREADY paid the fee and are still waiting: reassure the payout is processing, tell them to keep the fee confirmation, check the withdrawal history tab, and offer to check personally — do NOT push another payment.
-→ Advise them to follow the platform's cashier instructions.`,
+→ Advise them to follow the platform's cashier instructions.
+→ Do NOT pitch plans or codes mid-withdrawal — resolve this first.`,
 
         deposit_help: `The user needs help depositing on the trial betting site.
 → Walk them through: Dashboard → Deposit/Cashier tab → select Card, Mobile Money, Crypto, or Apps.
 → Once funded, launch Aviator and follow the bot's predictions.`,
+
+        code_expired: `The client's code or trial has ENDED — this is a warm returning customer, not a stranger.
+→ Acknowledge the win: "Hope the predictions treated you well!"
+→ If it was the FREE trial: "The trial is one-time — a code for YOUR site gives you non-stop predictions locked to your platform."
+→ If it was a PAID code: pitch a renewal — same site unless they want to switch. Mention Weekly $250 saves 52% vs daily.
+→ Present plans briefly (Daily $75 / Weekly $250 / Monthly $800), then ask which payment method they normally use (card, mobile money, or crypto) and guide them through it.
+→ Remind: after paying on ${BOT_URL}, the new code arrives by EMAIL automatically.`,
     };
     return addons[intent] || '';
 }
@@ -1253,61 +1341,127 @@ function cleanResponse(text) {
 
 // ============================================================
 // FALLBACK RESPONSES (when AI is unavailable)
+// Each fallback is tagged so we never send the same one twice —
+// the second time, a short "repeat" variant is sent instead.
 // ============================================================
+const FALLBACK_REPEATS = {
+    paid_no_code: `Did you find it? Check your inbox + *spam/junk* for "Your AviSignals Activation Code" — or send me the *email you paid with* / payment reference and I'll pull up your order.`,
+    withdrawal: `Like I said — your payout is safe 🙏 Pay the platform's processing fee and the hold lifts. It cleared instantly for a client with the exact same issue 💪`,
+    deposit: `Same as before — Dashboard → *Deposit / Cashier* → pick your method → fund. Anything specific stuck on the deposit page?`,
+    code_expired: `Quick recap — grab a fresh code on ${BOT_URL} (Daily $75 / Weekly $250 / Monthly $800) and it lands in your email right after payment. Which payment method do you normally use?`,
+    payment_method: `Just tell me how you usually pay — *card*, *mobile money*, or *crypto* — and I'll walk you through the exact steps 🚀`,
+    pricing: `Like I shared — Daily *$75*, Weekly *$250* (save 52%), Monthly *$800*. Tell me your site + preferred payment method and I'll guide you step by step.`,
+    free_options: `The two free options are still there 👆 — free channel (${FREE_CHANNEL}) and the 60-min trial on ${BOT_URL}. Want help with either?`,
+    legitimacy: `Still 100% real 💯 — the free trial on ${BOT_URL} proves it live. Want me to walk you through claiming it?`,
+    default: `I've shared the key details above ☝️ — what specifically can I help you with? Buying a code, the free trial, or something else?`,
+};
+
+function fb(session, key, text) {
+    if (!session.fallbacksSent) session.fallbacksSent = new Set();
+    if (session.fallbacksSent.has(key)) {
+        return FALLBACK_REPEATS[key] || FALLBACK_REPEATS.default;
+    }
+    session.fallbacksSent.add(key);
+    return text;
+}
+
 function getFallbackResponse(text, session) {
     const lower = (text || '').toLowerCase();
+    const s = session.slots || {};
 
     // Paid but no code — never send a sales pitch to someone who already paid
     if (session.codeRecovery || /paid.*(but|and).*(no|not|didn'?t|haven'?t).*(code|email)|no code|haven'?t received|didn'?t receive|waiting for.*(code|activation)/i.test(lower)) {
-        return `Thanks for letting me know, ${session.firstName} 🙏\n\n` +
+        return fb(session, 'paid_no_code',
+            `Thanks for letting me know, ${session.firstName} 🙏\n\n` +
             `First — please check your *email inbox* and the *spam/junk* folder for "Your AviSignals Activation Code".\n\n` +
-            `If it's not there, send me the *email you paid with* or the *payment reference* and I'll pull up your order right now.`;
+            `If it's not there, send me the *email you paid with* or the *payment reference* and I'll pull up your order right now.`);
     }
 
-    if (lower.includes('price') || lower.includes('cost') || lower.includes('how much') || lower.includes('$75') || lower.includes('buy')) {
-        return `Hey ${session.firstName}! 💰 Here are our plans:\n\n` +
-            `• *Daily* — $75 (24 hours)\n` +
-            `• *Weekly* — $250 (7 days, save 52%!)\n` +
-            `• *Monthly* — $800 (30 days, save 64%!)\n\n` +
-            `Go to ${BOT_URL} → Click *Buy Code* → Select your site and plan → Pay! 🚀\n\n` +
-            `Want to test it first? Grab the free trial — 60 minutes, no payment: ${BOT_URL}`;
+    // Withdrawal issues come BEFORE pricing/buy — a "$75 processing fee"
+    // message must never trigger a sales pitch.
+    if (/withdraw|payout|on hold|processing fee|release.{0,20}(fund|winning|payout)|held/i.test(lower)) {
+        return fb(session, 'withdrawal',
+            `Hey ${session.firstName}! Regarding withdrawals on platforms like ClassyBet or JetBet: if your withdrawal is on hold for a processing fee, please go ahead and pay the fee to release it.\n\n` +
+            `We had another client who ran into the exact same issue with their withdrawal on hold — once they paid the platform's processing fee, their payout cleared and was credited to their account immediately! 💪`);
     }
 
-    if (lower.includes('free') || lower.includes('trial') || lower.includes('test')) {
-        return `Hey ${session.firstName}! 🎮 You have TWO free options:\n\n` +
-            `1️⃣ *Free Telegram Channel* — live signals 24/7: ${FREE_CHANNEL}\n` +
-            `2️⃣ *Free Bot Trial* — 60 minutes on today's trial site: ${BOT_URL}\n\n` +
-            `Try both — they're 100% free! Once you see the bot working, you can get a code for YOUR site.`;
-    }
-
-    if (lower.includes('withdraw') || lower.includes('hold') || lower.includes('processing fee') || lower.includes('payout')) {
-        return `Hey ${session.firstName}! Regarding withdrawals on platforms like ClassyBet or JetBet: if your withdrawal is on hold for a processing fee, please go ahead and pay the fee to release it.\n\n` +
-            `We had another client who ran into the exact same issue with their withdrawal on hold — once they paid the platform's processing fee, their payout cleared and was credited to their account immediately! 💪`;
-    }
-
-    if (lower.includes('deposit') || lower.includes('fund') || lower.includes('recharge')) {
-        return `Hey ${session.firstName}! To deposit on your betting site:\n\n` +
+    // Deposits on betting sites — also before pricing
+    if (/deposit|fund|recharge|top ?up|cashier/i.test(lower)) {
+        return fb(session, 'deposit',
+            `Hey ${session.firstName}! To deposit on your betting site:\n\n` +
             `1. Open your betting site dashboard or profile\n` +
             `2. Click on the *Deposit / Cashier* tab\n` +
             `3. Choose Card, Mobile Money (M-Pesa, etc.), Crypto, or Payment Apps\n` +
             `4. Confirm the amount to fund your balance\n\n` +
-            `Once funded, launch Aviator and cash out with the bot's signals!`;
+            `Once funded, launch Aviator and cash out with the bot's signals!`);
     }
 
-    if (lower.includes('real') || lower.includes('scam') || lower.includes('legit')) {
-        return `I totally understand the concern, ${session.firstName}. 💯 AviSignals is 100% real — we've been running for over a year with thousands of users worldwide.\n\n` +
+    // Code / trial ended — renewal pitch
+    if (/expired|ran out|ended|is over|stopped working|not working anymore|renew|reactivat|extend|subscription/i.test(lower)) {
+        return fb(session, 'code_expired',
+            `Hey ${session.firstName}! Hope the predictions treated you well 🎉\n\n` +
+            `To get back in, grab a fresh code on ${BOT_URL} → *Buy Code* → pick your site & plan:\n` +
+            `• *Daily* $75 • *Weekly* $250 (save 52%) • *Monthly* $800\n\n` +
+            `Pay on the app and the new code lands in your *email* right away. Which payment method do you normally use — card, mobile money, or crypto?`);
+    }
+
+    // "How do I pay" / payment method questions — method-aware guidance
+    if (/how (do|can|to|will) (i )?(pay|make payment)|payment method|pay with|which payment|card|mpesa|m-?pesa|mobile money|usdt|crypto|binance|visa|mastercard/i.test(lower)) {
+        let resp;
+        if (s.method === 'usdt') {
+            resp = `Crypto it is 💪\n\n` +
+                `1. Open your crypto app (Binance, OKX, Trust Wallet — any works)\n` +
+                `2. Buy/load *USDT*\n` +
+                `3. Send it on the *TRC20 (Tron)* network to:\n\`${USDT_ADDRESS}\`\n` +
+                `⚠️ MUST be TRC20 — other networks lose the funds.\n\n` +
+                `Once sent, drop the tx hash or a screenshot here — I'll verify it and your code goes straight to your email ⚡`;
+        } else if (s.method === 'card' || s.method === 'mobile_money') {
+            resp = `Easy! On ${BOT_URL} → *Buy Code* → pick your site & plan → on the payment modal *select your country's currency FIRST* → choose ${s.method === 'card' ? '*Card* and enter your card details' : '*Mobile Money* and enter your phone number'} → pay.\n\n` +
+                `Your code arrives by *email* the moment it confirms ✅`;
+        } else {
+            resp = `We accept *Card*, *Mobile Money* (M-Pesa, MTN, Airtel), and *Crypto (USDT TRC20)* 💳\n\n` +
+                `Which do you normally use? I'll give you the exact steps for it.`;
+        }
+        return fb(session, 'payment_method', resp);
+    }
+
+    // Pricing / buy intent
+    if (/price|cost|how much|\$75|\$250|\$800|buy|purchase|get (a |the |my )?code|activate|plan/i.test(lower)) {
+        return fb(session, 'pricing',
+            `Hey ${session.firstName}! 💰 Here are our plans:\n\n` +
+            `• *Daily* — $75 (24 hours)\n` +
+            `• *Weekly* — $250 (7 days, save 52%!)\n` +
+            `• *Monthly* — $800 (30 days, save 64%!)\n\n` +
+            `Go to ${BOT_URL} → *Buy Code* → select your site & plan → pay → your code lands in your *email* instantly 🚀\n\n` +
+            `Which payment method do you normally use — card, mobile money, or crypto?`);
+    }
+
+    // Free options
+    if (/free|trial|demo|test/i.test(lower)) {
+        return fb(session, 'free_options',
+            `Hey ${session.firstName}! 🎮 You have TWO free options:\n\n` +
+            `1️⃣ *Free Telegram Channel* — live signals 24/7: ${FREE_CHANNEL}\n` +
+            `2️⃣ *Free Bot Trial* — 60 minutes on today's trial site: ${BOT_URL}\n\n` +
+            `Try both — they're 100% free! Once you see the bot working, you can get a code for YOUR site.`);
+    }
+
+    // Legitimacy
+    if (/real|scam|legit|trust|proof/i.test(lower)) {
+        return fb(session, 'legitimacy',
+            `I totally understand the concern, ${session.firstName}. 💯 AviSignals is 100% real — we've been running for over a year with thousands of users worldwide.\n\n` +
             `Try it yourself for FREE:\n` +
             `📡 Free channel: ${FREE_CHANNEL}\n` +
             `🎮 Free trial: ${BOT_URL}\n\n` +
-            `No payment needed. See the predictions work live!`;
+            `No payment needed. See the predictions work live!`);
     }
 
-    return `Hey ${session.firstName}! 👋 Thanks for reaching out! I'm here to help.\n\n` +
+    return fb(session, 'default',
+        `Hey ${session.firstName}! 👋 Thanks for reaching out! I'm here to help.\n\n` +
         `AviSignals is an AI-powered Aviator predictor bot — it works on ALL betting sites worldwide.\n\n` +
         `Want to try it free?\n` +
         `📡 Join our main channel for regular *FREE code drops* & signals: ${FREE_CHANNEL}\n` +
         `🎮 Free 60-min live bot trial: ${BOT_URL}\n\n` +
-        `What site do you play on? I'll help you get started! 🚀`;
+        `What site do you play on? I'll help you get started! 🚀`);
 }
 
 // ============================================================
