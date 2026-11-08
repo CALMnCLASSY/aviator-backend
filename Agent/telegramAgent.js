@@ -919,7 +919,7 @@ function startTelegramAgent() {
     global.agentMarketingBotInstance = agentMarketingBot;
     agentMarketingBot.start();
 
-    // ── Initialize Premium Signals Bot ────────────────────────────
+    // ── Initialize Premium Signals Bot ───────────────────────────
     const TelegramSignalsMarketingBot = require('../marketing/telegramSignalsMarketing');
     const signalsMarketingBot = new TelegramSignalsMarketingBot();
     global.signalsMarketingBotInstance = signalsMarketingBot;
