@@ -610,6 +610,42 @@ async function sendActivationCodeEmail(to, code, siteName = 'your selected betti
     return sendEmail(to, subject, html);
 }
 
+// Admin follow-up — custom message from the admin panel.
+// Always prefilled with direct admin contact details
+// (never the referral agent) so the client knows exactly
+// who to reach if they have issues.
+async function sendAdminFollowUpEmail(to, { subject, message } = {}) {
+    const name = to.split('@')[0];
+    const safeMessage = String(message || '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/\n/g, '<br>');
+
+    const body = `
+    <p style="color:#ccc;">Hey <strong style="color:#fff;">${name}</strong>,</p>
+    <p style="color:#ccc;">${safeMessage || 'Just checking in regarding your AviSignals account.'}</p>
+
+    <div style="background:rgba(241,196,15,0.08);border-left:3px solid ${BRAND_GOLD};padding:16px 18px;border-radius:0 8px 8px 0;margin:24px 0;">
+      <p style="margin:0 0 10px;color:#fff;font-weight:700;">Need anything? Contact the admin directly:</p>
+      <p style="margin:0;color:#ccc;font-size:14px;line-height:1.9;">
+        ✈️ Telegram: <a href="${ADMIN_TG}" style="color:${BRAND_GOLD};">@avisignalshelp_bot</a><br>
+        📧 Email: <a href="mailto:${REPLY_TO}" style="color:${BRAND_GOLD};">${REPLY_TO}</a>
+      </p>
+      <p style="margin:10px 0 0;color:rgba(255,255,255,0.45);font-size:12px;">
+        This is the fastest way to reach us — we reply personally, usually within the hour.
+      </p>
+    </div>`;
+
+    const html = wrapInTemplate({
+        previewText: 'A message from the AviSignals admin team',
+        headline:    subject || 'A quick note from AviSignals',
+        body,
+        ctaText: 'Open AviSignals Bot',
+        ctaUrl:  BOT_URL
+    });
+
+    return sendEmail(to, subject || 'A message from the AviSignals team', html);
+}
+
 // ============================================================
 // EXPORTS
 // ============================================================
@@ -623,5 +659,6 @@ module.exports = {
     sendRenewalWarningEmail,
     sendHotLeadEmail,
     sendOtpEmail,
-    sendActivationCodeEmail
+    sendActivationCodeEmail,
+    sendAdminFollowUpEmail
 };

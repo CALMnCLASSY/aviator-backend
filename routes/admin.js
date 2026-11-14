@@ -2,6 +2,8 @@ const express = require('express');
 const crypto = require('crypto');
 const router = express.Router();
 const trialSite = require('../services/trialSite');
+const emailService = require('../Agent/emailService');
+const paymentSupport = require('../Agent/paymentSupport');
 
 // ============================================================
 // ADMIN AUTH
@@ -251,10 +253,125 @@ router.get('/activations', async (req, res) => {
             .from('activations')
             .select('*, profiles(email, phone)')
             .order('activated_at', { ascending: false })
-            .limit(50);
+            .limit(100);
 
         if (error) throw error;
         res.json({ success: true, count: data.length, activations: data });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// ============================================================
+// SUBSCRIBER MANAGEMENT
+// After a payment verifies, admins need to resend codes and
+// follow up with customers without leaving the panel.
+// ============================================================
+
+/**
+ * GET /verified-payments — recently verified payments for the
+ * post-verification actions (resend code / follow-up email).
+ */
+router.get('/verified-payments', async (req, res) => {
+    try {
+        const db = req.supabaseAdmin || req.supabase;
+        const { data, error } = await db
+            .from('payments')
+            .select('*, profiles(email, phone, assigned_site)')
+            .in('status', ['verified', 'success', 'completed'])
+            .order('created_at', { ascending: false })
+            .limit(50);
+        if (error) throw error;
+        res.json({ success: true, payments: (data || []).map(p => ({
+            id: p.id, reference: p.reference, amount: p.amount,
+            plan: p.plan || p.plan_type, method: p.method || p.payment_method,
+            status: p.status, created_at: p.created_at,
+            email: p.profiles?.email, phone: p.profiles?.phone,
+            site: p.profiles?.assigned_site || p.site
+        }))});
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+/**
+ * GET /users/:email — full picture of one subscriber:
+ * profile, all activations, and payment history.
+ */
+router.get('/users/:email', async (req, res) => {
+    try {
+        const db = req.supabaseAdmin || req.supabase;
+        const email = decodeURIComponent(req.params.email).trim().toLowerCase();
+        const { data: profile } = await db
+            .from('profiles').select('*').ilike('email', email).limit(1).single();
+        if (!profile) return res.status(404).json({ success: false, error: 'User not found' });
+
+        const [acts, pays] = await Promise.all([
+            db.from('activations').select('*').eq('user_id', profile.id)
+              .order('activated_at', { ascending: false }).limit(50),
+            db.from('payments').select('*').eq('user_id', profile.id)
+              .order('created_at', { ascending: false }).limit(20)
+        ]);
+        res.json({
+            success: true, profile,
+            activations: acts.data || [],
+            payments: pays.data || []
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+/**
+ * POST /users/resend-code — email the client a fresh activation
+ * code for their site (rotating daily code system).
+ * Body: { email, site? }
+ */
+router.post('/users/resend-code', async (req, res) => {
+    try {
+        const { email, site } = req.body || {};
+        if (!email) return res.status(400).json({ success: false, error: 'email required' });
+
+        // Determine the site — explicit choice wins, else their
+        // latest activation, else their assigned site.
+        let siteName = site;
+        if (!siteName) {
+            const db = req.supabaseAdmin || req.supabase;
+            const { data: profile } = await db
+                .from('profiles').select('id, assigned_site').ilike('email', email.trim()).limit(1).single();
+            siteName = profile?.assigned_site;
+            if (profile) {
+                const { data: act } = await db
+                    .from('activations').select('site').eq('user_id', profile.id)
+                    .order('activated_at', { ascending: false }).limit(1).single();
+                if (act?.site) siteName = act.site;
+            }
+        }
+
+        const code = paymentSupport.getCodeForSite(siteName);
+        const sent = await emailService.sendActivationCodeEmail(
+            email.trim(), code, siteName || 'your selected betting site');
+        res.json({ success: !!sent, email, site: siteName, code: sent ? undefined : code,
+            error: sent ? undefined : 'Email provider failed or unconfigured' });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+/**
+ * POST /users/follow-up — send a custom admin follow-up email.
+ * Always prefilled with direct admin contact (never the agent).
+ * Body: { email, subject?, message }
+ */
+router.post('/users/follow-up', async (req, res) => {
+    try {
+        const { email, subject, message } = req.body || {};
+        if (!email || !message) {
+            return res.status(400).json({ success: false, error: 'email and message required' });
+        }
+        const sent = await emailService.sendAdminFollowUpEmail(email.trim(), { subject, message });
+        res.json({ success: !!sent,
+            error: sent ? undefined : 'Email provider failed or unconfigured' });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }

@@ -529,7 +529,7 @@
                 <button class="nav-item active" data-view="overview"><i class="fas fa-gauge-high"></i> Overview</button>
                 <button class="nav-item" data-view="payments"><i class="fas fa-credit-card"></i> Payments <span class="badge hidden" id="navPendingBadge">0</span></button>
                 <button class="nav-item" data-view="users"><i class="fas fa-users"></i> Users</button>
-                <button class="nav-item" data-view="activations"><i class="fas fa-bolt"></i> Activations</button>
+                <button class="nav-item" data-view="activations"><i class="fas fa-bolt"></i> Subscribers</button>
                 <button class="nav-item" data-view="codes"><i class="fas fa-key"></i> Codes</button>
                 <button class="nav-item" data-view="agents"><i class="fas fa-handshake"></i> Agents</button>
                 <button class="nav-item" data-view="support"><i class="fas fa-headset"></i> Support Chats</button>
@@ -610,6 +610,15 @@
                             </table>
                         </div>
                     </div>
+                    <div class="card mt">
+                        <div class="section-title"><i class="fas fa-circle-check" style="color:var(--success)"></i> Recently Verified</div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Time</th><th>Customer</th><th>Amount</th><th>Site</th><th>Actions</th></tr></thead>
+                                <tbody id="verifiedBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
                 </section>
 
                 <!-- USERS -->
@@ -628,13 +637,16 @@
                     </div>
                 </section>
 
-                <!-- ACTIVATIONS -->
+                <!-- SUBSCRIBERS (previous activations — click a user to manage) -->
                 <section id="view-activations" class="hidden">
                     <div class="card">
-                        <div class="section-title"><i class="fas fa-bolt"></i> Recent Activations</div>
+                        <div class="section-head">
+                            <div class="section-title"><i class="fas fa-bolt"></i> Premium Subscribers <span class="pill dim">click a row to manage</span></div>
+                            <input class="search-input" id="subSearch" placeholder="Search email / site…" oninput="renderActivations()">
+                        </div>
                         <div class="table-wrap">
                             <table>
-                                <thead><tr><th>Time</th><th>User</th><th>Type</th><th>Site</th><th>Code</th></tr></thead>
+                                <thead><tr><th>Time</th><th>User</th><th>Type</th><th>Site</th><th>Code</th><th></th></tr></thead>
                                 <tbody id="actBody"></tbody>
                             </table>
                         </div>
@@ -729,6 +741,50 @@
         <div class="drawer-body" id="drawerBody"></div>
     </div>
 
+    <!-- Subscriber management drawer -->
+    <div class="drawer" id="subDrawer" style="right:-520px; width:520px;">
+        <div class="drawer-head">
+            <div>
+                <div style="font-weight:800;" id="subName">Subscriber</div>
+                <div style="font-size:0.75em; color:var(--text-dim);" id="subMeta"></div>
+            </div>
+            <button class="btn btn-sm btn-ghost" onclick="closeSubDrawer()"><i class="fas fa-xmark"></i></button>
+        </div>
+        <div class="drawer-body">
+            <div id="subDetail"></div>
+
+            <div class="card" style="padding:16px; margin-top:16px;">
+                <div class="section-title" style="font-size:0.9em;"><i class="fas fa-key"></i> Activation Code</div>
+                <p style="font-size:0.78em; color:var(--text-dim); margin-bottom:10px;">
+                    Emails the customer a fresh activation code for their site.
+                </p>
+                <button class="btn btn-accent btn-block" id="resendCodeBtn" onclick="resendSubCode()">
+                    <i class="fas fa-paper-plane"></i> Resend Activation Code
+                </button>
+            </div>
+
+            <div class="card" style="padding:16px; margin-top:16px;">
+                <div class="section-title" style="font-size:0.9em;"><i class="fas fa-envelope"></i> Follow-up Email</div>
+                <p style="font-size:0.78em; color:var(--text-dim); margin-bottom:10px;">
+                    Sent from the admin team — always includes your direct contact details (not the agent's).
+                </p>
+                <div class="field">
+                    <label>Subject</label>
+                    <input type="text" id="fuSubject">
+                </div>
+                <div class="field">
+                    <label>Message</label>
+                    <textarea id="fuMessage" rows="5" style="width:100%; padding:12px 14px; background:rgba(0,0,0,0.25); border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:inherit; font-size:0.9em; resize:vertical;"></textarea>
+                </div>
+                <button class="btn btn-block" id="fuSendBtn" onclick="sendFollowUp()">
+                    <i class="fas fa-envelope"></i> Send Follow-up
+                </button>
+            </div>
+
+            <div id="subHistory" class="mt"></div>
+        </div>
+    </div>
+
     <div id="toastWrap"></div>
 
     <script>
@@ -750,7 +806,7 @@
             overview: { title: 'Overview', load: loadOverview },
             payments: { title: 'Payments', load: loadPayments },
             users: { title: 'Users', load: loadUsers },
-            activations: { title: 'Activations', load: loadActivations },
+            activations: { title: 'Premium Subscribers', load: loadActivations },
             codes: { title: 'Activation Codes', load: loadCodes },
             agents: { title: 'Agents & Referrals', load: loadAgents },
             support: { title: 'Support Chats', load: loadSupport },
@@ -942,10 +998,46 @@
         // ═══════════ PAYMENTS ═══════════
         async function loadPayments() {
             try {
-                const data = await api('/pending-verifications');
-                state.payments = data.verifications || [];
+                const [pend, ver] = await Promise.all([
+                    api('/pending-verifications'),
+                    api('/verified-payments')
+                ]);
+                state.payments = pend.verifications || [];
+                state.verified = ver.payments || [];
                 renderPayments();
+                renderVerified();
             } catch (e) { console.warn(e); }
+        }
+
+        function renderVerified() {
+            const tbody = document.getElementById('verifiedBody');
+            const list = state.verified || [];
+            tbody.innerHTML = list.length ? '' : '<tr class="empty-row"><td colspan="5">No verified payments yet</td></tr>';
+            list.forEach(p => {
+                const tr = document.createElement('tr');
+                const email = p.email || '';
+                tr.innerHTML = `
+                    <td>${fmtTime(p.created_at)}</td>
+                    <td><b>${esc(email || '—')}</b><br><small style="color:var(--text-dim)">${esc(p.phone || '')}</small></td>
+                    <td style="color:var(--success); font-weight:700;">${esc(p.amount || '—')}</td>
+                    <td>${esc(p.site || '—')}</td>
+                    <td>
+                        ${email ? `<button class="btn btn-sm btn-accent" onclick="resendCodeFor('${esc(email)}','${esc(p.site || '')}')"><i class="fas fa-key"></i> Code</button>
+                        <button class="btn btn-sm" onclick="openSubscriber('${esc(email)}')"><i class="fas fa-user-gear"></i> Manage</button>` : '<span style="color:var(--text-dim)">no email</span>'}
+                    </td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function resendCodeFor(email, site) {
+            try {
+                const data = await api('/users/resend-code', {
+                    method: 'POST',
+                    body: JSON.stringify({ email, site: site || undefined })
+                });
+                toast(data.success ? `New code emailed to <b>${esc(email)}</b>` : (data.error || 'Send failed'),
+                      data.success ? 'ok' : 'err');
+            } catch (e) { toast('Request failed', 'err'); }
         }
 
         function renderPayments() {
@@ -1022,24 +1114,108 @@
             });
         }
 
-        // ═══════════ ACTIVATIONS ═══════════
+        // ═══════════ SUBSCRIBERS / ACTIVATIONS ═══════════
         async function loadActivations() {
             try {
                 const data = await api('/activations');
-                const tbody = document.getElementById('actBody');
-                const list = data.activations || [];
-                tbody.innerHTML = list.length ? '' : '<tr class="empty-row"><td colspan="5">No activations</td></tr>';
-                list.forEach(a => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
+                state.activations = data.activations || [];
+                renderActivations();
+            } catch (e) { console.warn(e); }
+        }
+
+        function renderActivations() {
+            const q = (document.getElementById('subSearch').value || '').toLowerCase();
+            const tbody = document.getElementById('actBody');
+            const list = (state.activations || []).filter(a =>
+                !q || (a.profiles?.email || '').toLowerCase().includes(q) || (a.site || '').toLowerCase().includes(q));
+            tbody.innerHTML = list.length ? '' : '<tr class="empty-row"><td colspan="6">No activations</td></tr>';
+            list.forEach(a => {
+                const email = a.profiles?.email || '';
+                const tr = document.createElement('tr');
+                tr.style.cursor = email ? 'pointer' : 'default';
+                if (email) tr.onclick = () => openSubscriber(email);
+                tr.innerHTML = `
                         <td>${fmtTime(a.activated_at)}</td>
-                        <td><b>${esc(a.profiles?.email || '—')}</b><br><small style="color:var(--text-dim)">${esc(a.profiles?.phone || '')}</small></td>
+                        <td><b>${esc(email || '—')}</b><br><small style="color:var(--text-dim)">${esc(a.profiles?.phone || '')}</small></td>
                         <td><span class="pill ${a.code_type === 'freeTrial' ? 'blue' : 'gold'}">${esc(a.code_type || '—')}</span></td>
                         <td>${esc(a.site || a.assigned_site || '—')}</td>
-                        <td><span class="code-chip" onclick="copyText('${esc(a.code)}','code')">${esc(a.code || '—')}</span></td>`;
-                    tbody.appendChild(tr);
+                        <td><span class="code-chip" onclick="event.stopPropagation(); copyText('${esc(a.code)}','code')">${esc(a.code || '—')}</span></td>
+                        <td>${email ? '<i class="fas fa-user-gear" style="color:var(--text-dim)"></i>' : ''}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // ── Subscriber drawer ──
+        let currentSub = null;
+
+        async function openSubscriber(email) {
+            try {
+                const data = await api(`/users/${encodeURIComponent(email)}`);
+                if (!data.success) { toast(data.error || 'User not found', 'err'); return; }
+                currentSub = { email, site: data.profile?.assigned_site || data.activations?.[0]?.site || '' };
+                const p = data.profile || {};
+                document.getElementById('subName').textContent = email;
+                document.getElementById('subMeta').textContent =
+                    `${p.phone || 'no phone'} · site: ${currentSub.site || '—'} · ${data.activations.length} activations`;
+                document.getElementById('subDetail').innerHTML = `
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                        <div><div style="font-size:0.7em;color:var(--text-dim);">PHONE</div><b>${esc(p.phone || '—')}</b></div>
+                        <div><div style="font-size:0.7em;color:var(--text-dim);">ASSIGNED SITE</div><b>${esc(p.assigned_site || '—')}</b></div>
+                        <div><div style="font-size:0.7em;color:var(--text-dim);">ACTIVATIONS</div><b>${data.activations.length}</b></div>
+                        <div><div style="font-size:0.7em;color:var(--text-dim);">PAYMENTS</div><b>${data.payments.length}</b></div>
+                        <div><div style="font-size:0.7em;color:var(--text-dim);">JOINED</div><b>${p.created_at ? fmtTime(p.created_at) : '—'}</b></div>
+                        <div><div style="font-size:0.7em;color:var(--text-dim);">REFERRER</div><b>${esc(p.referred_by || p.referrer || '—')}</b></div>
+                    </div>`;
+                document.getElementById('fuSubject').value = 'Your AviSignals premium access';
+                document.getElementById('fuMessage').value =
+                    `Hi! This is the AviSignals admin team — just checking in on your premium access.\n\n` +
+                    `Your activation code is working on ${currentSub.site || 'your site'}. If you run into any issues at all, ` +
+                    `message us directly on Telegram at @avisignalshelp_bot or reply to this email — we handle everything personally, no middlemen.`;
+                const hist = document.getElementById('subHistory');
+                hist.innerHTML = '<div class="section-title" style="font-size:0.85em;"><i class="fas fa-clock-rotate-left"></i> History</div>';
+                data.activations.slice(0, 10).forEach(a => {
+                    hist.innerHTML += `<div style="font-size:0.8em; padding:8px 0; border-bottom:1px solid var(--border);">
+                        <span class="pill ${a.code_type === 'freeTrial' ? 'blue' : 'gold'}">${esc(a.code_type)}</span>
+                        ${esc(a.site)} · <code>${esc(a.code)}</code> · ${fmtTime(a.activated_at)}</div>`;
                 });
-            } catch (e) { console.warn(e); }
+                data.payments.slice(0, 5).forEach(py => {
+                    hist.innerHTML += `<div style="font-size:0.8em; padding:8px 0; border-bottom:1px solid var(--border);">
+                        <span class="pill green">${esc(py.status)}</span>
+                        ${esc(py.amount || '')} · ${fmtTime(py.created_at)}</div>`;
+                });
+                document.getElementById('subDrawer').classList.add('open');
+            } catch (e) { console.warn(e); toast('Could not load subscriber', 'err'); }
+        }
+
+        function closeSubDrawer() {
+            document.getElementById('subDrawer').classList.remove('open');
+            currentSub = null;
+        }
+
+        async function resendSubCode() {
+            if (!currentSub) return;
+            const btn = document.getElementById('resendCodeBtn');
+            btn.disabled = true;
+            await resendCodeFor(currentSub.email, currentSub.site);
+            btn.disabled = false;
+        }
+
+        async function sendFollowUp() {
+            if (!currentSub) return;
+            const subject = document.getElementById('fuSubject').value.trim();
+            const message = document.getElementById('fuMessage').value.trim();
+            if (!message) { toast('Write a message first', 'err'); return; }
+            const btn = document.getElementById('fuSendBtn');
+            btn.disabled = true;
+            try {
+                const data = await api('/users/follow-up', {
+                    method: 'POST',
+                    body: JSON.stringify({ email: currentSub.email, subject, message })
+                });
+                toast(data.success ? `Follow-up sent to <b>${esc(currentSub.email)}</b>` : (data.error || 'Send failed'),
+                      data.success ? 'ok' : 'err');
+            } catch (e) { toast('Request failed', 'err'); }
+            btn.disabled = false;
         }
 
         // ═══════════ CODES ═══════════
