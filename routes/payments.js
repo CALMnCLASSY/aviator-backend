@@ -5,6 +5,7 @@ const axios = require('axios');
 const fetch = require('node-fetch');
 const discordAgent = require('../Agent/discordAgent');
 const journeyAgent = require('../Agent/journeyAgent');
+const trialSite = require('../services/trialSite');
 const fs = require('fs');
 const path = require('path');
 
@@ -296,6 +297,24 @@ router.post('/webhooks/flutterwave', handleFlutterwaveWebhook);
 router.post('/webhook/flutterwave', handleFlutterwaveWebhook);
 router.post('/flutterwave/webhook', handleFlutterwaveWebhook);
 router.post('/flutterwave', handleFlutterwaveWebhook);
+
+/**
+ * TODAY'S FREE TRIAL SITE
+ * The bot page calls this once on load so every visitor is
+ * assigned the same trial site — the server-side daily rotation
+ * plus any manual admin override (which only applies for the
+ * date it was set).
+ */
+router.get('/trial-site', (req, res) => {
+  const today = trialSite.getTodaySite();
+  res.json({
+    success: true,
+    site: today.site,
+    source: today.source,
+    date: today.date,
+    timezone: today.timezone
+  });
+});
 
 /**
  * VERIFY PAYMENT (Status Check)

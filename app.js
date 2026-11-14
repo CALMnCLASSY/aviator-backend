@@ -4,7 +4,7 @@
 // What changed from v1:
 //  SECURITY
 //  - Body limit dropped from 50mb → 10kb (was a vulnerability)
-//  - Admin panel (/control) now requires a secret token header
+//  - Admin panel only served at /control; all /api/admin/* routes need Bearer auth
 //  - Master admin code has NO hardcoded fallback
 //  - CORS localhost check is dev-only (not in production)
 //  - Health endpoint no longer leaks internal architecture
@@ -68,7 +68,8 @@ if (missingEnv.length) {
 const RECOMMENDED_ENV = [
     'TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID', 'TELEGRAM_CHANNEL_ID',
     'RESEND_API_KEY', 'DISCORD_WEBHOOK_URL', 'GROQ_API_KEY',
-    'MASTER_ADMIN_CODE', 'ADMIN_PANEL_TOKEN', 'BREVO_USER', 'BREVO_SMTP_KEY'
+    'MASTER_ADMIN_CODE', 'ADMIN_PANEL_TOKEN', 'ADMIN_EMAIL', 'ADMIN_PASSWORD',
+    'BREVO_USER', 'BREVO_SMTP_KEY'
 ];
 RECOMMENDED_ENV.forEach(k => {
     if (!process.env[k]) console.warn(`⚠️  Optional env var not set: ${k}`);
@@ -393,25 +394,42 @@ app.use((req, _res, next) => {
 // ============================================================
 // STATIC FILES
 // ============================================================
+// The admin panel is only served through the token-gated
+// /control route — never expose it as a plain static file.
+app.use((req, res, next) => {
+    if (req.path === '/admin.html') {
+        return res.status(404).json({ success: false, message: 'Not found.' });
+    }
+    next();
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
-app.use('/marketing-assets', express.static(path.join(__dirname, 'marketing')));
+
+// Marketing assets are embedded by the agent panel on
+// avisignals.com, which is a different origin from this API —
+// Helmet sets Cross-Origin-Resource-Policy: same-origin globally,
+// so relax it ONLY for this path. ?download=1 forces an
+// attachment so download buttons work cross-origin.
+app.use('/marketing-assets', (req, res, next) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    next();
+}, express.static(path.join(__dirname, 'marketing'), {
+    setHeaders: (res, filePath) => {
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+        res.setHeader('Cache-Control', 'public, max-age=604800'); // 7 days
+        if (res.req && res.req.query && res.req.query.download) {
+            res.setHeader('Content-Disposition', `attachment; filename="${path.basename(filePath)}"`);
+        }
+    }
+}));
 
 // ============================================================
-// ADMIN PANEL — protected by token header
-// In v1 this was wide open. Now requires:
-//   Header: X-Admin-Token: <your ADMIN_PANEL_TOKEN from .env>
+// ADMIN PANEL — served only at /control.
+// The page itself is public (it is just a login form); every
+// /api/admin/* endpoint it calls requires a Bearer token from
+// POST /api/admin/login, so nothing sensitive is exposed here.
 // ============================================================
 app.get('/control', (req, res) => {
-    const token    = req.headers['x-admin-token'] || req.query.token;
-    const expected = process.env.ADMIN_PANEL_TOKEN;
-
-    if (!expected) {
-        return res.status(503).json({ success: false, message: 'Admin panel not configured.' });
-    }
-    if (!token || token !== expected) {
-        console.warn(`🚫 Unauthorised admin panel attempt from ${req.ip}`);
-        return res.status(401).json({ success: false, message: 'Unauthorised.' });
-    }
     res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 

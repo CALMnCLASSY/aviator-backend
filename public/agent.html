@@ -9,9 +9,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #070913;
-            --bg-card: rgba(17, 24, 39, 0.88);
-            --bg-card-hover: rgba(26, 36, 58, 0.95);
+            --bg: #0b0d17;
+            --bg-card: rgba(22, 27, 44, 0.88);
+            --bg-card-hover: rgba(27, 33, 56, 0.95);
             --accent: #f1c40f;
             --accent-glow: rgba(241, 196, 15, 0.35);
             --success: #10b981;
@@ -916,6 +916,55 @@
             gap: 6px;
         }
 
+        .btn-asset-dl.secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-dim);
+        }
+
+        .btn-asset-dl.secondary:hover {
+            color: var(--accent);
+            border-color: var(--accent);
+            background: rgba(241, 196, 15, 0.08);
+        }
+
+        .asset-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .filter-chips {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .filter-chip {
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid var(--border-subtle);
+            background: transparent;
+            color: var(--text-dim);
+            font-family: inherit;
+            font-size: 0.78em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .filter-chip:hover {
+            color: var(--text);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .filter-chip.active {
+            background: rgba(241, 196, 15, 0.12);
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
         .btn-asset-dl:hover {
             background: var(--accent);
             color: #000;
@@ -1328,16 +1377,19 @@
                     </div>
                     <div class="tools-nav-tabs">
                         <button class="tools-tab-btn active" onclick="switchToolsTab('images')">
-                            <i class="fas fa-image"></i> Banners (1-5)
+                            <i class="fas fa-image"></i> Banners
                         </button>
                         <button class="tools-tab-btn" onclick="switchToolsTab('videos')">
-                            <i class="fas fa-video"></i> Videos (1-20)
+                            <i class="fas fa-video"></i> Videos
                         </button>
                         <button class="tools-tab-btn" onclick="switchToolsTab('scripts')">
                             <i class="fas fa-copy"></i> Ready Captions
                         </button>
                     </div>
                 </div>
+
+                <!-- Category filter chips -->
+                <div id="assetFilterChips" class="filter-chips"></div>
 
                 <!-- Tab 1: Images Grid -->
                 <div id="toolsImagesGrid" class="asset-grid">
@@ -1689,15 +1741,40 @@
             }
         }
 
-        function renderMarketingTools() {
+        let assetFilter = 'all';
+
+        function renderAssetFilterChips() {
+            const wrap = document.getElementById('assetFilterChips');
+            if (!wrap || !marketingToolsData) return;
+            const cats = new Set(['all']);
+            (marketingToolsData.videos || []).forEach(v => cats.add(v.category));
+            (marketingToolsData.images || []).forEach(i => cats.add(i.category));
+            wrap.innerHTML = '';
+            cats.forEach(c => {
+                const b = document.createElement('button');
+                b.className = `filter-chip${assetFilter === c ? ' active' : ''}`;
+                b.textContent = c === 'all' ? 'All' : c;
+                b.onclick = () => { assetFilter = c; renderAssetFilterChips(); renderAssetGrids(); };
+                wrap.appendChild(b);
+            });
+        }
+
+        function copyAssetLink(btn, url) {
+            navigator.clipboard.writeText(url).then(() => {
+                const orig = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                setTimeout(() => { btn.innerHTML = orig; }, 2000);
+            });
+        }
+
+        function renderAssetGrids() {
             if (!marketingToolsData) return;
+            const match = (a) => assetFilter === 'all' || a.category === assetFilter;
 
-            const promoLink = `${window.location.origin}/?ref=${currentAgentCode || 'vip'}`;
-
-            // 1. Render Images
+            // 1. Render Images (lazy)
             const imgContainer = document.getElementById('toolsImagesGrid');
             imgContainer.innerHTML = '';
-            marketingToolsData.images.forEach(img => {
+            (marketingToolsData.images || []).filter(match).forEach(img => {
                 const card = document.createElement('div');
                 card.className = 'asset-card';
                 card.innerHTML = `
@@ -1708,35 +1785,54 @@
                     <div class="asset-body">
                         <div class="asset-title">${img.name}</div>
                         <div class="asset-desc">High resolution promotion banner</div>
-                        <a href="${img.url}" download="${img.file}" target="_blank" class="btn-asset-dl">
-                            <i class="fas fa-download"></i> Download Image
-                        </a>
+                        <div class="asset-actions">
+                            <a href="${img.downloadUrl || img.url}" class="btn-asset-dl" download>
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                            <button class="btn-asset-dl secondary" onclick="copyAssetLink(this, '${img.url}')">
+                                <i class="fas fa-link"></i> Link
+                            </button>
+                        </div>
                     </div>
                 `;
                 imgContainer.appendChild(card);
             });
 
-            // 2. Render Videos
+            // 2. Render Videos — preload="none" so 30+ files don't all start downloading
             const vidContainer = document.getElementById('toolsVideosGrid');
             vidContainer.innerHTML = '';
-            marketingToolsData.videos.forEach(vid => {
+            (marketingToolsData.videos || []).filter(match).forEach(vid => {
                 const card = document.createElement('div');
                 card.className = 'asset-card';
                 card.innerHTML = `
                     <div class="asset-preview">
                         <span class="asset-tag">${vid.category}</span>
-                        <video src="${vid.url}" controls preload="metadata"></video>
+                        <video src="${vid.url}" controls preload="none"></video>
                     </div>
                     <div class="asset-body">
                         <div class="asset-title">${vid.title}</div>
                         <div class="asset-desc">${vid.desc}</div>
-                        <a href="${vid.url}" download="${vid.file}" class="btn-asset-dl">
-                            <i class="fas fa-download"></i> Download MP4
-                        </a>
+                        <div class="asset-actions">
+                            <a href="${vid.downloadUrl || vid.url}" class="btn-asset-dl" download>
+                                <i class="fas fa-download"></i> MP4
+                            </a>
+                            <button class="btn-asset-dl secondary" onclick="copyAssetLink(this, '${vid.url}')">
+                                <i class="fas fa-link"></i> Link
+                            </button>
+                        </div>
                     </div>
                 `;
                 vidContainer.appendChild(card);
             });
+        }
+
+        function renderMarketingTools() {
+            if (!marketingToolsData) return;
+
+            const promoLink = `${window.location.origin}/?ref=${currentAgentCode || 'vip'}`;
+
+            renderAssetFilterChips();
+            renderAssetGrids();
 
             // 3. Render Copywriting Scripts
             const scriptContainer = document.getElementById('toolsScriptsGrid');

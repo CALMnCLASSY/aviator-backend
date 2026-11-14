@@ -1,5 +1,7 @@
 const express = require('express');
 const fetch = require('node-fetch');
+const fs = require('fs');
+const path = require('path');
 const router = express.Router();
 
 // Mask emails and phone numbers for promoter privacy
@@ -115,53 +117,127 @@ router.post('/track-click', async (req, res) => {
     }
 });
 
+// ============================================================
+// MARKETING TOOLS ASSET DISCOVERY
+// The asset lists are built from whatever is actually on disk
+// in marketing/ — so newly uploaded videos/images show up for
+// agents automatically and deleted files never produce 404s.
+// Curated titles/categories are kept as overrides by filename.
+// ============================================================
+const MARKETING_DIR = path.join(__dirname, '..', 'marketing');
+const IMAGE_EXT = /\.(jpe?g|png|webp|gif|svg)$/i;
+const VIDEO_EXT = /\.(mp4|webm|mov)$/i;
+
+const IMAGE_META = {
+    'marketingpic.jpg':  { name: 'Marketing Banner 1', category: 'General Promo' },
+    'marketingpic2.jpg': { name: 'Marketing Banner 2', category: 'High Multiplier Win' },
+    'marketingpic3.jpg': { name: 'Marketing Banner 3', category: 'AI Predictor Showcase' },
+    'marketingpic4.jpg': { name: 'Marketing Banner 4', category: 'Live Proof & Results' },
+    'marketingpic5.jpg': { name: 'Marketing Banner 5', category: 'Fast Cashout Alert' },
+    'agentprogram.jpg':  { name: 'Agent Program Banner', category: 'Earn Money Promo' },
+    'bothomepage.jpg':   { name: 'Bot Dashboard Preview', category: 'Platform Interface' },
+    'getfreetrial.jpg':  { name: 'Free Trial Promo Card', category: 'Free Trial Hook' },
+};
+
+const VIDEO_META = {
+    'howitworks.mp4':      { title: 'Full System Walkthrough', category: 'Tutorial', desc: 'Step-by-step guide on how the AI Predictor works' },
+    'botrunning.mp4':      { title: 'Live Bot Prediction Engine', category: 'Live Demo', desc: 'Live demonstration of high odds prediction in real time' },
+    'premiumchannel.mp4':  { title: 'VIP Premium Channel Signals', category: 'Live Demo', desc: 'Live video showing continuous VIP signal delivery' },
+    'getfreecode.mp4':     { title: 'How to Get Free Trial Code', category: 'Tutorial', desc: 'Walkthrough on claiming 60-min free access' },
+    '1winworks.mp4':       { title: '1Win Platform Walkthrough', category: 'Platform Tutorial', desc: 'Live test and cashout tutorial for 1Win Aviator' },
+    'stakeworks.mp4':      { title: 'Stake Platform Walkthrough', category: 'Platform Tutorial', desc: 'Connecting to Stake Aviator with live predictions' },
+    'sportybetworks.mp4':  { title: 'SportyBet Walkthrough', category: 'Platform Tutorial', desc: 'Live signal delivery on SportyBet Aviator' },
+    'fulltutorial.mp4':    { title: 'Full Setup Tutorial', category: 'Tutorial', desc: 'Complete setup guide from signup to first prediction' },
+    'freetrialvid.mp4':    { title: 'Free Trial Promo', category: 'Free Trial Hook', desc: 'Short promo explaining the 60-min free trial' },
+    'botworking.mp4':      { title: 'Bot Working Live', category: 'Live Demo', desc: 'Real-time prediction demo' },
+    'botworking2.mp4':     { title: 'Bot Working Live #2', category: 'Live Demo', desc: 'Real-time prediction demo' },
+    'buycode.mp4':         { title: 'How to Buy a Code', category: 'Tutorial', desc: 'Purchase walkthrough for platform codes' },
+    'buycode1w.mp4':       { title: 'Buy Code — 1Win', category: 'Tutorial', desc: 'Purchase walkthrough on 1Win' },
+    'mozzartworks.mp4':    { title: 'MozzartBet Walkthrough', category: 'Platform Tutorial', desc: 'Live predictions on MozzartBet' },
+    'hollywoodworks.mp4':  { title: 'Hollywoodbets Walkthrough', category: 'Platform Tutorial', desc: 'Live predictions on Hollywoodbets' },
+    'marketingluckno.mp4': { title: 'Lucky Numbers Promo', category: 'Social Media Reel', desc: 'High energy TikTok / Reels format' },
+};
+
+function autoTitle(file, kind) {
+    const base = file.replace(/\.[^.]+$/, '');
+    const m = base.match(/^(\D+?)(\d+)$/);
+    if (kind === 'video' && /^marketingvid/i.test(base)) {
+        return `Viral Cashout Reel #${m ? m[2] : ''}`.replace(/ #$/, '');
+    }
+    if (kind === 'image' && /^marketingpic/i.test(base)) {
+        return `Marketing Banner ${m ? m[2] : ''}`.trim();
+    }
+    return base.replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function autoVideoCategory(file) {
+    if (/^marketingvid|luckno/i.test(file)) return 'Social Media Reel';
+    if (/works\.mp4$/i.test(file)) return 'Platform Tutorial';
+    return 'General';
+}
+
+function autoImageCategory(file) {
+    if (/shot|win|withdr|proof/i.test(file)) return 'Win Proof';
+    if (/^marketingpic/i.test(file)) return 'General Promo';
+    return 'General';
+}
+
+// 5-minute cache — the folder rarely changes
+let marketingAssetsCache = { at: 0, images: null, videos: null };
+
+function getMarketingAssets() {
+    const now = Date.now();
+    if (marketingAssetsCache.images && now - marketingAssetsCache.at < 5 * 60 * 1000) {
+        return { images: marketingAssetsCache.images, videos: marketingAssetsCache.videos };
+    }
+
+    const baseUrl = (process.env.BASE_URL || 'https://back.avisignals.com').replace(/\/$/, '');
+    const assetsUrl = `${baseUrl}/marketing-assets`;
+
+    let videoFiles = [], imageFiles = [];
+    try {
+        videoFiles = fs.readdirSync(MARKETING_DIR).filter(f => VIDEO_EXT.test(f)).sort();
+    } catch (_) {}
+    try {
+        imageFiles = fs.readdirSync(path.join(MARKETING_DIR, 'images')).filter(f => IMAGE_EXT.test(f)).sort();
+    } catch (_) {}
+
+    const videos = videoFiles.map((file, i) => {
+        const meta = VIDEO_META[file] || {};
+        const url = `${assetsUrl}/${encodeURIComponent(file)}`;
+        return {
+            id: (file.replace(/\.[^.]+$/, '') || `vid${i}`).toLowerCase(),
+            title: meta.title || autoTitle(file, 'video'),
+            file,
+            category: meta.category || autoVideoCategory(file),
+            url,
+            downloadUrl: `${url}?download=1`,
+            desc: meta.desc || 'Ready-to-share marketing video'
+        };
+    });
+
+    const images = imageFiles.map((file, i) => {
+        const meta = IMAGE_META[file] || {};
+        const url = `${assetsUrl}/images/${encodeURIComponent(file)}`;
+        return {
+            id: (file.replace(/\.[^.]+$/, '') || `img${i}`).toLowerCase(),
+            name: meta.name || autoTitle(file, 'image'),
+            file,
+            category: meta.category || autoImageCategory(file),
+            url,
+            downloadUrl: `${url}?download=1`
+        };
+    });
+
+    marketingAssetsCache = { at: now, images, videos };
+    return { images, videos };
+}
+
 /**
  * GET MARKETING TOOLS & ASSETS
  */
 router.get('/marketing-tools', (req, res) => {
-    const baseUrl = process.env.BASE_URL?.replace(/\/$/, '') || 'https://back.avisignals.com';
-    const assetsUrl = `${baseUrl}/marketing-assets`;
-
-    const images = [
-        { id: 'pic1', name: 'Marketing Banner 1', file: 'marketingpic.jpg', category: 'General Promo', url: `${assetsUrl}/images/marketingpic.jpg` },
-        { id: 'pic2', name: 'Marketing Banner 2', file: 'marketingpic2.jpg', category: 'High Multiplier Win', url: `${assetsUrl}/images/marketingpic2.jpg` },
-        { id: 'pic3', name: 'Marketing Banner 3', file: 'marketingpic3.jpg', category: 'AI Predictor Showcase', url: `${assetsUrl}/images/marketingpic3.jpg` },
-        { id: 'pic4', name: 'Marketing Banner 4', file: 'marketingpic4.jpg', category: 'Live Proof & Results', url: `${assetsUrl}/images/marketingpic4.jpg` },
-        { id: 'pic5', name: 'Marketing Banner 5', file: 'marketingpic5.jpg', category: 'Fast Cashout Alert', url: `${assetsUrl}/images/marketingpic5.jpg` },
-        { id: 'agentprog', name: 'Agent Program Banner', file: 'agentprogram.jpg', category: 'Earn Money Promo', url: `${assetsUrl}/images/agentprogram.jpg` },
-        { id: 'bothome', name: 'Bot Dashboard Preview', file: 'bothomepage.jpg', category: 'Platform Interface', url: `${assetsUrl}/images/bothomepage.jpg` },
-        { id: 'freetrial', name: 'Free Trial Promo Card', file: 'getfreetrial.jpg', category: 'Free Trial Hook', url: `${assetsUrl}/images/getfreetrial.jpg` }
-    ];
-
-    const videos = [
-        { id: 'howitworks', title: 'Full System Walkthrough', file: 'howitworks.mp4', category: 'Tutorial', url: `${assetsUrl}/howitworks.mp4`, desc: 'Step-by-step guide on how the AI Predictor works' },
-        { id: 'botrunning', title: 'Live Bot Prediction Engine', file: 'botrunning.mp4', category: 'Live Demo', url: `${assetsUrl}/botrunning.mp4`, desc: 'Live demonstration of high odds prediction in real time' },
-        { id: 'premiumchannel', title: 'VIP Premium Channel Signals', file: 'premiumchannel.mp4', category: 'Live Demo', url: `${assetsUrl}/premiumchannel.mp4`, desc: 'Live video showing continuous VIP signal delivery' },
-        { id: 'getfreecode', title: 'How to Get Free Trial Code', file: 'getfreecode.mp4', category: 'Tutorial', url: `${assetsUrl}/getfreecode.mp4`, desc: 'Walkthrough on claiming 60-min free access' },
-        { id: 'betika', title: 'Betika Platform Walkthrough', file: 'betikaworks.mp4', category: 'Platform Tutorial', url: `${assetsUrl}/betikaworks.mp4`, desc: 'How to predict rounds accurately on Betika' },
-        { id: '1win', title: '1Win Platform Walkthrough', file: '1winworks.mp4', category: 'Platform Tutorial', url: `${assetsUrl}/1winworks.mp4`, desc: 'Live test and cashout tutorial for 1Win Aviator' },
-        { id: 'stake', title: 'Stake Platform Walkthrough', file: 'stakeworks.mp4', category: 'Platform Tutorial', url: `${assetsUrl}/stakeworks.mp4`, desc: 'Connecting to Stake Aviator with live predictions' },
-        { id: 'sportybet', title: 'SportyBet Walkthrough', file: 'sportybetworks.mp4', category: 'Platform Tutorial', url: `${assetsUrl}/sportybetworks.mp4`, desc: 'Live signal delivery on SportyBet Aviator' },
-        { id: 'vid2', title: 'Viral Cashout Reel #2', file: 'marketingvid2.mp4', category: 'Social Media Reel', url: `${assetsUrl}/marketingvid2.mp4`, desc: 'High energy TikTok / Reels format' },
-        { id: 'vid3', title: 'Viral Cashout Reel #3', file: 'marketingvid3.mp4', category: 'Social Media Reel', url: `${assetsUrl}/marketingvid3.mp4`, desc: 'High energy TikTok / Reels format' },
-        { id: 'vid4', title: 'Viral Cashout Reel #4', file: 'marketingvid4.mp4', category: 'Social Media Reel', url: `${assetsUrl}/marketingvid4.mp4`, desc: 'High energy TikTok / Reels format' },
-        { id: 'vid5', title: 'Viral Cashout Reel #5', file: 'marketingvid5.mp4', category: 'Social Media Reel', url: `${assetsUrl}/marketingvid5.mp4`, desc: 'High energy TikTok / Reels format' },
-        { id: 'vid6', title: 'Viral Cashout Reel #6', file: 'marketingvid6.mp4', category: 'Social Media Reel', url: `${assetsUrl}/marketingvid6.mp4`, desc: 'High energy TikTok / Reels format' },
-        { id: 'vid7', title: 'Viral Cashout Reel #7', file: 'marketingvid7.mp4', category: 'Social Media Reel', url: `${assetsUrl}/marketingvid7.mp4`, desc: 'High energy TikTok / Reels format' },
-        { id: 'vid8', title: 'Viral Cashout Reel #8', file: 'marketingvid8.mp4', category: 'Social Media Reel', url: `${assetsUrl}/marketingvid8.mp4`, desc: 'High energy TikTok / Reels format' },
-        { id: 'vid9', title: 'Viral Cashout Reel #9', file: 'marketingvid9.mp4', category: 'Social Media Reel', url: `${assetsUrl}/marketingvid9.mp4`, desc: 'High energy TikTok / Reels format' },
-        { id: 'vid10', title: 'Viral Cashout Reel #10', file: 'marketingvid10.mp4.mp4', category: 'Social Media Reel', url: `${assetsUrl}/marketingvid10.mp4.mp4`, desc: 'High energy TikTok / Reels format' },
-        { id: 'vid11', title: 'Viral Cashout Reel #11', file: 'marketingvid11.mp4', category: 'Social Media Reel', url: `${assetsUrl}/marketingvid11.mp4`, desc: 'High energy TikTok / Reels format' },
-        { id: 'vid12', title: 'Viral Cashout Reel #12', file: 'marketingvid12.mp4', category: 'Social Media Reel', url: `${assetsUrl}/marketingvid12.mp4`, desc: 'High energy TikTok / Reels format' },
-        { id: 'vid13', title: 'Viral Cashout Reel #13', file: 'marketingvid13.mp4', category: 'Social Media Reel', url: `${assetsUrl}/marketingvid13.mp4`, desc: 'High energy TikTok / Reels format' },
-        { id: 'vid14', title: 'Viral Cashout Reel #14', file: 'marketingvid14.mp4', category: 'Social Media Reel', url: `${assetsUrl}/marketingvid14.mp4`, desc: 'High energy TikTok / Reels format' },
-        { id: 'vid15', title: 'Viral Cashout Reel #15', file: 'marketingvid15.mp4', category: 'Social Media Reel', url: `${assetsUrl}/marketingvid15.mp4`, desc: 'High energy TikTok / Reels format' },
-        { id: 'vid16', title: 'Viral Cashout Reel #16', file: 'marketingvid16.mp4', category: 'Social Media Reel', url: `${assetsUrl}/marketingvid16.mp4`, desc: 'High energy TikTok / Reels format' },
-        { id: 'vid17', title: 'Viral Cashout Reel #17', file: 'marketingvid17.mp4', category: 'Social Media Reel', url: `${assetsUrl}/marketingvid17.mp4`, desc: 'High energy TikTok / Reels format' },
-        { id: 'vid18', title: 'Viral Cashout Reel #18', file: 'marketingvid18.mp4', category: 'Social Media Reel', url: `${assetsUrl}/marketingvid18.mp4`, desc: 'High energy TikTok / Reels format' },
-        { id: 'vid19', title: 'Viral Cashout Reel #19', file: 'marketingvid19.mp4', category: 'Social Media Reel', url: `${assetsUrl}/marketingvid19.mp4`, desc: 'High energy TikTok / Reels format' },
-        { id: 'vid20', title: 'Viral Cashout Reel #20', file: 'marketingvid20.mp4', category: 'Social Media Reel', url: `${assetsUrl}/marketingvid20.mp4`, desc: 'High energy TikTok / Reels format' }
-    ];
+    const { images, videos } = getMarketingAssets();
 
     const copywritingTemplates = [
         {

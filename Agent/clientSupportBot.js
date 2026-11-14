@@ -25,6 +25,7 @@ const path = require('path');
 const groq = require('./groqClient');
 const { matchScript, SCRIPTS, BOT_URL, FREE_CHANNEL } = require('./clientScripts');
 const paymentSupport = require('./paymentSupport');
+const trialSite = require('../services/trialSite');
 const {
     VIDEOS, IMAGES, getVideoPath, getImagePath,
     matchSiteVideo, getCachedFileId, setCachedFileId,
@@ -998,6 +999,10 @@ async function handleClientMessage(message) {
     systemPrompt += `\n- Detected intent: ${intent}`;
     systemPrompt += `\n- Messages exchanged: ${session.history.length}`;
     systemPrompt += `\n- Time in conversation: ${Math.round((Date.now() - session.startedAt) / 60000)} minutes`;
+    try {
+        const today = trialSite.getTodaySite();
+        systemPrompt += `\n- Today's free trial site: ${today.site.displayName} (${today.site.url}) — the trial code ONLY works on this site today.`;
+    } catch (_) {}
 
     // Inject matched script context
     if (script && script.context) {

@@ -4,552 +4,1249 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aviator Admin | Professional Monitoring</title>
+    <title>AviSignals Admin</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #0b0d17;
-            --card-bg: #161b2c;
+            --bg-soft: #10142a;
+            --card: #161b2c;
+            --card-hover: #1b2138;
             --accent: #f1c40f;
+            --accent-soft: rgba(241, 196, 15, 0.12);
             --success: #2ecc71;
             --danger: #e74c3c;
+            --info: #3498db;
             --text: #ecf0f1;
             --text-dim: #94a3b8;
-            --border: rgba(241, 196, 15, 0.1);
+            --border: rgba(255, 255, 255, 0.07);
+            --sidebar-w: 250px;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--bg);
+            background: var(--bg);
             color: var(--text);
             font-family: 'Inter', sans-serif;
-            line-height: 1.6;
+            line-height: 1.5;
+            min-height: 100vh;
         }
 
-        /* Login UI */
-        .login-overlay {
-            position: fixed;
-            inset: 0;
-            background: radial-gradient(circle at center, #1a253a 0%, #0b0d17 100%);
+        .hidden { display: none !important; }
+
+        /* ═══════════ LOGIN ═══════════ */
+        .login-wrap {
+            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 2000;
+            background: radial-gradient(ellipse at top, #1a253a 0%, var(--bg) 70%);
+            padding: 20px;
         }
 
         .login-card {
-            background: var(--card-bg);
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
             padding: 40px;
-            border-radius: 24px;
             width: 100%;
             max-width: 400px;
-            border: 1px solid var(--border);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            text-align: center;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
         }
 
-        .input-group {
-            margin-bottom: 20px;
-            text-align: left;
+        .login-logo {
+            width: 56px; height: 56px;
+            margin: 0 auto 18px;
+            border-radius: 16px;
+            background: var(--accent-soft);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5em; color: var(--accent);
         }
 
-        .input-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: var(--text-dim);
-            font-size: 0.9em;
-        }
+        .login-card h1 { font-size: 1.4em; text-align: center; margin-bottom: 4px; }
+        .login-card .sub { text-align: center; color: var(--text-dim); font-size: 0.85em; margin-bottom: 28px; }
 
-        .form-input {
+        .field { margin-bottom: 16px; }
+        .field label { display: block; font-size: 0.8em; color: var(--text-dim); margin-bottom: 6px; font-weight: 600; }
+        .field input {
             width: 100%;
-            padding: 12px 16px;
-            background: rgba(0, 0, 0, 0.2);
+            padding: 12px 14px;
+            background: rgba(0, 0, 0, 0.25);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            color: white;
+            border-radius: 10px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.95em;
             outline: none;
+            transition: border-color 0.2s;
         }
+        .field input:focus { border-color: var(--accent); }
 
-        .form-input:focus {
-            border-color: var(--accent);
-        }
-
-        .btn-primary {
-            width: 100%;
-            padding: 14px;
-            background: var(--accent);
-            color: black;
-            border: none;
-            border-radius: 12px;
-            font-weight: 700;
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 10px 18px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--card-hover);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.9em;
+            font-weight: 600;
             cursor: pointer;
-            transition: 0.2s;
+            transition: 0.15s;
         }
+        .btn:hover { transform: translateY(-1px); border-color: rgba(255,255,255,0.15); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(241, 196, 15, 0.2);
-        }
+        .btn-accent { background: var(--accent); color: #111; border-color: var(--accent); }
+        .btn-accent:hover { box-shadow: 0 8px 20px rgba(241, 196, 15, 0.25); }
+        .btn-block { width: 100%; padding: 13px; }
+        .btn-sm { padding: 6px 12px; font-size: 0.8em; border-radius: 8px; }
+        .btn-success { color: var(--success); border-color: rgba(46, 204, 113, 0.4); }
+        .btn-danger { color: var(--danger); border-color: rgba(231, 76, 60, 0.4); }
+        .btn-ghost { background: transparent; }
 
-        /* Dashboard UI */
-        .dashboard {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 40px 20px;
+        .login-error {
             display: none;
+            background: rgba(231, 76, 60, 0.1);
+            border: 1px solid rgba(231, 76, 60, 0.3);
+            color: #ffb3ab;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.85em;
+            margin-bottom: 16px;
         }
 
-        .header {
+        /* ═══════════ APP LAYOUT ═══════════ */
+        .app { display: flex; min-height: 100vh; }
+
+        .sidebar {
+            width: var(--sidebar-w);
+            background: var(--bg-soft);
+            border-right: 1px solid var(--border);
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 40px;
+            flex-direction: column;
+            position: fixed;
+            top: 0; bottom: 0; left: 0;
+            z-index: 100;
+            transition: transform 0.25s ease;
+        }
+
+        .side-brand {
+            display: flex; align-items: center; gap: 12px;
+            padding: 22px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .side-brand .logo {
+            width: 38px; height: 38px; border-radius: 10px;
+            background: var(--accent-soft); color: var(--accent);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .side-brand .name { font-weight: 800; font-size: 0.95em; }
+        .side-brand .name span { color: var(--accent); }
+        .side-brand .tag { font-size: 0.68em; color: var(--text-dim); }
+
+        .side-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+        .nav-item {
+            display: flex; align-items: center; gap: 12px;
+            width: 100%;
+            padding: 11px 14px;
+            margin-bottom: 4px;
+            border: none; border-radius: 10px;
+            background: transparent;
+            color: var(--text-dim);
+            font-family: inherit;
+            font-size: 0.9em; font-weight: 600;
+            cursor: pointer;
+            text-align: left;
+            transition: 0.15s;
+        }
+        .nav-item i { width: 18px; text-align: center; }
+        .nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+        .nav-item.active { background: var(--accent-soft); color: var(--accent); }
+        .nav-item .badge {
+            margin-left: auto;
+            background: var(--danger);
+            color: #fff;
+            font-size: 0.68em;
+            padding: 2px 7px;
+            border-radius: 20px;
+            font-weight: 700;
+        }
+
+        .side-footer { padding: 16px 20px; border-top: 1px solid var(--border); font-size: 0.75em; color: var(--text-dim); }
+
+        .main {
+            flex: 1;
+            margin-left: var(--sidebar-w);
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .topbar {
+            display: flex; align-items: center; gap: 14px;
+            padding: 16px 28px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(11, 13, 23, 0.8);
+            backdrop-filter: blur(8px);
+            position: sticky; top: 0;
+            z-index: 50;
+        }
+        .topbar h2 { font-size: 1.15em; font-weight: 700; }
+        .topbar .meta { color: var(--text-dim); font-size: 0.78em; margin-left: auto; }
+        .menu-toggle { display: none; }
+
+        .content { padding: 28px; flex: 1; }
+
+        /* ═══════════ CARDS / SECTIONS ═══════════ */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 22px;
         }
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 24px;
-            margin-bottom: 40px;
-        }
-
-        .stat-card {
-            background: var(--card-bg);
-            padding: 24px;
-            border-radius: 20px;
-            border: 1px solid var(--border);
-        }
-
-        .stat-label {
-            color: var(--text-dim);
-            font-size: 0.9em;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .stat-value {
-            font-size: 2.5em;
-            font-weight: 800;
-            color: var(--accent);
-            margin-top: 10px;
-        }
-
-        .section {
-            background: var(--card-bg);
-            border-radius: 24px;
-            padding: 30px;
-            margin-bottom: 40px;
-            border: 1px solid var(--border);
-        }
-
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
             margin-bottom: 24px;
         }
-
-        .table-wrap {
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th {
-            text-align: left;
-            padding: 16px;
-            color: var(--text-dim);
-            font-size: 0.85em;
-            text-transform: uppercase;
-            border-bottom: 1px solid var(--border);
-        }
-
-        td {
-            padding: 16px;
-            border-bottom: 1px solid var(--border);
-            vertical-align: middle;
-        }
-
-        .action-btn {
-            background: none;
+        .stat-card {
+            background: var(--card);
             border: 1px solid var(--border);
-            color: var(--text);
-            padding: 8px 12px;
-            border-radius: 8px;
+            border-radius: 14px;
+            padding: 18px;
+            display: flex; align-items: center; gap: 14px;
+        }
+        .stat-card .icon {
+            width: 42px; height: 42px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1em; flex-shrink: 0;
+        }
+        .stat-card .icon.gold { background: var(--accent-soft); color: var(--accent); }
+        .stat-card .icon.green { background: rgba(46,204,113,0.12); color: var(--success); }
+        .stat-card .icon.blue { background: rgba(52,152,219,0.12); color: var(--info); }
+        .stat-card .icon.red { background: rgba(231,76,60,0.12); color: var(--danger); }
+        .stat-card .label { font-size: 0.72em; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+        .stat-card .value { font-size: 1.45em; font-weight: 800; }
+
+        .section-title {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 1em; font-weight: 700;
+            margin-bottom: 16px;
+        }
+        .section-title i { color: var(--accent); }
+        .section-head {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 12px; flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .section-head .section-title { margin-bottom: 0; }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 1100px) { .grid-2 { grid-template-columns: 1fr; } }
+
+        .mt { margin-top: 20px; }
+
+        /* ═══════════ TRIAL SITE CARD ═══════════ */
+        .trial-card { position: relative; overflow: hidden; }
+        .trial-current {
+            display: flex; align-items: center; gap: 16px;
+            margin-bottom: 16px;
+        }
+        .trial-current .site-badge {
+            width: 52px; height: 52px; border-radius: 14px;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4em;
+        }
+        .trial-current .name { font-size: 1.3em; font-weight: 800; }
+        .trial-current .src {
+            display: inline-block;
+            font-size: 0.68em; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            padding: 3px 9px; border-radius: 20px;
+            margin-top: 4px;
+        }
+        .src.rotation { background: rgba(52,152,219,0.15); color: var(--info); }
+        .src.override { background: rgba(241,196,15,0.15); color: var(--accent); }
+        .trial-meta { font-size: 0.78em; color: var(--text-dim); margin-bottom: 14px; }
+
+        .seg-toggle {
+            display: grid; grid-template-columns: 1fr 1fr;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 4px;
+            gap: 4px;
+        }
+        .seg-btn {
+            padding: 10px;
+            border: none; border-radius: 9px;
+            background: transparent; color: var(--text-dim);
+            font-family: inherit; font-weight: 700; font-size: 0.85em;
             cursor: pointer;
-            transition: 0.2s;
+            transition: 0.15s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
         }
+        .seg-btn.active { background: var(--accent); color: #111; }
+        .seg-btn:not(.active):hover { color: var(--text); }
 
-        .action-btn:hover {
-            background: var(--border);
+        /* ═══════════ TABLES ═══════════ */
+        .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+        th {
+            text-align: left; padding: 12px 14px;
+            color: var(--text-dim); font-size: 0.75em; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            background: rgba(0,0,0,0.2);
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
         }
+        td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        tbody tr:hover { background: rgba(255,255,255,0.02); }
+        .empty-row td { text-align: center; color: var(--text-dim); padding: 28px; }
 
-        .action-btn.approve {
-            color: var(--success);
-            border-color: var(--success);
+        .pill {
+            display: inline-block; padding: 3px 10px; border-radius: 20px;
+            font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;
         }
+        .pill.green { background: rgba(46,204,113,0.14); color: var(--success); }
+        .pill.gold { background: var(--accent-soft); color: var(--accent); }
+        .pill.red { background: rgba(231,76,60,0.14); color: var(--danger); }
+        .pill.blue { background: rgba(52,152,219,0.14); color: var(--info); }
+        .pill.dim { background: rgba(255,255,255,0.06); color: var(--text-dim); }
 
-        .action-btn.reject {
-            color: var(--danger);
-            border-color: var(--danger);
+        code, .code-chip {
+            font-family: 'Consolas', monospace;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            padding: 3px 8px; border-radius: 6px;
+            font-size: 0.88em;
+            color: var(--accent);
+            cursor: pointer;
         }
+        .code-chip:hover { border-color: var(--accent); }
 
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+        .search-input {
+            padding: 9px 14px;
+            background: rgba(0,0,0,0.25);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-family: inherit; font-size: 0.85em;
+            outline: none;
+            min-width: 220px;
         }
+        .search-input:focus { border-color: var(--accent); }
 
-        .hidden {
-            display: none;
+        /* ═══════════ SUPPORT CHATS ═══════════ */
+        .chat-list { display: flex; flex-direction: column; gap: 10px; }
+        .chat-row {
+            display: flex; align-items: center; gap: 14px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            cursor: pointer;
+            transition: 0.15s;
         }
+        .chat-row:hover { border-color: rgba(241,196,15,0.3); }
+        .chat-avatar {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: var(--accent-soft); color: var(--accent);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; flex-shrink: 0;
+        }
+        .chat-info { flex: 1; min-width: 0; }
+        .chat-name { font-weight: 700; font-size: 0.9em; }
+        .chat-sub { font-size: 0.75em; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .drawer {
+            position: fixed; top: 0; right: -480px; bottom: 0;
+            width: 480px; max-width: 95vw;
+            background: var(--bg-soft);
+            border-left: 1px solid var(--border);
+            z-index: 300;
+            transition: right 0.25s ease;
+            display: flex; flex-direction: column;
+        }
+        .drawer.open { right: 0; }
+        .drawer-head {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 18px 20px; border-bottom: 1px solid var(--border);
+        }
+        .drawer-body { flex: 1; overflow-y: auto; padding: 18px 20px; }
+        .msg { margin-bottom: 12px; display: flex; }
+        .msg .bubble {
+            max-width: 82%; padding: 10px 14px; border-radius: 14px;
+            font-size: 0.85em; white-space: pre-wrap; word-break: break-word;
+        }
+        .msg.user { justify-content: flex-start; }
+        .msg.user .bubble { background: var(--card); border: 1px solid var(--border); }
+        .msg.ai { justify-content: flex-end; }
+        .msg.ai .bubble { background: rgba(52,152,219,0.15); border: 1px solid rgba(52,152,219,0.3); }
+
+        /* ═══════════ ASSET GRID ═══════════ */
+        .asset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 16px;
+        }
+        .asset-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+        }
+        .asset-media { aspect-ratio: 16/10; background: #000; position: relative; }
+        .asset-media img, .asset-media video {
+            width: 100%; height: 100%; object-fit: cover; display: block;
+        }
+        .asset-body { padding: 12px 14px; }
+        .asset-name { font-size: 0.85em; font-weight: 700; margin-bottom: 2px; }
+        .asset-cat { font-size: 0.7em; color: var(--text-dim); margin-bottom: 10px; }
+        .filter-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+        .chip {
+            padding: 6px 14px; border-radius: 20px;
+            border: 1px solid var(--border);
+            background: transparent; color: var(--text-dim);
+            font-family: inherit; font-size: 0.78em; font-weight: 600;
+            cursor: pointer;
+        }
+        .chip.active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+
+        /* ═══════════ QUICK LINKS ═══════════ */
+        .quick-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+        }
+        .quick-tile {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: 0.15s;
+            text-align: left;
+            color: var(--text);
+            font-family: inherit;
+        }
+        .quick-tile:hover { border-color: rgba(241,196,15,0.4); transform: translateY(-2px); }
+        .quick-tile i { color: var(--accent); font-size: 1.1em; margin-bottom: 8px; display: block; }
+        .quick-tile .t { font-size: 0.85em; font-weight: 700; }
+        .quick-tile .d { font-size: 0.72em; color: var(--text-dim); margin-top: 2px; }
+
+        /* ═══════════ TOASTS ═══════════ */
+        #toastWrap {
+            position: fixed; bottom: 24px; right: 24px;
+            display: flex; flex-direction: column; gap: 10px;
+            z-index: 1000;
+        }
+        .toast {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--info);
+            padding: 12px 18px;
+            border-radius: 10px;
+            font-size: 0.85em;
+            min-width: 260px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            animation: slideIn 0.25s ease;
+        }
+        .toast.ok { border-left-color: var(--success); }
+        .toast.err { border-left-color: var(--danger); }
+        @keyframes slideIn { from { transform: translateX(60px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+        .spinner {
+            width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,0.15);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ═══════════ MOBILE ═══════════ */
+        @media (max-width: 900px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: none; }
+            .main { margin-left: 0; }
+            .menu-toggle { display: inline-flex; }
+            .content { padding: 16px; }
+        }
+        .backdrop {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+            z-index: 90; display: none;
+        }
+        .backdrop.show { display: block; }
     </style>
 </head>
 
 <body>
-    <!-- Login Area -->
-    <div id="loginArea" class="login-overlay">
+
+    <!-- ═══════════ LOGIN ═══════════ -->
+    <div id="loginView" class="login-wrap">
         <div class="login-card">
-            <h1 style="color: var(--accent); margin-bottom: 10px;">Admin Access</h1>
-            <p style="color: var(--text-dim); margin-bottom: 30px;">Professional Predictor Monitoring</p>
+            <div class="login-logo"><i class="fas fa-shield-halved"></i></div>
+            <h1>AviSignals <span style="color: var(--accent);">Admin</span></h1>
+            <p class="sub">Control Panel</p>
+            <div class="login-error" id="loginError"></div>
             <form id="loginForm">
-                <div class="input-group">
-                    <label>Admin Email</label>
-                    <input type="email" id="adminEmail" class="form-input" required>
+                <div class="field">
+                    <label>Email</label>
+                    <input type="email" id="adminEmail" required autocomplete="username">
                 </div>
-                <div class="input-group">
-                    <label>Secure Password</label>
-                    <input type="password" id="adminPass" class="form-input" required>
+                <div class="field">
+                    <label>Password</label>
+                    <input type="password" id="adminPass" required autocomplete="current-password">
                 </div>
-                <button type="submit" class="btn-primary">Sign In</button>
+                <button type="submit" class="btn btn-accent btn-block" id="loginBtn">Sign In</button>
             </form>
         </div>
     </div>
 
-    <!-- Main Dashboard -->
-    <div id="adminDash" class="dashboard">
-        <div class="header">
-            <div>
-                <h1 style="font-weight: 800;">ADMIN <span style="color: var(--accent);">DASHBOARD</span></h1>
-                <p style="color: var(--text-dim);">Real-time Supabase Integration</p>
-            </div>
-            <div style="display: flex; gap: 15px;">
-                <button class="btn-primary" style="width: auto; padding: 10px 20px;" onclick="refreshAll()">
-                    <i class="fas fa-sync-alt"></i> Refresh
-                </button>
-                <button class="action-btn" onclick="logout()"
-                    style="color: var(--danger); border-color: var(--danger);">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </button>
-            </div>
-        </div>
+    <!-- ═══════════ APP ═══════════ -->
+    <div id="app" class="app hidden">
+        <div class="backdrop" id="backdrop" onclick="closeSidebar()"></div>
 
-        <!-- Metrics -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-label">Online Now</div>
-                <div class="stat-value" id="countOnline" style="color: var(--success);">0</div>
+        <aside class="sidebar" id="sidebar">
+            <div class="side-brand">
+                <div class="logo"><i class="fas fa-satellite-dish"></i></div>
+                <div>
+                    <div class="name">Avi<span>Signals</span></div>
+                    <div class="tag">Admin Panel</div>
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">Total Registered</div>
-                <div class="stat-value" id="countUsers">0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Pending Payments</div>
-                <div class="stat-value" id="countPending">0</div>
-            </div>
-        </div>
+            <nav class="side-nav" id="sideNav">
+                <button class="nav-item active" data-view="overview"><i class="fas fa-gauge-high"></i> Overview</button>
+                <button class="nav-item" data-view="payments"><i class="fas fa-credit-card"></i> Payments <span class="badge hidden" id="navPendingBadge">0</span></button>
+                <button class="nav-item" data-view="users"><i class="fas fa-users"></i> Users</button>
+                <button class="nav-item" data-view="activations"><i class="fas fa-bolt"></i> Activations</button>
+                <button class="nav-item" data-view="codes"><i class="fas fa-key"></i> Codes</button>
+                <button class="nav-item" data-view="agents"><i class="fas fa-handshake"></i> Agents</button>
+                <button class="nav-item" data-view="support"><i class="fas fa-headset"></i> Support Chats</button>
+                <button class="nav-item" data-view="assets"><i class="fas fa-photo-film"></i> Assets</button>
+            </nav>
+            <div class="side-footer">AviSignals Control v2</div>
+        </aside>
 
-        <!-- Pending Section -->
-        <div class="section">
-            <div class="section-header">
-                <h2><i class="fas fa-clock" style="color: var(--accent);"></i> Pending Verifications</h2>
-                <button class="action-btn reject" style="border-radius: 8px; font-size: 0.85em; font-weight: 600;" onclick="clearExpired()">
-                    <i class="fas fa-trash-alt"></i> Clear All Expired
-                </button>
-            </div>
-            <div class="table-wrap">
-                <table id="tablePending">
-                    <thead>
-                        <tr>
-                            <th>Time</th>
-                            <th>User (Email/Phone)</th>
-                            <th>Reference</th>
-                            <th>Amount</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Codes Section -->
-        <div class="section">
-            <div class="section-header">
-                <h2><i class="fas fa-key"></i> Current Activation Codes</h2>
-                <button class="btn-primary" style="width: auto; padding: 8px 15px;" onclick="rotateCodes()">Rotate
-                    All</button>
-            </div>
-            <div class="table-wrap">
-                <table id="tableCodes">
-                    <thead>
-                        <tr>
-                            <th>Site</th>
-                            <th>Daily Code</th>
-                            <th>Free Trial</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Referrals Section -->
-        <div class="section">
-            <div class="section-header">
-                <h2><i class="fas fa-users-cog" style="color: var(--accent);"></i> Referral System Tracking</h2>
-            </div>
-            <div class="table-wrap" style="margin-bottom: 25px;">
-                <table id="tableReferrals">
-                    <thead>
-                        <tr>
-                            <th>Referrer Code</th>
-                            <th>Clicks</th>
-                            <th>Submits</th>
-                            <th>Registered</th>
-                            <th>Purchases</th>
-                            <th>Revenue</th>
-                            <th>Click -> Signup</th>
-                            <th>Signup -> Sale</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+        <div class="main">
+            <div class="topbar">
+                <button class="btn btn-ghost menu-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                <h2 id="viewTitle">Overview</h2>
+                <span class="meta" id="lastRefresh"></span>
+                <button class="btn btn-sm" onclick="refreshView()"><i class="fas fa-rotate"></i> Refresh</button>
+                <button class="btn btn-sm btn-danger" onclick="logout()"><i class="fas fa-right-from-bracket"></i> Logout</button>
             </div>
 
-            <h3 style="margin-bottom: 15px; font-size: 1.1em; color: var(--text-dim);"><i class="fas fa-list-ol"></i> Recent Referral Activity Ledger</h3>
-            <div class="table-wrap">
-                <table id="tableReferralLedger">
-                    <thead>
-                        <tr>
-                            <th>Time</th>
-                            <th>Referrer</th>
-                            <th>Event</th>
-                            <th>User (Email/Phone)</th>
-                            <th>Details</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+            <div class="content">
+
+                <!-- OVERVIEW -->
+                <section id="view-overview">
+                    <div class="stats-grid" id="statsGrid"></div>
+
+                    <div class="grid-2">
+                        <!-- Trial Site Control -->
+                        <div class="card trial-card">
+                            <div class="section-title"><i class="fas fa-calendar-day"></i> Free Trial Site</div>
+                            <div class="trial-current">
+                                <div class="site-badge"><i class="fas fa-dice"></i></div>
+                                <div>
+                                    <div class="name" id="trialSiteName">—</div>
+                                    <span class="src rotation" id="trialSiteSource">rotation</span>
+                                </div>
+                            </div>
+                            <div class="trial-meta" id="trialSiteMeta">Loading…</div>
+                            <div class="seg-toggle">
+                                <button class="seg-btn" id="segClassyBet" onclick="setTrialSite('classybet')">
+                                    <i class="fas fa-star"></i> ClassyBet
+                                </button>
+                                <button class="seg-btn" id="segJetBet" onclick="setTrialSite('jetbet')">
+                                    <i class="fas fa-jet-fighter"></i> JetBet
+                                </button>
+                            </div>
+                            <button class="btn btn-block mt" id="revertRotationBtn" style="margin-top:12px;" onclick="revertTrialSite()">
+                                <i class="fas fa-rotate-left"></i> Revert to Daily Rotation
+                            </button>
+                        </div>
+
+                        <!-- Quick links -->
+                        <div class="card">
+                            <div class="section-title"><i class="fas fa-bolt"></i> Quick Actions</div>
+                            <div class="quick-grid">
+                                <button class="quick-tile" onclick="go('payments')"><i class="fas fa-credit-card"></i><div class="t">Payments</div><div class="d">Verify pending</div></button>
+                                <button class="quick-tile" onclick="go('codes')"><i class="fas fa-key"></i><div class="t">Codes</div><div class="d">Rotate codes</div></button>
+                                <button class="quick-tile" onclick="go('support')"><i class="fas fa-headset"></i><div class="t">Support</div><div class="d">Live chats</div></button>
+                                <button class="quick-tile" onclick="go('agents')"><i class="fas fa-handshake"></i><div class="t">Agents</div><div class="d">Referrals</div></button>
+                                <button class="quick-tile" onclick="go('assets')"><i class="fas fa-photo-film"></i><div class="t">Assets</div><div class="d">Marketing kit</div></button>
+                                <button class="quick-tile" onclick="go('users')"><i class="fas fa-users"></i><div class="t">Users</div><div class="d">All profiles</div></button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PAYMENTS -->
+                <section id="view-payments" class="hidden">
+                    <div class="card">
+                        <div class="section-head">
+                            <div class="section-title"><i class="fas fa-credit-card"></i> Pending Verifications</div>
+                            <div style="display:flex; gap:10px;">
+                                <input class="search-input" id="paySearch" placeholder="Search ref / user…" oninput="renderPayments()">
+                                <button class="btn btn-sm btn-danger" onclick="clearExpired()"><i class="fas fa-trash"></i> Clear expired</button>
+                            </div>
+                        </div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Time</th><th>User</th><th>Reference</th><th>Amount</th><th>Actions</th></tr></thead>
+                                <tbody id="payBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- USERS -->
+                <section id="view-users" class="hidden">
+                    <div class="card">
+                        <div class="section-head">
+                            <div class="section-title"><i class="fas fa-users"></i> Registered Users <span class="pill dim" id="usersCount">0</span></div>
+                            <input class="search-input" id="userSearch" placeholder="Search email / phone…" oninput="renderUsers()">
+                        </div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Email</th><th>Phone</th><th>Activations</th><th>Payments</th><th>Last seen</th></tr></thead>
+                                <tbody id="usersBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ACTIVATIONS -->
+                <section id="view-activations" class="hidden">
+                    <div class="card">
+                        <div class="section-title"><i class="fas fa-bolt"></i> Recent Activations</div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Time</th><th>User</th><th>Type</th><th>Site</th><th>Code</th></tr></thead>
+                                <tbody id="actBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- CODES -->
+                <section id="view-codes" class="hidden">
+                    <div class="card">
+                        <div class="section-head">
+                            <div class="section-title"><i class="fas fa-key"></i> Activation Codes</div>
+                            <button class="btn btn-sm btn-accent" onclick="rotateCodes()"><i class="fas fa-rotate"></i> Rotate all</button>
+                        </div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Site</th><th>Daily Code</th><th>Free Trial</th></tr></thead>
+                                <tbody id="codesBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- AGENTS -->
+                <section id="view-agents" class="hidden">
+                    <div class="card">
+                        <div class="section-title"><i class="fas fa-money-bill-wave"></i> Withdrawal Requests</div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Time</th><th>Agent</th><th>Amount</th><th>Wallet</th><th>Contact</th></tr></thead>
+                                <tbody id="withdrawBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card mt">
+                        <div class="section-title"><i class="fas fa-handshake"></i> Referrer Performance</div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Code</th><th>Clicks</th><th>Signups</th><th>Sales</th><th>Revenue</th><th>Conv %</th></tr></thead>
+                                <tbody id="refBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card mt">
+                        <div class="section-title"><i class="fas fa-list"></i> Recent Referral Activity</div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Time</th><th>Referrer</th><th>Event</th><th>User</th><th>Details</th></tr></thead>
+                                <tbody id="ledgerBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SUPPORT CHATS -->
+                <section id="view-support" class="hidden">
+                    <div class="card">
+                        <div class="section-head">
+                            <div class="section-title"><i class="fas fa-headset"></i> Live Telegram Client Sessions</div>
+                            <span class="pill dim" id="supportNote"></span>
+                        </div>
+                        <div class="chat-list" id="chatList"></div>
+                    </div>
+                </section>
+
+                <!-- ASSETS -->
+                <section id="view-assets" class="hidden">
+                    <div class="card">
+                        <div class="section-head">
+                            <div class="section-title"><i class="fas fa-photo-film"></i> Marketing Assets <span class="pill dim">what agents see</span></div>
+                            <div class="filter-chips" id="assetChips" style="margin:0;"></div>
+                        </div>
+                        <div class="asset-grid" id="assetGrid"></div>
+                    </div>
+                </section>
+
             </div>
         </div>
     </div>
 
-    <script>
-        const API_BASE = '/api/admin';
-        const PAY_API = '/api/payments';
+    <!-- Chat detail drawer -->
+    <div class="drawer" id="chatDrawer">
+        <div class="drawer-head">
+            <div>
+                <div style="font-weight:800;" id="drawerName">Chat</div>
+                <div style="font-size:0.75em; color:var(--text-dim);" id="drawerMeta"></div>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button class="btn btn-sm btn-danger" id="takeoverBtn" onclick="toggleTakeover()">Takeover</button>
+                <button class="btn btn-sm btn-ghost" onclick="closeDrawer()"><i class="fas fa-xmark"></i></button>
+            </div>
+        </div>
+        <div class="drawer-body" id="drawerBody"></div>
+    </div>
 
-        // Auth Logic
+    <div id="toastWrap"></div>
+
+    <script>
+        const API = '/api/admin';
+        const PAY_API = '/api/payments';
+        const REF_API = '/api/referrals';
+
+        let token = localStorage.getItem('admin_token') || null;
+        let state = {
+            stats: null, payments: [], users: [], activations: [],
+            codes: {}, referrals: null, withdrawals: [], support: [],
+            assets: null, assetFilter: 'all'
+        };
+        let loaded = {};
+        let currentView = 'overview';
+        let currentChat = null;
+
+        const VIEWS = {
+            overview: { title: 'Overview', load: loadOverview },
+            payments: { title: 'Payments', load: loadPayments },
+            users: { title: 'Users', load: loadUsers },
+            activations: { title: 'Activations', load: loadActivations },
+            codes: { title: 'Activation Codes', load: loadCodes },
+            agents: { title: 'Agents & Referrals', load: loadAgents },
+            support: { title: 'Support Chats', load: loadSupport },
+            assets: { title: 'Marketing Assets', load: loadAssets },
+        };
+
+        // ═══════════ HELPERS ═══════════
+        async function api(path, opts = {}) {
+            const res = await fetch(`${API}${path}`, {
+                ...opts,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                    ...(opts.headers || {})
+                }
+            });
+            if (res.status === 401) { logout(false); throw new Error('Session expired'); }
+            return res.json();
+        }
+
+        function toast(msg, type = 'ok') {
+            const el = document.createElement('div');
+            el.className = `toast ${type}`;
+            el.innerHTML = msg;
+            document.getElementById('toastWrap').appendChild(el);
+            setTimeout(() => el.remove(), 4000);
+        }
+
+        const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const fmtTime = t => new Date(t).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const money = n => `$${Number(n || 0).toFixed(2)}`;
+
+        function copyText(t, label = 'code') {
+            navigator.clipboard.writeText(t).then(() => toast(`Copied ${label}`)).catch(() => {});
+        }
+
+        // ═══════════ AUTH ═══════════
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('adminEmail').value;
-            const password = document.getElementById('adminPass').value;
-
-            const res = await fetch(`${API_BASE}/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
-            const data = await res.json();
-
-            if (data.success) {
-                localStorage.setItem('admin_session', data.token);
-                initDash();
-            } else {
-                alert('Invalid Credentials');
+            const btn = document.getElementById('loginBtn');
+            const errBox = document.getElementById('loginError');
+            errBox.style.display = 'none';
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span>';
+            try {
+                const res = await fetch(`${API}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: document.getElementById('adminEmail').value,
+                        password: document.getElementById('adminPass').value
+                    })
+                });
+                const data = await res.json();
+                if (data.success && data.token) {
+                    token = data.token;
+                    localStorage.setItem('admin_token', token);
+                    enterApp();
+                } else {
+                    errBox.textContent = data.message || 'Invalid credentials';
+                    errBox.style.display = 'block';
+                }
+            } catch (err) {
+                errBox.textContent = 'Connection error';
+                errBox.style.display = 'block';
             }
+            btn.disabled = false;
+            btn.textContent = 'Sign In';
         });
 
-        function logout() {
-            localStorage.removeItem('admin_session');
+        async function logout(callApi = true) {
+            if (callApi && token) {
+                try { await api('/logout', { method: 'POST' }); } catch (_) {}
+            }
+            token = null;
+            localStorage.removeItem('admin_token');
             location.reload();
         }
 
-        async function initDash() {
-            document.getElementById('loginArea').classList.add('hidden');
-            document.getElementById('adminDash').style.display = 'block';
-            refreshAll();
-            setInterval(refreshAll, 30000); // 30s auto-refresh
+        function enterApp() {
+            document.getElementById('loginView').classList.add('hidden');
+            document.getElementById('app').classList.remove('hidden');
+            const hash = location.hash.replace('#', '');
+            go(VIEWS[hash] ? hash : 'overview');
+            setInterval(() => { if (currentView === 'overview') loadOverview(); }, 30000);
         }
 
-        async function refreshAll() {
+        // ═══════════ NAV ═══════════
+        function go(view) {
+            if (!VIEWS[view]) view = 'overview';
+            currentView = view;
+            location.hash = view;
+            document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+            Object.keys(VIEWS).forEach(v => document.getElementById(`view-${v}`).classList.toggle('hidden', v !== view));
+            document.getElementById('viewTitle').textContent = VIEWS[view].title;
+            closeSidebar();
+            refreshView();
+        }
+
+        function refreshView() {
+            VIEWS[currentView].load();
+            document.getElementById('lastRefresh').textContent = `Updated ${new Date().toLocaleTimeString()}`;
+        }
+
+        document.getElementById('sideNav').addEventListener('click', e => {
+            const btn = e.target.closest('.nav-item');
+            if (btn) go(btn.dataset.view);
+        });
+
+        window.addEventListener('hashchange', () => {
+            const h = location.hash.replace('#', '');
+            if (VIEWS[h] && h !== currentView) go(h);
+        });
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('backdrop').classList.toggle('show');
+        }
+        function closeSidebar() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('backdrop').classList.remove('show');
+        }
+
+        // ═══════════ OVERVIEW ═══════════
+        async function loadOverview() {
             try {
-                // Fetch Stats
-                const statsRes = await fetch(`${API_BASE}/stats`);
-                const statsData = await statsRes.json();
-                if (statsData.success && statsData.stats) {
-                    if (document.getElementById('countUsers')) document.getElementById('countUsers').innerText = statsData.stats.totalUsers || 0;
-                    if (document.getElementById('countOnline')) document.getElementById('countOnline').innerText = statsData.stats.onlineCount || 0;
-                    if (document.getElementById('countPending')) document.getElementById('countPending').innerText = statsData.stats.pendingVerifications || 0;
-                }
+                const [stats, trial] = await Promise.all([
+                    api('/stats'),
+                    api('/trial-site')
+                ]);
+                if (stats.success) renderStats(stats.stats);
+                if (trial.success) renderTrial(trial);
+            } catch (e) { console.warn(e); }
+        }
 
-                // Fetch Pending
-                const pendingRes = await fetch(`${API_BASE}/pending-verifications`);
-                const pendingData = await pendingRes.json();
-                renderPending(pendingData.verifications || []);
-
-                // Fetch Codes
-                const codesRes = await fetch(`${API_BASE}/activation-codes`);
-                const codesData = await codesRes.json();
-                renderCodes(codesData.codes || {});
-
-                // Fetch Referrals
-                const refRes = await fetch(`${API_BASE}/referrals`);
-                const refData = await refRes.json();
-                if (refData.success) {
-                    renderReferrals(refData.referrers || []);
-                    renderReferralLedger(refData.activities || []);
-                }
-
-            } catch (err) {
-                console.error('Dash refresh failed:', err);
+        function renderStats(s) {
+            document.getElementById('statsGrid').innerHTML = `
+                <div class="stat-card"><div class="icon green"><i class="fas fa-signal"></i></div><div><div class="label">Online now</div><div class="value" style="color:var(--success)">${s.onlineCount || 0}</div></div></div>
+                <div class="stat-card"><div class="icon blue"><i class="fas fa-users"></i></div><div><div class="label">Total users</div><div class="value">${s.totalUsers || 0}</div></div></div>
+                <div class="stat-card"><div class="icon red"><i class="fas fa-clock"></i></div><div><div class="label">Pending payments</div><div class="value" style="color:var(--danger)">${s.pendingVerifications || 0}</div></div></div>
+                <div class="stat-card"><div class="icon gold"><i class="fas fa-dollar-sign"></i></div><div><div class="label">Revenue today</div><div class="value">${money(s.todayRevenue)}</div></div></div>
+                <div class="stat-card"><div class="icon gold"><i class="fas fa-bolt"></i></div><div><div class="label">Activations today</div><div class="value">${s.todayActivations || 0}</div></div></div>
+            `;
+            const badge = document.getElementById('navPendingBadge');
+            if (s.pendingVerifications > 0) {
+                badge.textContent = s.pendingVerifications;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
             }
         }
 
-        function renderPending(list) {
-            const tbody = document.querySelector('#tablePending tbody');
-            if (!tbody) return;
-            tbody.innerHTML = list.length === 0 ? '<tr><td colspan="5" style="text-align:center; color: var(--text-dim);">No pending items</td></tr>' : '';
+        function renderTrial(t) {
+            const site = t.site || {};
+            document.getElementById('trialSiteName').textContent = site.displayName || site.key;
+            const srcEl = document.getElementById('trialSiteSource');
+            srcEl.textContent = t.source === 'override' ? 'Manual override' : 'Daily rotation';
+            srcEl.className = `src ${t.source}`;
+            document.getElementById('trialSiteMeta').innerHTML =
+                `Tomorrow's site: <b>${esc(t.tomorrowSite?.displayName)}</b> &nbsp;·&nbsp; Day boundary: <b>${esc(t.timezone)}</b>` +
+                (t.overrideActive && t.override ? `<br>Override set ${fmtTime(t.override.setAt)} — expires at midnight, rotation resumes automatically.` : '');
+
+            document.getElementById('segClassyBet').classList.toggle('active', site.key === 'classybet');
+            document.getElementById('segJetBet').classList.toggle('active', site.key === 'jetbet');
+        }
+
+        async function setTrialSite(site) {
+            try {
+                const data = await api('/trial-site', { method: 'POST', body: JSON.stringify({ site }) });
+                if (data.success) {
+                    renderTrial(data);
+                    toast(`Free trial site set to <b>${esc(data.site.displayName)}</b> for today`);
+                } else {
+                    toast(data.error || 'Failed', 'err');
+                }
+            } catch (e) { toast('Request failed', 'err'); }
+        }
+
+        async function revertTrialSite() {
+            try {
+                const data = await api('/trial-site', { method: 'DELETE' });
+                if (data.success) {
+                    renderTrial(data);
+                    toast(`Back to rotation — today's site is <b>${esc(data.site.displayName)}</b>`);
+                }
+            } catch (e) { toast('Request failed', 'err'); }
+        }
+
+        // ═══════════ PAYMENTS ═══════════
+        async function loadPayments() {
+            try {
+                const data = await api('/pending-verifications');
+                state.payments = data.verifications || [];
+                renderPayments();
+            } catch (e) { console.warn(e); }
+        }
+
+        function renderPayments() {
+            const q = (document.getElementById('paySearch').value || '').toLowerCase();
+            const list = state.payments.filter(p =>
+                !q || (p.id || '').toLowerCase().includes(q) || (p.user || '').toLowerCase().includes(q) || (p.phone || '').toLowerCase().includes(q));
+            const tbody = document.getElementById('payBody');
+            tbody.innerHTML = list.length ? '' : '<tr class="empty-row"><td colspan="5">No pending payments</td></tr>';
             list.forEach(p => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${new Date(p.timestamp).toLocaleTimeString()}</td>
-                    <td><b>${p.user}</b><br><small>${p.phone}</small></td>
-                    <td><code>${p.id}</code></td>
-                    <td style="color: var(--accent); font-weight: 700;">${p.amount}</td>
+                    <td>${fmtTime(p.timestamp)}</td>
+                    <td><b>${esc(p.user)}</b><br><small style="color:var(--text-dim)">${esc(p.phone)}</small></td>
+                    <td><span class="code-chip" onclick="copyText('${esc(p.id)}','reference')">${esc(p.id)}</span></td>
+                    <td style="color:var(--accent); font-weight:700;">${esc(p.amount)}</td>
                     <td>
-                        <button class="action-btn approve" onclick="verify('${p.id}', true)">Approve</button>
-                        <button class="action-btn reject" onclick="verify('${p.id}', false)">Reject</button>
-                    </td>
-                `;
+                        <button class="btn btn-sm btn-success" onclick="verifyPay('${esc(p.id)}', true)">Approve</button>
+                        <button class="btn btn-sm btn-danger" onclick="verifyPay('${esc(p.id)}', false)">Reject</button>
+                    </td>`;
                 tbody.appendChild(tr);
             });
         }
 
-        function renderCodes(codes) {
-            const tbody = document.querySelector('#tableCodes tbody');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-            Object.entries(codes).forEach(([site, c]) => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><b>${site}</b></td>
-                    <td><code>${c.daily}</code></td>
-                    <td><code>${c.freeTrial || '-'}</code></td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        async function verify(ref, ok) {
-            if (!confirm(`Are you sure you want to ${ok ? 'APPROVE' : 'REJECT'}?`)) return;
-            const res = await fetch(`${PAY_API}/admin-verify/${ref}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ verified: ok, reason: 'Admin dashboard manual action' })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert('Action success');
-                refreshAll();
-            } else {
-                alert('Error: ' + data.error);
-            }
-        }
-
-        async function rotateCodes() {
-            if (!confirm('Rotate all codes?')) return;
-            await fetch(`${API_BASE}/rotate-activation-codes`, { method: 'POST' });
-            refreshAll();
+        async function verifyPay(ref, ok) {
+            if (!confirm(`${ok ? 'APPROVE' : 'REJECT'} payment ${ref}?`)) return;
+            try {
+                const res = await fetch(`${PAY_API}/admin-verify/${ref}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ verified: ok, reason: 'Admin panel action' })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    toast(`Payment ${ok ? 'approved' : 'rejected'}`);
+                    loadPayments();
+                } else {
+                    toast(data.error || 'Failed', 'err');
+                }
+            } catch (e) { toast('Request failed', 'err'); }
         }
 
         async function clearExpired() {
-            if (!confirm('Are you sure you want to clear all expired (older than 24h) pending verifications?')) return;
+            if (!confirm('Clear all pending verifications older than 24h?')) return;
+            const data = await api('/clear-expired-verifications', { method: 'POST' });
+            toast(data.message || 'Done', data.success ? 'ok' : 'err');
+            loadPayments();
+        }
+
+        // ═══════════ USERS ═══════════
+        async function loadUsers() {
             try {
-                const res = await fetch(`${API_BASE}/clear-expired-verifications`, { method: 'POST' });
-                const data = await res.json();
-                if (data.success) {
-                    alert(data.message || 'Cleared successfully');
-                    refreshAll();
-                } else {
-                    alert('Error: ' + data.error);
-                }
-            } catch (err) {
-                console.error(err);
-                alert('Connection error');
+                const data = await api('/users');
+                state.users = data.users || [];
+                document.getElementById('usersCount').textContent = state.users.length;
+                renderUsers();
+            } catch (e) { console.warn(e); }
+        }
+
+        function renderUsers() {
+            const q = (document.getElementById('userSearch').value || '').toLowerCase();
+            const list = state.users.filter(u =>
+                !q || (u.email || '').toLowerCase().includes(q) || (u.phone || '').toLowerCase().includes(q));
+            const tbody = document.getElementById('usersBody');
+            tbody.innerHTML = list.length ? '' : '<tr class="empty-row"><td colspan="5">No users</td></tr>';
+            list.slice(0, 200).forEach(u => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><b>${esc(u.email || '—')}</b></td>
+                    <td>${esc(u.phone || '—')}</td>
+                    <td>${u.activations?.[0]?.count ?? 0}</td>
+                    <td>${u.payments?.[0]?.count ?? 0}</td>
+                    <td>${u.last_seen ? fmtTime(u.last_seen) : '—'}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // ═══════════ ACTIVATIONS ═══════════
+        async function loadActivations() {
+            try {
+                const data = await api('/activations');
+                const tbody = document.getElementById('actBody');
+                const list = data.activations || [];
+                tbody.innerHTML = list.length ? '' : '<tr class="empty-row"><td colspan="5">No activations</td></tr>';
+                list.forEach(a => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${fmtTime(a.activated_at)}</td>
+                        <td><b>${esc(a.profiles?.email || '—')}</b><br><small style="color:var(--text-dim)">${esc(a.profiles?.phone || '')}</small></td>
+                        <td><span class="pill ${a.code_type === 'freeTrial' ? 'blue' : 'gold'}">${esc(a.code_type || '—')}</span></td>
+                        <td>${esc(a.site || a.assigned_site || '—')}</td>
+                        <td><span class="code-chip" onclick="copyText('${esc(a.code)}','code')">${esc(a.code || '—')}</span></td>`;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) { console.warn(e); }
+        }
+
+        // ═══════════ CODES ═══════════
+        async function loadCodes() {
+            try {
+                const data = await api('/activation-codes');
+                const tbody = document.getElementById('codesBody');
+                const entries = Object.entries(data.codes || {});
+                tbody.innerHTML = entries.length ? '' : '<tr class="empty-row"><td colspan="3">No codes</td></tr>';
+                entries.forEach(([site, c]) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><b>${esc(site)}</b></td>
+                        <td><span class="code-chip" onclick="copyText('${esc(c.daily)}','code')">${esc(c.daily || '—')}</span></td>
+                        <td>${c.freeTrial ? `<span class="code-chip" style="color:var(--info)" onclick="copyText('${esc(c.freeTrial)}','trial code')">${esc(c.freeTrial)}</span>` : '<span style="color:var(--text-dim)">—</span>'}</td>`;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) { console.warn(e); }
+        }
+
+        async function rotateCodes() {
+            if (!confirm('Rotate ALL activation codes? Existing codes stop working.')) return;
+            const data = await api('/rotate-activation-codes', { method: 'POST' });
+            if (data.success) { toast('All codes rotated'); loadCodes(); }
+            else toast('Failed', 'err');
+        }
+
+        // ═══════════ AGENTS ═══════════
+        async function loadAgents() {
+            try {
+                const [refs, wds] = await Promise.all([
+                    api('/referrals'),
+                    api('/agent-withdrawals')
+                ]);
+                state.referrals = refs;
+                state.withdrawals = wds.withdrawals || [];
+                renderAgents();
+            } catch (e) { console.warn(e); }
+        }
+
+        function renderAgents() {
+            const wb = document.getElementById('withdrawBody');
+            wb.innerHTML = state.withdrawals.length ? '' : '<tr class="empty-row"><td colspan="5">No withdrawal requests</td></tr>';
+            state.withdrawals.forEach(w => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${fmtTime(w.timestamp)}</td>
+                    <td><b>${esc(w.agent)}</b></td>
+                    <td style="color:var(--success); font-weight:700;">${w.amount ? money(w.amount) : '—'}</td>
+                    <td><span class="code-chip" onclick="copyText('${esc(w.wallet)}','wallet')">${esc(String(w.wallet).slice(0, 10))}…</span></td>
+                    <td>${esc(w.contact)}</td>`;
+                wb.appendChild(tr);
+            });
+
+            const rb = document.getElementById('refBody');
+            const refs = state.referrals?.referrers || [];
+            rb.innerHTML = refs.length ? '' : '<tr class="empty-row"><td colspan="6">No referrers</td></tr>';
+            refs.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><span class="code-chip" onclick="copyText('${esc(r.code)}','code')">${esc(r.code)}</span></td>
+                    <td>${r.clicks}</td><td>${r.signups}</td><td>${r.purchases}</td>
+                    <td style="color:var(--success); font-weight:700;">${money(r.revenue)}</td>
+                    <td>${r.signupToPurchaseRate}%</td>`;
+                rb.appendChild(tr);
+            });
+
+            const lb = document.getElementById('ledgerBody');
+            const acts = state.referrals?.activities || [];
+            lb.innerHTML = acts.length ? '' : '<tr class="empty-row"><td colspan="5">No activity</td></tr>';
+            acts.forEach(a => {
+                const tr = document.createElement('tr');
+                const pillCls = a.eventType === 'purchase' ? 'green' : a.eventType === 'signup' ? 'gold' : 'dim';
+                tr.innerHTML = `
+                    <td>${fmtTime(a.timestamp)}</td>
+                    <td><b>${esc(a.referrer)}</b></td>
+                    <td><span class="pill ${pillCls}">${esc(a.eventType)}</span></td>
+                    <td>${esc(a.user)}</td>
+                    <td>${a.amount ? `<b style="color:var(--success)">${money(a.amount)}</b>` : esc(a.page || '—')}</td>`;
+                lb.appendChild(tr);
+            });
+        }
+
+        // ═══════════ SUPPORT CHATS ═══════════
+        async function loadSupport() {
+            try {
+                const data = await api('/support-sessions');
+                const list = data.sessions || [];
+                document.getElementById('supportNote').textContent = data.note || `${list.length} active`;
+                const wrap = document.getElementById('chatList');
+                wrap.innerHTML = list.length ? '' : '<div style="color:var(--text-dim); text-align:center; padding:30px;">No active client sessions</div>';
+                list.forEach(s => {
+                    const el = document.createElement('div');
+                    el.className = 'chat-row';
+                    el.innerHTML = `
+                        <div class="chat-avatar">${esc((s.name || '?')[0].toUpperCase())}</div>
+                        <div class="chat-info">
+                            <div class="chat-name">${esc(s.name)} ${s.username ? `<span style="color:var(--text-dim);font-weight:400">@${esc(s.username)}</span>` : ''}
+                                ${s.takenOver ? '<span class="pill red" style="margin-left:6px">Taken over</span>' : ''}</div>
+                            <div class="chat-sub">${esc(s.intent || 'browsing')} · ${esc(s.funnelStage || '')} · site:${esc(s.slots?.site || '?')} plan:${esc(s.slots?.plan || '?')} · ${s.messages} msgs · ${s.lastMin}m ago</div>
+                        </div>
+                        <i class="fas fa-chevron-right" style="color:var(--text-dim)"></i>`;
+                    el.onclick = () => openChat(s.chatId);
+                    wrap.appendChild(el);
+                });
+            } catch (e) { console.warn(e); }
+        }
+
+        async function openChat(chatId) {
+            try {
+                const data = await api(`/support-sessions/${encodeURIComponent(chatId)}`);
+                if (!data.success) { toast(data.error || 'Not found', 'err'); return; }
+                currentChat = { chatId, takenOver: data.log.takenOver };
+                document.getElementById('drawerName').textContent = data.log.name || 'Client';
+                document.getElementById('drawerMeta').textContent =
+                    `${data.log.intent || ''} · ${data.log.funnelStage || ''} · ${chatId}`;
+                document.getElementById('takeoverBtn').innerHTML =
+                    data.log.takenOver ? '<i class="fas fa-play"></i> Resume bot' : '<i class="fas fa-hand"></i> Takeover';
+                const body = document.getElementById('drawerBody');
+                body.innerHTML = '';
+                (data.log.history || []).forEach(m => {
+                    const div = document.createElement('div');
+                    div.className = `msg ${m.role === 'user' ? 'user' : 'ai'}`;
+                    div.innerHTML = `<div class="bubble">${esc(m.content)}</div>`;
+                    body.appendChild(div);
+                });
+                body.scrollTop = body.scrollHeight;
+                document.getElementById('chatDrawer').classList.add('open');
+            } catch (e) { console.warn(e); }
+        }
+
+        function closeDrawer() {
+            document.getElementById('chatDrawer').classList.remove('open');
+            currentChat = null;
+        }
+
+        async function toggleTakeover() {
+            if (!currentChat) return;
+            const target = !currentChat.takenOver;
+            const data = await api(`/support-sessions/${encodeURIComponent(currentChat.chatId)}/takeover`, {
+                method: 'POST',
+                body: JSON.stringify({ active: target })
+            });
+            if (data.success) {
+                currentChat.takenOver = target;
+                document.getElementById('takeoverBtn').innerHTML =
+                    target ? '<i class="fas fa-play"></i> Resume bot' : '<i class="fas fa-hand"></i> Takeover';
+                toast(target ? 'Bot paused — you are replying manually (use /reply in Telegram)' : 'Bot resumed for this client');
+                loadSupport();
             }
         }
 
-        function renderReferrals(list) {
-            const tbody = document.querySelector('#tableReferrals tbody');
-            if (!tbody) return;
-            tbody.innerHTML = list.length === 0 ? '<tr><td colspan="8" style="text-align:center; color: var(--text-dim);">No referrers active</td></tr>' : '';
-            list.forEach(r => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><b style="color: var(--accent);">${r.code}</b></td>
-                    <td>${r.clicks}</td>
-                    <td>${r.submits}</td>
-                    <td>${r.signups}</td>
-                    <td>${r.purchases}</td>
-                    <td style="color: var(--success); font-weight: 700;">$${r.revenue.toFixed(2)}</td>
-                    <td><code>${r.clickToSignupRate}%</code></td>
-                    <td><code>${r.signupToPurchaseRate}%</code></td>
-                `;
-                tbody.appendChild(tr);
+        // ═══════════ ASSETS ═══════════
+        async function loadAssets() {
+            try {
+                const res = await fetch(`${REF_API}/marketing-tools`);
+                const data = await res.json();
+                if (data.success) {
+                    state.assets = data;
+                    renderAssetChips();
+                    renderAssets();
+                }
+            } catch (e) { console.warn(e); }
+        }
+
+        function renderAssetChips() {
+            const cats = new Set(['all']);
+            (state.assets.videos || []).forEach(v => cats.add(v.category));
+            (state.assets.images || []).forEach(i => cats.add(i.category));
+            const wrap = document.getElementById('assetChips');
+            wrap.innerHTML = '';
+            cats.forEach(c => {
+                const b = document.createElement('button');
+                b.className = `chip ${state.assetFilter === c ? 'active' : ''}`;
+                b.textContent = c;
+                b.onclick = () => { state.assetFilter = c; renderAssetChips(); renderAssets(); };
+                wrap.appendChild(b);
             });
         }
 
-        function renderReferralLedger(list) {
-            const tbody = document.querySelector('#tableReferralLedger tbody');
-            if (!tbody) return;
-            tbody.innerHTML = list.length === 0 ? '<tr><td colspan="5" style="text-align:center; color: var(--text-dim);">No recent referral activity</td></tr>' : '';
-            list.forEach(a => {
-                const tr = document.createElement('tr');
-                let detailsStr = '—';
-                if (a.amount) detailsStr = `<span style="color: var(--success); font-weight: 700;">$${a.amount}</span>`;
-                else if (a.page) detailsStr = `<span style="color: var(--text-dim);">${a.page}</span>`;
-
-                let badgeColor = 'var(--text-dim)';
-                if (a.eventType === 'purchase') badgeColor = 'var(--success)';
-                else if (a.eventType === 'signup') badgeColor = 'var(--accent)';
-                else if (a.eventType === 'click') badgeColor = 'var(--text)';
-                else if (a.eventType === 'landing_submit') badgeColor = 'var(--accent)';
-
-                tr.innerHTML = `
-                    <td>${new Date(a.timestamp).toLocaleTimeString()}</td>
-                    <td><span style="color: var(--accent); font-weight:600;">${a.referrer}</span></td>
-                    <td><span style="background: rgba(255,255,255,0.05); border: 1px solid ${badgeColor}; padding: 3px 8px; border-radius: 6px; font-size: 0.8em; color: ${badgeColor}; text-transform: uppercase;">${a.eventType}</span></td>
-                    <td><b>${a.user}</b></td>
-                    <td>${detailsStr}</td>
-                `;
-                tbody.appendChild(tr);
+        function renderAssets() {
+            const grid = document.getElementById('assetGrid');
+            const f = state.assetFilter;
+            const items = [
+                ...(state.assets.videos || []).map(v => ({ ...v, kind: 'video', title: v.title })),
+                ...(state.assets.images || []).map(i => ({ ...i, kind: 'image', title: i.name }))
+            ].filter(a => f === 'all' || a.category === f);
+            grid.innerHTML = items.length ? '' : '<div style="color:var(--text-dim)">No assets</div>';
+            items.forEach(a => {
+                const card = document.createElement('div');
+                card.className = 'asset-card';
+                const media = a.kind === 'video'
+                    ? `<video src="${esc(a.url)}" controls preload="none"></video>`
+                    : `<img src="${esc(a.url)}" loading="lazy" alt="${esc(a.title)}">`;
+                card.innerHTML = `
+                    <div class="asset-media">${media}</div>
+                    <div class="asset-body">
+                        <div class="asset-name">${esc(a.title)}</div>
+                        <div class="asset-cat">${esc(a.category)}</div>
+                        <a class="btn btn-sm" href="${esc(a.downloadUrl || a.url)}" target="_blank"><i class="fas fa-download"></i> Download</a>
+                    </div>`;
+                grid.appendChild(card);
             });
         }
 
-        // Session check on load
-        if (localStorage.getItem('admin_session')) initDash();
+        // ═══════════ BOOT ═══════════
+        if (token) enterApp();
     </script>
 </body>
 

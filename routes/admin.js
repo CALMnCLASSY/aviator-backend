@@ -1,33 +1,78 @@
 const express = require('express');
+const crypto = require('crypto');
 const router = express.Router();
+const trialSite = require('../services/trialSite');
 
-// Admin credentials (maintained for simple backend access)
-const ADMIN_EMAIL = 'admin@cncavisignals.com';
-const ADMIN_PASSWORD = 'thecnccompanybot';
+// ============================================================
+// ADMIN AUTH
+// Credentials come from env — no hardcoded fallback.
+// Login issues a random session token (12h, in-memory) that
+// must be sent as `Authorization: Bearer <token>` on every
+// other /api/admin/* route.
+// ============================================================
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '').trim();
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
 
-// CORS middleware for admin routes
-router.use((req, res, next) => {
-    const origin = req.headers.origin || 'null';
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    if (req.method === 'OPTIONS') return res.sendStatus(200);
+const TOKEN_TTL_MS = 12 * 60 * 60 * 1000;
+const adminTokens = new Map(); // token -> expiresAt
+
+function issueToken() {
+    const token = crypto.randomBytes(32).toString('hex');
+    adminTokens.set(token, Date.now() + TOKEN_TTL_MS);
+    return token;
+}
+
+function revokeToken(token) {
+    adminTokens.delete(token);
+}
+
+// Periodic cleanup of expired tokens
+setInterval(() => {
+    const now = Date.now();
+    for (const [t, exp] of adminTokens.entries()) {
+        if (exp < now) adminTokens.delete(t);
+    }
+}, 10 * 60 * 1000).unref();
+
+function requireAdmin(req, res, next) {
+    const header = req.headers.authorization || '';
+    const token = header.startsWith('Bearer ') ? header.slice(7) : (req.headers['x-admin-session'] || '');
+    const expiresAt = adminTokens.get(token);
+    if (!token || !expiresAt || expiresAt < Date.now()) {
+        if (token && expiresAt) adminTokens.delete(token);
+        return res.status(401).json({ success: false, error: 'Unauthorised' });
+    }
+    // Sliding renewal — active sessions stay alive
+    adminTokens.set(token, Date.now() + TOKEN_TTL_MS);
     next();
-});
+}
 
 // Admin Login
 router.post('/login', (req, res) => {
-    const { email, password } = req.body;
+    if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+        return res.status(503).json({ success: false, message: 'Admin login not configured (set ADMIN_EMAIL / ADMIN_PASSWORD).' });
+    }
+    const { email, password } = req.body || {};
     if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
         return res.json({
             success: true,
-            token: 'admin-session-' + Date.now(),
+            token: issueToken(),
             admin: { email: ADMIN_EMAIL }
         });
     }
+    console.warn(`🚫 Failed admin login from ${req.ip}`);
     return res.status(401).json({ success: false, message: 'Invalid credentials' });
 });
+
+router.post('/logout', requireAdmin, (req, res) => {
+    const header = req.headers.authorization || '';
+    const token = header.startsWith('Bearer ') ? header.slice(7) : '';
+    revokeToken(token);
+    res.json({ success: true });
+});
+
+// Everything below requires a valid admin session
+router.use(requireAdmin);
 
 /**
  * GET DASHBOARD STATS
@@ -232,6 +277,101 @@ router.get('/chat-summaries', async (req, res) => {
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
+});
+
+/**
+ * TRIAL SITE — today's free-trial betting site.
+ * The daily rotation keeps running underneath; an override is
+ * only valid for the date it was set, so rotation resumes at
+ * midnight automatically.
+ */
+router.get('/trial-site', (req, res) => {
+    res.json({ success: true, ...trialSite.getTodaySite() });
+});
+
+router.post('/trial-site', (req, res) => {
+    const site = String(req.body?.site || '').toLowerCase();
+    if (!trialSite.SITES[site]) {
+        return res.status(400).json({
+            success: false,
+            error: `Unknown site. Valid: ${Object.keys(trialSite.SITES).join(', ')}`
+        });
+    }
+    const override = trialSite.setOverride(site, 'admin-panel');
+    res.json({ success: true, override, ...trialSite.getTodaySite() });
+});
+
+router.delete('/trial-site', (req, res) => {
+    trialSite.clearOverride();
+    res.json({ success: true, ...trialSite.getTodaySite() });
+});
+
+/**
+ * AGENT WITHDRAWAL REQUESTS — logged by /api/referrals/request-withdrawal
+ */
+router.get('/agent-withdrawals', async (req, res) => {
+    try {
+        const db = req.supabaseAdmin || req.supabase;
+        if (!db) return res.status(500).json({ success: false, error: 'Database client unavailable' });
+
+        const { data, error } = await db
+            .from('logs')
+            .select('*')
+            .eq('event_type', 'referral_withdrawal_request')
+            .order('created_at', { ascending: false })
+            .limit(50);
+
+        if (error) throw error;
+
+        res.json({
+            success: true,
+            count: data.length,
+            withdrawals: data.map(l => ({
+                id: l.id,
+                agent: l.details?.agent || l.details?.referrer || 'Unknown',
+                amount: l.details?.amount || null,
+                wallet: l.details?.walletAddress || l.details?.wallet || 'N/A',
+                contact: l.details?.contact || 'N/A',
+                timestamp: l.created_at,
+                raw: l.details
+            }))
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+/**
+ * TELEGRAM SUPPORT SESSIONS — live client conversations from
+ * clientSupportBot.js (in-memory on this process).
+ */
+function getSupportBot() {
+    try { return require('../Agent/clientSupportBot'); } catch (_) { return null; }
+}
+
+router.get('/support-sessions', (req, res) => {
+    const bot = getSupportBot();
+    if (!bot || typeof bot.getActiveClients !== 'function') {
+        return res.json({ success: true, sessions: [], note: 'Support bot not running on this process' });
+    }
+    res.json({ success: true, sessions: bot.getActiveClients() });
+});
+
+router.get('/support-sessions/:chatId', (req, res) => {
+    const bot = getSupportBot();
+    const log = bot && bot.getClientHistory ? bot.getClientHistory(req.params.chatId) : null;
+    if (!log) return res.status(404).json({ success: false, error: 'No conversation for this client' });
+    res.json({ success: true, log });
+});
+
+router.post('/support-sessions/:chatId/takeover', (req, res) => {
+    const bot = getSupportBot();
+    if (!bot || typeof bot.setTakeover !== 'function') {
+        return res.status(503).json({ success: false, error: 'Support bot not running on this process' });
+    }
+    const active = req.body?.active !== false;
+    bot.setTakeover(req.params.chatId, active);
+    res.json({ success: true, chatId: req.params.chatId, takenOver: active });
 });
 
 /**
