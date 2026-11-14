@@ -1015,6 +1015,16 @@ async function handleClientMessage(message) {
         systemPrompt += `\n\nINTENT-SPECIFIC INSTRUCTIONS:\n${intentAddon}`;
     }
 
+    // Site-specific upsell — once we know their platform, every
+    // non-critical intent gets a nudge toward a code for it.
+    const NO_UPSELL = new Set([
+        'ready_to_buy', 'paid_no_code', 'payment_issue', 'withdrawal_help',
+        'deposit_not_updated', 'deposit_help', 'frustrated', 'code_expired'
+    ]);
+    if (session.slots.site && !NO_UPSELL.has(intent)) {
+        systemPrompt += `\n\nSITE UPSELL: This client plays on ${session.slots.site}. Where it fits naturally — ONE short line, never forced — mention that dedicated predictions for ${session.slots.site} unlock with a code from $75/24hrs at ${BOT_URL}.`;
+    }
+
     try {
         // Send "typing" action
         await telegramAPI('sendChatAction', { chat_id: chatId, action: 'typing' });
@@ -1460,13 +1470,17 @@ function getFallbackResponse(text, session) {
             `No payment needed. See the predictions work live!`);
     }
 
+    // Default — site-aware: if we know their platform, offer a code for it
+    const sitePitch = s.site
+        ? `Since you play on *${s.site}* — dedicated predictions for it start at *$75 for 24hrs*. Want me to set you up with a code? 🚀`
+        : `What site do you play on? I'll help you get started! 🚀`;
     return fb(session, 'default',
         `Hey ${session.firstName}! 👋 Thanks for reaching out! I'm here to help.\n\n` +
         `AviSignals is an AI-powered Aviator predictor bot — it works on ALL betting sites worldwide.\n\n` +
         `Want to try it free?\n` +
         `📡 Join our main channel for regular *FREE code drops* & signals: ${FREE_CHANNEL}\n` +
         `🎮 Free 60-min live bot trial: ${BOT_URL}\n\n` +
-        `What site do you play on? I'll help you get started! 🚀`);
+        sitePitch);
 }
 
 // ============================================================

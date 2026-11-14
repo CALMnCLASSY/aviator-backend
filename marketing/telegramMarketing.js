@@ -4,6 +4,33 @@ const fs = require('fs');
 const path = require('path');
 const cron = require('node-cron');
 
+// Rotating target-country hashtags — appended 3–4 at a time to
+// promotional channel posts so regional audiences find them.
+const COUNTRY_TAGS = [
+    '#SouthAfrica', '#Nigeria', '#Ghana', '#UnitedKingdom', '#IvoryCoast',
+    '#Pakistan', '#Zambia', '#Mozambique', '#Cameroon', '#India',
+    '#Nepal', '#Bangladesh', '#Uganda', '#SriLanka', '#Congo',
+    '#Botswana', '#Tanzania', '#Canada', '#Australia'
+];
+
+// Rotating conversion CTAs for promotional posts — every promo
+// gets a clear next step with a trackable ?ref=telegram link.
+const BOT_URL = 'https://avisignals.com/bot';
+const PROMO_CTAS = [
+    `🔑 Want non-stop predictions for YOUR site? Get a code: ${BOT_URL}?ref=telegram`,
+    `🆓 New here? Start the 60-minute FREE bot trial: ${BOT_URL}?ref=telegram`,
+    `💎 Premium codes from $75 — 24h access on YOUR platform: ${BOT_URL}?ref=telegram`,
+    `🌍 Playing on a different site? There's a code for it: ${BOT_URL}?ref=telegram`,
+];
+
+// Message types that get the CTA + country-tag footer
+const PROMO_TYPES = new Set([
+    'classy_promos', 'promos', 'plans_promo', 'payment_promo',
+    'free_trial', 'social_proof', 'site_promos'
+]);
+
+const STATE_FILE = path.join(__dirname, 'marketingState.json');
+
 class TelegramMarketingBot {
     constructor() {
         this.botToken = process.env.TELEGRAM_BOT_TOKEN;
@@ -33,6 +60,8 @@ class TelegramMarketingBot {
         this.imageQueues = {}; // Per-category image queues
         this.videoQueue = [];
         this.totalMessagesSent = 0;
+        this.countryTagIndex = 0;
+        this.ctaIndex = 0;
 
         // ====== ALL 18 VIDEOS with context-aware categories ======
         this.videoLibrary = [
@@ -40,7 +69,7 @@ class TelegramMarketingBot {
             { file: 'betwayworks.mp4', category: 'demo', caption_type: 'bot_demo_video' },
             { file: 'sportybetworks.mp4', category: 'demo', caption_type: 'bot_demo_video' },
             { file: 'stakeworks.mp4', category: 'demo', caption_type: 'bot_demo_video' },
-            { file: 'aviator-works.mp4', category: 'demo', caption_type: 'bot_demo_video' },
+            { file: 'botworking2.mp4', category: 'demo', caption_type: 'bot_demo_video' },
             { file: 'hollywoodworks.mp4', category: 'demo', caption_type: 'bot_demo_video' },
             { file: 'getfreecode.mp4', category: 'demo', caption_type: 'bot_demo_video' },
             { file: 'marketingluckno.mp4', category: 'motivational', caption_type: 'motivational_video' },
@@ -52,7 +81,7 @@ class TelegramMarketingBot {
             { file: 'marketingvid7.mp4', category: 'marketing', caption_type: 'marketing_video' },
             { file: 'marketingvid8.mp4', category: 'marketing', caption_type: 'marketing_video' },
             { file: 'marketingvid9.mp4', category: 'marketing', caption_type: 'marketing_video' },
-            { file: 'marketingvid10.mp4.mp4', category: 'marketing', caption_type: 'marketing_video' },
+            { file: 'marketingvid10.mp4', category: 'marketing', caption_type: 'marketing_video' },
             { file: 'marketingvid11.mp4', category: 'marketing', caption_type: 'marketing_video' },
             { file: 'marketingvid12.mp4', category: 'marketing', caption_type: 'marketing_video' },
             { file: 'marketingvid13.mp4', category: 'marketing', caption_type: 'marketing_video' },
@@ -70,13 +99,13 @@ class TelegramMarketingBot {
         this.imageLibrary = {
             // Win proof screenshots (for win_results, celebration)
             win_proof: [
-                '1xbetshot1.jpg', '1wintzshot.jpg', 'betikawinshot1.jpg', 'betwaywinshot.jpg', 'betikawinshot1.jpg', 'withdrawalwinshot.jpg',
+                '1xbetshot1.jpg', '1wintzshot.jpg', 'betikawinshot1.jpg', 'withdrawalwinshot.jpg',
                 'hollywithdraw1.jpg', 'popesshot.jpg', 'stakewithdr1.jpg', 'stakeusshot1.jpg', 'hollywoodshot2.jpg', 'hollywithdraw2.jpg', 'sportyngrshot1.jpg'
             ],
             // Bot/site screenshots (for promos, classy_promos)
             site_promo: [
                 'avisignalsmainhome.jpg', 'hollywoodshot2.jpg',
-                'screenshot1.jpg', 'marketing.jpg', 'selectbsite.jpg'
+                'screenshot1.jpeg', 'marketing.jpg', 'selectbsite.jpg'
             ],
             // Signal/prediction related (for signals, analysis_updates, signal_confirmations)
             signal_related: [
@@ -333,6 +362,10 @@ class TelegramMarketingBot {
     }
 
     async testConnection() {
+        if (process.env.TELEGRAM_DRY_RUN === '1') {
+            console.log('🧪 [DRY-RUN] getMe — connection test bypassed');
+            return true;
+        }
         try {
             console.log('🔍 Testing Telegram connection...');
             const response = await fetch(`https://api.telegram.org/bot${this.botToken}/getMe`);
@@ -365,6 +398,12 @@ class TelegramMarketingBot {
 
             // Escape bot username underscore for Markdown so it doesn't break entity parsing
             finalMessage = (finalMessage || '').replace(/avisignalshelp_bot/g, 'avisignalshelp\\_bot');
+
+            if (process.env.TELEGRAM_DRY_RUN === '1') {
+                console.log(`🧪 [DRY-RUN] sendMessage → ${finalMessage.slice(0, 400).replace(/\n/g, ' ⏎ ')}`);
+                this.totalMessagesSent++;
+                return true;
+            }
 
             const url = `https://api.telegram.org/bot${this.botToken}/sendMessage`;
             const payload = {
@@ -419,6 +458,12 @@ class TelegramMarketingBot {
             const FormData = require('form-data');
             const safeCaption = (caption || '').replace(/avisignalshelp_bot/g, 'avisignalshelp\\_bot');
 
+            if (process.env.TELEGRAM_DRY_RUN === '1') {
+                console.log(`🧪 [DRY-RUN] sendPhoto(${path.basename(imagePath)}) → ${safeCaption.slice(0, 300).replace(/\n/g, ' ⏎ ')}`);
+                this.totalMessagesSent++;
+                return true;
+            }
+
             const form = new FormData();
             form.append('chat_id', this.channelId);
             form.append('photo', fs.createReadStream(imagePath));
@@ -467,6 +512,12 @@ class TelegramMarketingBot {
         try {
             const FormData = require('form-data');
             const safeCaption = (caption || '').replace(/avisignalshelp_bot/g, 'avisignalshelp\\_bot');
+
+            if (process.env.TELEGRAM_DRY_RUN === '1') {
+                console.log(`🧪 [DRY-RUN] sendVideo(${path.basename(videoPath)}) → ${safeCaption.slice(0, 300).replace(/\n/g, ' ⏎ ')}`);
+                this.totalMessagesSent++;
+                return true;
+            }
 
             const form = new FormData();
             form.append('chat_id', this.channelId);
@@ -578,6 +629,179 @@ class TelegramMarketingBot {
         }
     }
 
+    // ====== RAW MESSAGE SEND — returns Telegram result incl. message_id ======
+    // Used by the animated code drop, which needs the message_id to edit it.
+    async sendChannelMessageRaw(text) {
+        try {
+            const safeText = (text || '').replace(/avisignalshelp_bot/g, 'avisignalshelp\\_bot');
+            const payload = { chat_id: this.channelId, text: safeText, parse_mode: 'Markdown' };
+
+            if (process.env.TELEGRAM_DRY_RUN === '1') {
+                console.log(`🧪 [DRY-RUN] sendMessage → ${safeText.slice(0, 300).replace(/\n/g, ' ⏎ ')}`);
+                this.totalMessagesSent++;
+                return { ok: true, result: { message_id: Date.now() % 100000 } };
+            }
+
+            const res = await fetch(`https://api.telegram.org/bot${this.botToken}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await res.json();
+            if (!result.ok) console.error('❌ sendMessage failed:', result.description);
+            else { this.totalMessagesSent++; }
+            return result;
+        } catch (e) {
+            console.error('❌ sendChannelMessageRaw error:', e.message);
+            return null;
+        }
+    }
+
+    // ====== MESSAGE EDIT — powers the live countdown ======
+    async editChannelMessage(messageId, text) {
+        try {
+            const safeText = (text || '').replace(/avisignalshelp_bot/g, 'avisignalshelp\\_bot');
+            const payload = {
+                chat_id: this.channelId,
+                message_id: messageId,
+                text: safeText,
+                parse_mode: 'Markdown'
+            };
+
+            if (process.env.TELEGRAM_DRY_RUN === '1') {
+                console.log(`🧪 [DRY-RUN] editMessageText(${messageId}) → ${safeText.slice(0, 300).replace(/\n/g, ' ⏎ ')}`);
+                return { ok: true };
+            }
+
+            const res = await fetch(`https://api.telegram.org/bot${this.botToken}/editMessageText`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await res.json();
+            if (!result.ok) console.warn('⚠️ editMessageText failed:', result.description);
+            return result;
+        } catch (e) {
+            console.warn('⚠️ editChannelMessage error:', e.message);
+            return null;
+        }
+    }
+
+    // ====== COUNTRY TAGS + CTA FOOTER ======
+    getCountryTags() {
+        const tags = [];
+        for (let i = 0; i < 4; i++) {
+            tags.push(COUNTRY_TAGS[this.countryTagIndex % COUNTRY_TAGS.length]);
+            this.countryTagIndex++;
+        }
+        return tags.join(' ');
+    }
+
+    getPromoFooter() {
+        const cta = PROMO_CTAS[this.ctaIndex % PROMO_CTAS.length];
+        this.ctaIndex++;
+        return `${cta}\n\n${this.getCountryTags()}`;
+    }
+
+    // ====== PERSISTED MARKETING STATE ======
+    // Remembers the last post time so a server restart doesn't
+    // re-fire the "startup post" when we just posted minutes ago.
+    loadMarketingState() {
+        try { return JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')); }
+        catch (_) { return {}; }
+    }
+
+    saveMarketingState(patch) {
+        const state = Object.assign(this.loadMarketingState(), patch);
+        try { fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2)); }
+        catch (e) { console.warn('⚠️ Marketing state save failed:', e.message); }
+    }
+
+    // ============================================================
+    // ANIMATED FREE-CODE DROP
+    // One countdown message, edited every ~10s through the final
+    // minute, then a final edit reveals today's FREE TRIAL code
+    // (for today's actual trial site) + how-to video + poll.
+    // Never reveals a paid daily code publicly.
+    // ============================================================
+    async runAnimatedCodeDrop() {
+        try {
+            console.log('🎁 Starting animated free-code drop...');
+
+            // Resolve today's trial site + its freeTrial code
+            const { getTodaySite } = require('../services/trialSite');
+            const today = getTodaySite();
+            const siteName = today.site?.displayName || today.site?.name || 'ClassyBet';
+
+            const codesPath = path.join(__dirname, '..', 'activation_codes.json');
+            let freeCode = null;
+            try {
+                const codes = JSON.parse(fs.readFileSync(codesPath, 'utf8'));
+                freeCode = codes[today.key]?.freeTrial
+                    || codes.classybet?.freeTrial
+                    || codes.jetbet?.freeTrial
+                    || null;
+            } catch (e) {
+                console.error('❌ Could not read activation codes:', e.message);
+            }
+            if (!freeCode) {
+                console.error('❌ No freeTrial code found in activation_codes.json — aborting drop');
+                return false;
+            }
+
+            const sleep = ms => new Promise(r => setTimeout(r, ms));
+            const frameText = (t) => {
+                const filled = Math.min(5, Math.round((60 - t) / 12));
+                return `🎁 *FREE CODE DROP INCOMING!* 🚀\n\n` +
+                    `⏳ *T-${t} seconds…* ${'▰'.repeat(filled)}${'▱'.repeat(5 - filled)}\n\n` +
+                    `Get ready to grab today's FREE ${siteName} trial code the second it lands! ⚡`;
+            };
+
+            // Send the countdown message, then edit it each ~10s
+            const sent = await this.sendChannelMessageRaw(frameText(60));
+            const messageId = sent?.result?.message_id;
+
+            for (const t of [50, 40, 30, 20, 10]) {
+                await sleep(10000);
+                if (!this.isRunning) return false;
+                if (messageId) await this.editChannelMessage(messageId, frameText(t));
+                else await this.sendChannelMessageRaw(frameText(t));
+            }
+            await sleep(10000);
+            if (!this.isRunning) return false;
+
+            // Final edit — reveal the FREE TRIAL code
+            const reveal =
+                `🏆 *FREE TRIAL CODE — ${siteName.toUpperCase()}* 🎁\n\n` +
+                `🔑 Code: \`${freeCode}\`\n\n` +
+                `✅ Works on *${siteName}* — today's free trial site\n` +
+                `👉 Activate it now: ${BOT_URL}?ref=telegram\n\n` +
+                `💎 Playing on a different site? Premium codes unlock non-stop signals on YOUR platform — from $75.`;
+            if (messageId) await this.editChannelMessage(messageId, reveal);
+            else await this.sendChannelMessageRaw(reveal);
+
+            // How-to-redeem video + giveaway poll
+            const videoPath = path.join(__dirname, 'getfreecode.mp4');
+            if (fs.existsSync(videoPath)) {
+                await this.sendVideoToChannel(videoPath,
+                    `🎥 *How to redeem your FREE code* — takes under a minute!\n\n👉 ${BOT_URL}?ref=telegram`);
+            }
+            try {
+                const { sendGiveawayPoll } = require('../Agent/telegramAgent');
+                await sendGiveawayPoll();
+            } catch (e) {
+                console.warn('⚠️ Giveaway poll failed:', e.message);
+            }
+
+            this.saveMarketingState({ lastDropDate: today.date, lastDropAt: new Date().toISOString() });
+            console.log(`✅ Animated code drop complete — ${siteName} freeTrial code revealed`);
+            return true;
+        } catch (e) {
+            console.error('❌ Animated code drop error:', e);
+            return false;
+        }
+    }
+
     async sendTestMessage() {
         const message = "🧪 Test message from AviSignals Marketing Bot";
         return await this.sendToChannel(message);
@@ -683,7 +907,10 @@ class TelegramMarketingBot {
             await this.completeFlow();
         }
 
-        if (success) this.lastPostTime = Date.now();
+        if (success) {
+            this.lastPostTime = Date.now();
+            this.saveMarketingState({ lastPostTime: this.lastPostTime });
+        }
         return success;
     }
 
@@ -710,7 +937,9 @@ class TelegramMarketingBot {
                 const captionPool = this.messagePool[videoEntry.caption_type] || this.messagePool['marketing_video'] || [
                     "🎥 Watch and learn how to WIN BIG! 🚀\n\n💎 Visit avisignals.com for premium signals!\n🆓 FREE TRIAL available now!"
                 ];
-                const caption = this.processMessage(this.randomFromArray(captionPool), videoEntry.caption_type);
+                let caption = this.processMessage(this.randomFromArray(captionPool), videoEntry.caption_type);
+                // Rotating CTA + country tags on video promos (1024-char caption limit)
+                if (caption.length < 700) caption += `\n\n${this.getPromoFooter()}`;
 
                 console.log(`🎥 Sending video: ${videoEntry.file} (${videoEntry.category})`);
                 return await this.sendVideoToChannel(videoPath, caption);
@@ -734,7 +963,13 @@ class TelegramMarketingBot {
             }
 
             const message = this.randomFromArray(selectedMessages);
-            const processedMessage = this.processMessage(message, messageType);
+            let processedMessage = this.processMessage(message, messageType);
+
+            // Rotating CTA + country tags on promotional posts — kept short
+            // so image captions stay under Telegram's 1024-char limit
+            if (PROMO_TYPES.has(messageType) && processedMessage.length < 800) {
+                processedMessage += `\n\n${this.getPromoFooter()}`;
+            }
 
             // Determine persona
             const useBot = ['signals', 'cancelled_signals', 'analysis_updates', 'signal_confirmations', 'win_results'].includes(messageType);
@@ -843,34 +1078,12 @@ class TelegramMarketingBot {
     }
 
     async runCodeGiveaway() {
+        // Manual /giveaway trigger — runs the same animated drop as the
+        // scheduled noon session. Reveals today's FREE TRIAL code only.
         try {
             console.log('🎁 Starting code giveaway sequence...');
-            // Announce giveaway
-            const announceMsg = "🎁 *GIVEAWAY in 30 seconds!*\\n\\nFirst person gets the free code! Be ready! 🚀";
-            await this.sendToChannel(announceMsg);
-
-            // Wait 30 seconds
-            await new Promise(resolve => setTimeout(resolve, 30000));
-
-            // Load today's code (we'll just pull the first daily code we find)
-            const codesPath = path.join(__dirname, '..', 'activation_codes.json');
-            let dailyCode = 'DAILYCODE';
-            if (fs.existsSync(codesPath)) {
-                const codes = JSON.parse(fs.readFileSync(codesPath, 'utf8'));
-                for (const site in codes) {
-                    if (codes[site].daily) {
-                        dailyCode = codes[site].daily;
-                        break;
-                    }
-                }
-            }
-
-            const codeMsg = '🏆 *CODE REVEALED:* `' + dailyCode + '`\n\n' +
-                'First person to use it win free access!\n' +
-                '👉 Enter it here: avisignals.com/bot';
-
-            await this.sendToChannel(codeMsg);
-            console.log('✅ Giveaway code revealed.');
+            await this.runAnimatedCodeDrop();
+            console.log('✅ Giveaway complete.');
         } catch (error) {
             console.error('❌ Error in runCodeGiveaway:', error);
         }
@@ -886,7 +1099,7 @@ class TelegramMarketingBot {
             await new Promise(resolve => setTimeout(resolve, 10000)); // 10s for manual
             await this.sendToChannel("⏳ *Almost time!* Code users, log in now.");
             await new Promise(resolve => setTimeout(resolve, 10000)); // 10s for manual
-            await this.sendToChannel("🟢 *WE ARE LIVE!* Today's session is OPEN.\\nFree code at avisignals.com/bot");
+            await this.sendToChannel("🟢 *WE ARE LIVE!* Today's session is OPEN.\nFree code at avisignals.com/bot");
             console.log('✅ Manual countdown complete.');
         } catch (error) {
             console.error('❌ Error in runCountdownSequence:', error);
@@ -997,30 +1210,10 @@ class TelegramMarketingBot {
             });
         }
 
-        const codesPath = path.join(__dirname, '..', 'activation_codes.json');
-        let dailyCode = 'DAILYCODE';
-        if (fs.existsSync(codesPath)) {
-            try {
-                const codes = JSON.parse(fs.readFileSync(codesPath, 'utf8'));
-                if (codes[siteName] && codes[siteName].daily) {
-                    dailyCode = codes[siteName].daily;
-                } else {
-                    for (const site in codes) {
-                        if (codes[site].daily) {
-                            dailyCode = codes[site].daily;
-                            break;
-                        }
-                    }
-                }
-            } catch (e) {
-                console.error('Error reading activation codes for Noon Session:', e);
-            }
-        }
-
         queue.push({
             type: 'text',
             delay: 10000,
-            content: `🎁 *GIVEAWAY - FREE ACCESS CODE REVEALED!* 🏆\n\nWe have released today's free code for *${siteName}*:\n\n🔑 Code: \`${dailyCode}\`\n\nFirst person to use it get free bot predictions!\n👉 Enter it on the app here: avisignals.com/bot`
+            content: `🎁 *FREE CODE DROP — STARTING NOW!* 🏆\n\nWatch the countdown below and grab today's free trial code the second it lands! ⚡`
         });
 
         // Append channel template (supported countries/currencies/sites)
@@ -1031,6 +1224,10 @@ class TelegramMarketingBot {
         });
 
         await this.executeSequentialQueue(queue);
+
+        // Animated drop — reveals today's FREE TRIAL code (trial site),
+        // sends the how-to video, then the giveaway poll.
+        if (this.isRunning) await this.runAnimatedCodeDrop();
     }
 
     async runEveningSession() {
@@ -1125,7 +1322,7 @@ class TelegramMarketingBot {
         const template = this.channelTemplates[this.channelTemplateIndex];
         this.channelTemplateIndex = (this.channelTemplateIndex + 1) % this.channelTemplates.length;
         console.log(`📢 Channel template #${this.channelTemplateIndex} queued (global reach / supported sites)`);
-        return template;
+        return `${template}\n\n${this.getCountryTags()}`;
     }
 
     async start() {
@@ -1147,11 +1344,17 @@ class TelegramMarketingBot {
         console.log(`🎥 Videos: ${this.videoLibrary.length} in rotation`);
         console.log(`📸 Images: ${Object.values(this.imageLibrary).flat().length} tags`);
 
-        // Send first post immediately, unless we are in the middle of the night
+        // Send first post immediately — unless we're in the middle of the
+        // night, or a restart already happened within the last 25 minutes
+        // (persisted lastPostTime prevents duplicate startup posts).
         const currentHour = new Date().getHours();
-        if (currentHour >= 6 && currentHour <= 23) {
+        const lastPost = this.loadMarketingState().lastPostTime || 0;
+        const minsSincePost = (Date.now() - lastPost) / 60000;
+        if (currentHour >= 6 && currentHour <= 23 && minsSincePost > 25) {
             console.log('🚀 Sending immediate startup marketing post...');
             this.sendMarketingPost();
+        } else if (minsSincePost <= 25) {
+            console.log(`⏭️ Skipping startup post — last post was ${minsSincePost.toFixed(0)}m ago`);
         }
 
         // Schedule to run exactly on the hour and half hour (:00 and :30) between 6am and 11pm
@@ -1196,7 +1399,7 @@ class TelegramMarketingBot {
 
         // T-0: 7:00 PM EAT (16:00 UTC)
         cron.schedule('0 16 * * *', async () => {
-            if (this.isRunning) await this.sendToChannel("🟢 *WE ARE LIVE!* Today's session is OPEN.\\nFree code at avisignals.com/bot");
+            if (this.isRunning) await this.sendToChannel("🟢 *WE ARE LIVE!* Today's session is OPEN.\nFree code at avisignals.com/bot");
         });
     }
 

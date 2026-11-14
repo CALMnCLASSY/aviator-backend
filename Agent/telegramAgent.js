@@ -25,6 +25,8 @@
 
 const cron = require('node-cron');
 const https = require('https');
+const fs = require('fs');
+const path = require('path');
 const groq = require('./groqClient');
 const { createClient } = require('@supabase/supabase-js');
 const { translateToAgent } = require('../marketing/translator');
@@ -179,6 +181,12 @@ function telegramRequest(method, payload, retries = 3) {
             return resolve(null);
         }
 
+        // Test mode — log the payload instead of hitting Telegram
+        if (process.env.TELEGRAM_DRY_RUN === '1') {
+            console.log(`🧪 [DRY-RUN] ${method}:`, JSON.stringify(payload).slice(0, 600));
+            return resolve({ ok: true, result: { message_id: 1, poll: { id: 'dry-poll' } } });
+        }
+
         const body = JSON.stringify(payload);
         const bodyBuf = Buffer.from(body, 'utf8');
 
@@ -287,6 +295,163 @@ async function sendToAdmin(text, explicitParseMode = null) {
 }
 
 
+
+// ============================================================
+// CHANNEL POLLS — native Telegram polls with rotating topics.
+// State persisted to marketing/pollState.json so restarts and
+// retries never double-post or lose a pending poll's results.
+// ============================================================
+const POLL_STATE_FILE = path.join(__dirname, '..', 'marketing', 'pollState.json');
+
+function loadPollState() {
+    try { return JSON.parse(fs.readFileSync(POLL_STATE_FILE, 'utf8')); }
+    catch (_) { return {}; }
+}
+
+function savePollState(patch) {
+    const state = Object.assign(loadPollState(), patch);
+    try { fs.writeFileSync(POLL_STATE_FILE, JSON.stringify(state, null, 2)); }
+    catch (e) { console.warn('⚠️ Poll state save failed:', e.message); }
+    return state;
+}
+
+function eatDateKey() {
+    return new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Nairobi' });
+}
+
+const DAILY_POLLS = [
+    {
+        topic: 'site',
+        question: '🎯 Which site are you playing on today?',
+        options: ['SportyBet', '1Win', 'Betway', 'Betika', '1xBet', 'Other site'],
+        cta: `👉 Get dedicated predictions for YOUR site — grab a code: ${BOT_URL}?ref=telegram`
+    },
+    {
+        topic: 'drop',
+        question: '🎁 Are you ready for the next FREE code drop?',
+        options: ['Ready! 🔥', 'Need it ASAP', 'Already premium 👑', 'What drop?'],
+        cta: `Free codes drop in this channel — stay tuned. Test the bot meanwhile: ${BOT_URL}?ref=telegram`
+    },
+    {
+        topic: 'time',
+        question: '⏰ What time should the next signal session drop?',
+        options: ['Morning (6–10 AM)', 'Midday (12–2 PM)', 'Evening (6–9 PM)', 'Late night'],
+        cta: `We schedule drops around your votes — keep them coming! 🗳`
+    },
+    {
+        topic: 'premium',
+        question: '💎 What\'s your status with Premium access?',
+        options: ['Already premium 👑', 'Want a code today', 'Still on free trial', 'Not yet'],
+        cta: `Premium codes unlock non-stop signals on YOUR site, from $75: ${BOT_URL}?ref=telegram`
+    },
+    {
+        topic: 'help',
+        question: '🆘 What do you need help with most?',
+        options: ['Activation code', 'Payment', 'Using the bot', 'All good ✅'],
+        cta: `Need a hand? Message our support bot anytime: @avisignalshelp_bot`
+    },
+];
+
+async function sendChannelPoll(question, options) {
+    const res = await telegramRequest('sendPoll', {
+        chat_id: CHANNEL_ID,
+        question,
+        options,
+        is_anonymous: true
+    });
+    if (!res?.ok) console.error('❌ Poll send failed:', res?.description);
+    return res;
+}
+
+// Close a pending poll and post aggregate results to the channel.
+// Telegram polls are anonymous — only vote counts are available.
+async function finalizePendingPoll(slot) {
+    const state = loadPollState();
+    const pending = state[slot];
+    if (!pending?.messageId) return;
+
+    const res = await telegramRequest('stopPoll', { chat_id: CHANNEL_ID, message_id: pending.messageId });
+    const poll = res?.result;
+    if (!poll?.options) {
+        savePollState({ [slot]: null });
+        return;
+    }
+
+    const total = poll.total_voter_count || poll.options.reduce((s, o) => s + (o.voter_count || 0), 0);
+    const sorted = [...poll.options].sort((a, b) => (b.voter_count || 0) - (a.voter_count || 0));
+    const winner = sorted[0];
+    const pct = total ? Math.round(((winner?.voter_count || 0) / total) * 100) : 0;
+    const medals = ['🥇', '🥈', '🥉'];
+    const lines = sorted.map((o, i) => `${medals[i] || '•'} ${o.text} — ${o.voter_count || 0}`).join('\n');
+
+    const msg = `📊 *POLL RESULTS* — ${pending.question}\n\n` +
+        (total ? `${lines}\n\n🏆 Winner: *${winner?.text}* — ${pct}% of ${total} votes` : `_No votes recorded this time._`) +
+        (pending.cta ? `\n\n${pending.cta}` : '');
+
+    await sendToChannel(msg);
+    savePollState({
+        [slot]: null,
+        lastResults: { question: pending.question, winner: winner?.text, total, topic: pending.topic }
+    });
+    console.log(`📊 Poll results posted [${pending.topic || 'custom'}] — winner: ${winner?.text || 'none'}`);
+}
+
+// Daily poll — 2:00 PM EAT. Closes yesterday's poll, posts its
+// results, then sends today's topic (rotating). Once per EAT day.
+async function runDailyPoll() {
+    const state = loadPollState();
+    if (state.enabled === false) {
+        console.log('🔕 Daily poll disabled via /polloff — skipping.');
+        return;
+    }
+    const today = eatDateKey();
+    if (state.lastDailyPollDate === today) {
+        console.log('ℹ️ Daily poll already sent today — skipping.');
+        return;
+    }
+
+    await finalizePendingPoll('pendingDaily');
+
+    const idx = (state.topicIndex || 0) % DAILY_POLLS.length;
+    const poll = DAILY_POLLS[idx];
+    const res = await sendChannelPoll(poll.question, poll.options);
+    if (res?.ok) {
+        savePollState({
+            lastDailyPollDate: today,
+            topicIndex: idx + 1,
+            pendingDaily: {
+                messageId: res.result.message_id,
+                question: poll.question,
+                topic: poll.topic,
+                cta: poll.cta,
+                sentAt: new Date().toISOString()
+            }
+        });
+        console.log(`✅ Daily poll sent [${poll.topic}]`);
+    }
+}
+
+// Giveaway poll — called by telegramMarketing right after the
+// code drop. Closes the previous giveaway poll first.
+async function sendGiveawayPoll() {
+    await finalizePendingPoll('pendingGiveaway');
+    const question = '🎁 Did you grab today\'s FREE trial code?';
+    const options = ['Got it — activating now! 🚀', 'Missed it 😢', 'Already premium 👑', 'Need help'];
+    const res = await sendChannelPoll(question, options);
+    if (res?.ok) {
+        savePollState({
+            pendingGiveaway: {
+                messageId: res.result.message_id,
+                question,
+                topic: 'giveaway',
+                cta: `Missed it? Free codes land here daily — and the 60-min bot trial is always open: ${BOT_URL}?ref=telegram`,
+                sentAt: new Date().toISOString()
+            }
+        });
+        console.log('✅ Giveaway poll sent');
+    }
+    return res;
+}
 
 // ============================================================
 // CHANNEL BROADCASTER — runs at :15 and :45
@@ -418,6 +583,9 @@ AVAILABLE ADMIN COMMANDS (remind user if relevant):
 /lookup [email|ref] — check a payment status
 /resendcode [email|ref] — resend activation code email
 /sendcode [chat_id] — DM activation code to a client
+/poll [q] | [opt1] | [opt2] — custom channel poll
+/polloff /pollon — toggle the daily channel poll
+/pollresults — close pending polls and post results
 /help — full command list
 
 TONE: Sharp, direct, loyal COO. Data-driven, no filler. Short sentences.
@@ -745,6 +913,44 @@ async function handleAdminMessage(message) {
         return;
     }
 
+    // ── /pollresults — close pending polls & post results NOW ──
+    if (text.startsWith('/pollresults')) {
+        await finalizePendingPoll('pendingDaily');
+        await finalizePendingPoll('pendingGiveaway');
+        await telegramRequest('sendMessage', { chat_id: chatId, text: '📊 Pending polls closed and results posted (if any were open).', parse_mode: 'Markdown' });
+        return;
+    }
+
+    // ── /pollon — re-enable the daily channel poll ─────────────
+    if (text.startsWith('/pollon')) {
+        savePollState({ enabled: true });
+        await telegramRequest('sendMessage', { chat_id: chatId, text: '✅ Daily channel poll re-enabled.', parse_mode: 'Markdown' });
+        return;
+    }
+
+    // ── /polloff — disable the daily channel poll ──────────────
+    if (text.startsWith('/polloff')) {
+        savePollState({ enabled: false });
+        await telegramRequest('sendMessage', { chat_id: chatId, text: '🔕 Daily channel poll disabled. Use /pollon to re-enable.', parse_mode: 'Markdown' });
+        return;
+    }
+
+    // ── /poll — send a custom poll to the channel ──────────────
+    if (text.startsWith('/poll')) {
+        const parts = text.replace(/^\/poll\s*/, '').split('|').map(s => s.trim()).filter(Boolean);
+        if (parts.length < 3) {
+            await telegramRequest('sendMessage', { chat_id: chatId, text: '⚠️ Usage: /poll Question? | Option 1 | Option 2 [| Option 3...]', parse_mode: 'Markdown' });
+            return;
+        }
+        const res = await sendChannelPoll(parts[0], parts.slice(1));
+        await telegramRequest('sendMessage', {
+            chat_id: chatId,
+            text: res?.ok ? '✅ Poll posted to channel.' : `❌ Poll failed: ${res?.description || 'unknown error'}`,
+            parse_mode: 'Markdown'
+        });
+        return;
+    }
+
     // ── /help ──────────────────────────────────────────────────
     if (text.startsWith('/help') || text.startsWith('/start')) {
         const helpMsg =
@@ -758,7 +964,10 @@ async function handleAdminMessage(message) {
             `• /giveaway — run a code giveaway NOW\n` +
             `• /countdown — start live session countdown NOW\n` +
             `• /post — random channel broadcast NOW\n` +
-            `• /broadcast [msg] — post custom message to channel\n\n` +
+            `• /broadcast [msg] — post custom message to channel\n` +
+            `• /poll [q] | [opt1] | [opt2] — custom channel poll\n` +
+            `• /polloff /pollon — toggle the daily channel poll\n` +
+            `• /pollresults — close pending polls & post results\n\n` +
             `*CLIENT BOT COMMANDS*\n` +
             `• /clients — list active client conversations\n` +
             `• /takeover [id] — pause bot, reply manually\n` +
@@ -895,6 +1104,9 @@ function startTelegramAgent() {
     // ── Channel content broadcast: 2x per hour (:15, :45), 6am–11pm ──
     cron.schedule('15,45 6-23 * * *', runChannelPost);
 
+    // ── Daily channel poll: 2:00 PM EAT = 11:00 UTC ─────────────
+    cron.schedule('0 11 * * *', runDailyPoll);
+
     // ── Daily Admin Briefings (EAT timezone = UTC+3) ──────────────────
     // 🌅 Morning briefing: 7:00 AM EAT = 04:00 UTC
     cron.schedule('0 4 * * *', () => sendAdminBriefing('🌅 Morning'));
@@ -928,6 +1140,7 @@ function startTelegramAgent() {
     console.log('✅ Telegram Agent v3 ready:');
     console.log('   📢 Channel broadcast  — 2x/hour (:15, :45) 6am–11pm EAT');
     console.log('   📋 Admin briefings    — 7AM, 12PM, 9PM EAT (no hourly spam)');
+    console.log('   📊 Daily channel poll — 2:00 PM EAT (rotating topics)');
     console.log('   🎁 Code giveaway      — 1:00 PM EAT daily');
     console.log('   🔴 Live countdown     — 6:30→7:00 PM EAT daily');
     console.log('   👂 Admin bot webhook  — always on');
@@ -953,8 +1166,11 @@ async function broadcastAgentPromo() {
 module.exports = {
     startTelegramAgent,
     runChannelPost,
+    runDailyPoll,
     sendToAdmin,
     sendToChannel,
+    sendChannelPoll,
+    sendGiveawayPoll,
     broadcastPremiumVideo,
     broadcastAgentPromo,
     stopPolling,
